@@ -21,6 +21,15 @@
 project_id = "seguimiento-personal"
 
 [auth]
+# Registro cerrado: la app es de un solo usuario, ya creado. El usuario se
+# crea una sola vez desde el dashboard; /entrar solo inicia sesión.
+#
+# OJO: es ESTE enable_signup, el de [auth], el que cierra el registro (mapea a
+# disable_signup). El de [auth.email] es otra cosa: mapea a
+# external_email_enabled, o sea el interruptor del proveedor de correo entero.
+# Ponerlo en false apaga el login por correo y la app deja de funcionar.
+enable_signup = false
+
 # URL de producción. Base de la lista de destinos permitidos.
 site_url = "https://pauta-zeta.vercel.app"
 # Destinos permitidos después de autenticar.
@@ -30,6 +39,6 @@ additional_redirect_urls = [
 ]
 
 [auth.email]
-# Registro cerrado: la app es de un solo usuario, ya creado. Nadie más puede
-# darse de alta, y el formulario de /entrar solo inicia sesión.
-enable_signup = false
+# Proveedor de correo ENCENDIDO: sin esto no hay login con correo y contraseña.
+# No confundir con el enable_signup de [auth], que es el que cierra el registro.
+enable_signup = true

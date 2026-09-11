@@ -48,7 +48,22 @@ export async function iniciarSesion(
   });
 
   if (error) {
-    return { ok: false, error: "El correo o la contraseña no coinciden" };
+    /*
+      Solo "credenciales inválidas" es culpa de lo que se escribió. Cualquier
+      otra cosa (proveedor de correo apagado, usuario sin confirmar, rate
+      limit) es un problema de configuración, y decir "contraseña incorrecta"
+      manda a buscar donde no es. Se separan, y el motivo real queda en los
+      logs del servidor.
+    */
+    if (error.code === "invalid_credentials") {
+      return { ok: false, error: "El correo o la contraseña no coinciden" };
+    }
+
+    console.error("[entrar] fallo de autenticación:", error.code, error.message);
+    return {
+      ok: false,
+      error: `No se pudo entrar: ${error.message}`,
+    };
   }
 
   // redirect() lanza: va fuera de cualquier try/catch de quien llame.
