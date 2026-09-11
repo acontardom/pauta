@@ -31,24 +31,29 @@ y de la recuperación de una operación de tobillo.
    y muestran la diferencia en días.
 
 ## Autenticación
-Un solo correo tiene acceso, definido en `EMAIL_PERMITIDO` (variable **solo de
-servidor**: nunca con prefijo `NEXT_PUBLIC_`).
+Un solo usuario, con **correo y contraseña**. El correo autorizado está en
+`EMAIL_PERMITIDO` (variable **solo de servidor**: nunca con prefijo `NEXT_PUBLIC_`).
 
-**El flujo principal es por código, no por enlace.** En iOS una PWA instalada
-guarda sus cookies en un contenedor separado de Safari: si el login dependiera
-del enlace del correo, el enlace abriría Safari y la app instalada seguiría sin
-sesión. Por eso Supabase manda un código, se escribe dentro de la app y la
-sesión queda en el contenedor de la app. El enlace del mismo correo se mantiene
-como alternativa para entrar desde un navegador (`/auth/confirmar`).
+**Por qué contraseña y no enlace ni código.** En iOS una PWA instalada guarda
+sus cookies en un contenedor separado de Safari: el enlace de un correo abriría
+Safari y la app instalada seguiría sin sesión. Un código de un solo uso lo
+habría resuelto, pero Supabase **no deja personalizar las plantillas de correo
+en plan free** con el proveedor por defecto, y las de fábrica traen solo el
+enlace, sin código. Con contraseña no interviene el correo en ningún momento:
+se escribe dentro de la app y la sesión queda en su propio contenedor.
 
+- **El registro está cerrado** (`enable_signup = false`). El usuario se crea una
+  sola vez desde el dashboard de Supabase; `/entrar` solo inicia sesión.
 - La sesión va en **cookies**, nunca en `localStorage` ni `sessionStorage`.
 - `proxy.ts` (lo que hasta Next 15 se llamaba `middleware.ts`) refresca la sesión
-  en cada request y protege las rutas. Del matcher quedan fuera `/entrar`,
-  `/auth/*`, los estáticos y **el manifest y los íconos**: iOS los pide sin
-  sesión al instalar la app.
+  en cada request y protege las rutas. Del matcher quedan fuera `/entrar`, los
+  estáticos y **el manifest y los íconos**: iOS los pide sin sesión al instalar
+  la app.
 - Si hay sesión de un correo distinto al permitido, se cierra y se vuelve a `/entrar`.
 - Clientes: `lib/supabase/cliente.ts` (navegador) y `lib/supabase/servidor.ts`
   (Server Components, Server Actions y Route Handlers).
+- **No hay recuperación de contraseña dentro de la app**, porque eso exigiría
+  correo: se cambia desde el dashboard de Supabase.
 
 ## Esquema de la base
 10 tablas, todas con `id`, `user_id` (por defecto `auth.uid()`), `created_at` y
@@ -99,12 +104,13 @@ al esquema: si cambia la migración, cambian ellos en la misma tarea.
 - **`supabase/config.toml` es la fuente de verdad de la configuración de auth.**
   Todo cambio se hace ahí y se sube con `npx supabase config push`, nunca solo
   en el dashboard.
-- La plantilla de correo vive en `docs/supabase/plantilla-correo.html`.
-  **Pendiente:** Supabase no acepta plantillas propias en plan free con el
-  proveedor de correo por defecto (400 al hacer `config push`, y el rechazo es
-  atómico: bloquea todos los demás ajustes de auth). Por eso las dos secciones
-  `[auth.email.template.*]` están comentadas en `config.toml`. Para activarlas
-  hay que configurar SMTP propio o subir de plan, y descomentarlas.
+- `config.toml` declara **solo** lo que administramos. Todo lo que no declara,
+  `config push` lo deja intacto: la plantilla completa de `supabase init`
+  sobrescribiría ajustes reales del proyecto (MFA, Twilio, pooler, storage).
+- **La app no manda correos.** Si algún día hicieran falta (recuperar contraseña,
+  por ejemplo), hay que configurar SMTP propio: en plan free con el proveedor por
+  defecto, Supabase rechaza las plantillas propias con un 400 que además bloquea
+  el resto del `config push`.
 
 ## Convenciones
 - **Idioma:** toda la UI en español de Chile. Nombres de componentes, props y
@@ -175,7 +181,7 @@ muestra solo su encabezado y "En construcción".
 
 - Rutas: `/hoy`, `/semana`, `/progreso`, `/menus`, `/recuperacion`, `/configuracion`,
   todas bajo el grupo `app/(app)/` con el shell común. `/` redirige a `/hoy`.
-- `/entrar` y `/auth/confirmar` viven fuera del shell.
+- `/entrar` vive fuera del shell.
 - `/configuracion` tiene un bloque **provisorio** (correo, estado de la base y
   cerrar sesión) que la tarea 10 reemplaza.
 - `app/componentes/` es una página temporal de revisión visual: **se elimina en la tarea 11**.

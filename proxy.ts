@@ -73,13 +73,13 @@ export const config = {
   matcher: [
     /*
       Quedan fuera:
-      - /entrar y /auth/* : el propio flujo de login.
+      - /entrar : el propio formulario de login.
       - _next/static, _next/image : estáticos del build.
       - manifest.webmanifest, icon, apple-icon, icon-512, favicon.ico :
         iOS los pide SIN sesión al instalar la app. Si pasaran por aquí,
         la PWA se instalaría sin ícono y sin nombre.
       - archivos con extensión (imágenes, fuentes).
     */
-    "/((?!entrar|auth/|_next/static|_next/image|manifest\.webmanifest|icon|apple-icon|icon-512|favicon\.ico|.*\.(?:svg|png|jpg|jpeg|gif|webp|ico|woff|woff2|ttf)$).*)",
+    "/((?!entrar|_next/static|_next/image|manifest\.webmanifest|icon|apple-icon|icon-512|favicon\.ico|.*\.(?:svg|png|jpg|jpeg|gif|webp|ico|woff|woff2|ttf)$).*)",
   ],
 };
