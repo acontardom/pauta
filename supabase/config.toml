@@ -1,0 +1,69 @@
+# ============================================================================
+# Configuración de Supabase para Pauta.
+#
+# Este archivo es la FUENTE DE VERDAD de la configuración de auth: todo cambio
+# se hace aquí y se sube con "npx supabase config push", nunca solo en el
+# dashboard.
+#
+# Declara a propósito SOLO lo que administramos. "config push" deja intacto
+# todo lo que el archivo no declara, y la plantilla completa que genera
+# "supabase init" trae decenas de valores por defecto que, al subirse,
+# sobrescribirían ajustes reales del proyecto (MFA, Twilio, confirmación de
+# correo, tamaño del pooler, storage analytics). Antes de agregar una clave
+# acá, revisa con "npx supabase config diff" qué cambiaría en el remoto.
+#
+# El proyecto no usa el entorno local de Supabase (no hace falta Docker): las
+# migraciones van directo al remoto con "npx supabase db push". Si algún día se
+# quiere levantar local, la plantilla completa se regenera con "supabase init"
+# en una carpeta aparte.
+# ============================================================================
+
+project_id = "seguimiento-personal"
+
+[auth]
+# URL de producción: con ella se arman los enlaces de los correos.
+site_url = "https://pauta-zeta.vercel.app"
+# Destinos permitidos después de autenticar.
+additional_redirect_urls = [
+  "http://localhost:3000/**",
+  "https://pauta-zeta.vercel.app/**",
+]
+
+[auth.email]
+# Habilitado por ahora: hace falta para crear el usuario en el primer login.
+# Se desactiva una vez que la cuenta existe.
+enable_signup = true
+# Largo del código de un solo uso que se escribe dentro de la app.
+otp_length = 6
+
+# ----------------------------------------------------------------------------
+# PLANTILLAS DE CORREO — COMENTADAS A PROPÓSITO
+#
+# Supabase responde 400 al subirlas:
+#   "Email template modification is not available for free tier projects
+#    using the default email provider."
+#
+# Y el rechazo es atómico: mientras estas secciones estén declaradas, NINGÚN
+# ajuste de auth se sube.
+#
+# Esto importa más de lo que parece. Las plantillas por defecto de Supabase
+# están armadas alrededor del enlace ({{ .ConfirmationURL }}); si la que llega
+# no muestra el código, el flujo principal (escribirlo dentro de la app) no
+# funciona y solo queda el enlace, que en iOS abre Safari y deja la app
+# instalada sin sesión. Hay que mirar el primer correo que llegue para saberlo.
+#
+# Para habilitarlas hay que configurar SMTP propio (Resend, Brevo y otros
+# tienen plan gratis) o subir de plan. Hecho eso, se descomenta este bloque y
+# se corre "npx supabase config push".
+#
+# Una sola plantilla sirve para las dos situaciones:
+#   confirmation -> primer login, cuando se crea el usuario
+#   magic_link   -> logins siguientes
+# ----------------------------------------------------------------------------
+# [auth.email.template.confirmation]
+# subject = "Tu código para Pauta"
+# content_path = "./docs/supabase/plantilla-correo.html"
+#
+# [auth.email.template.magic_link]
+# subject = "Tu código para Pauta"
+# content_path = "./docs/supabase/plantilla-correo.html"

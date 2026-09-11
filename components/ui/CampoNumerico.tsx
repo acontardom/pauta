@@ -9,6 +9,8 @@ type Props = {
   modo?: "entero" | "decimal";
   placeholder?: string;
   sufijo?: string;
+  /** Para casos como el código de un solo uso ("one-time-code"). */
+  autoComplete?: string;
   className?: string;
 };
 
@@ -27,6 +29,7 @@ export default function CampoNumerico({
   modo = "decimal",
   placeholder = "—",
   sufijo,
+  autoComplete = "off",
   className = "",
 }: Props) {
   const id = useId();
@@ -73,7 +76,7 @@ export default function CampoNumerico({
           type="text"
           inputMode={modo === "entero" ? "numeric" : "decimal"}
           enterKeyHint="done"
-          autoComplete="off"
+          autoComplete={autoComplete}
           value={valor}
           placeholder={placeholder}
           onFocus={alEnfocar}

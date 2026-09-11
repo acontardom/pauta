@@ -11,7 +11,7 @@ y de la recuperación de una operación de tobillo.
 
 ## Stack
 - Next.js (App Router) + TypeScript, desplegado en Vercel.
-- Supabase para base de datos y autenticación (desde la tarea 2).
+- Supabase para base de datos y autenticación (`@supabase/supabase-js` + `@supabase/ssr`).
 - Tailwind CSS v4 (tokens con `@theme` en `app/globals.css`).
 - Vitest para pruebas unitarias (`npm test`).
 - PWA en iOS sin service worker: la app requiere conexión.
@@ -29,6 +29,82 @@ y de la recuperación de una operación de tobillo.
    - Bajar es malo en masa musculoesquelética, masa libre de grasa y agua corporal total.
 6. Los hitos de recuperación guardan **fecha planificada** y **fecha real**,
    y muestran la diferencia en días.
+
+## Autenticación
+Un solo correo tiene acceso, definido en `EMAIL_PERMITIDO` (variable **solo de
+servidor**: nunca con prefijo `NEXT_PUBLIC_`).
+
+**El flujo principal es por código, no por enlace.** En iOS una PWA instalada
+guarda sus cookies en un contenedor separado de Safari: si el login dependiera
+del enlace del correo, el enlace abriría Safari y la app instalada seguiría sin
+sesión. Por eso Supabase manda un código, se escribe dentro de la app y la
+sesión queda en el contenedor de la app. El enlace del mismo correo se mantiene
+como alternativa para entrar desde un navegador (`/auth/confirmar`).
+
+- La sesión va en **cookies**, nunca en `localStorage` ni `sessionStorage`.
+- `proxy.ts` (lo que hasta Next 15 se llamaba `middleware.ts`) refresca la sesión
+  en cada request y protege las rutas. Del matcher quedan fuera `/entrar`,
+  `/auth/*`, los estáticos y **el manifest y los íconos**: iOS los pide sin
+  sesión al instalar la app.
+- Si hay sesión de un correo distinto al permitido, se cierra y se vuelve a `/entrar`.
+- Clientes: `lib/supabase/cliente.ts` (navegador) y `lib/supabase/servidor.ts`
+  (Server Components, Server Actions y Route Handlers).
+
+## Esquema de la base
+10 tablas, todas con `id`, `user_id` (por defecto `auth.uid()`), `created_at` y
+`updated_at` (un trigger compartido lo mantiene). **RLS activo en todas**, con
+políticas de select/insert/update/delete solo para `authenticated`. Ninguna para `anon`.
+
+| Tabla | Para qué |
+|---|---|
+| `configuracion` | metas y horarios. Una fila por usuario |
+| `dias` | el día como unidad; `cerrado` alimenta "días registrados" |
+| `menus` | plantillas de comida reutilizables |
+| `comidas` | una fila por (fecha, tiempo) |
+| `alimentos` | tabla de equivalencias por grupo |
+| `medidas` | peso y cintura; varios registros por fecha |
+| `inbody` | composición corporal |
+| `hitos` | etapas de recuperación, con fecha planificada y real |
+| `entradas_recuperacion` | controles, kinesiología y notas |
+| `preguntas_control` | qué preguntar en el próximo control |
+
+**Claves de dominio** (iguales en la base y en `lib/dominio.ts`; si cambian en
+una, cambian en la otra):
+- Grupos: `cereales`, `verduras`, `fruta`, `proteicos`, `lacteos`, `aceite`, `grasas`
+- Tiempos: `desayuno`, `colacion_am`, `almuerzo`, `colacion_pm`, `cena`
+
+Son `text` con check constraints, no enums. Toda columna `porciones` se valida
+con la función `porciones_validas(jsonb)`.
+
+**Reglas del esquema que hay que tener presentes:**
+- **Una comida pendiente es la ausencia de fila en `comidas`.** Completa = modo
+  `menu` o `manual`; estimada = modo `fuera`.
+- Al registrar una comida desde un menú se **copian** `nombre_menu`, `porciones`
+  y `kcal` a la fila de `comidas`. Así la comida conserva lo que se comió aunque
+  el menú después se edite o se borre.
+- `kcal_activas` en `dias` son calorías **gastadas**; `kcal` en `menus` y
+  `comidas` son calorías **aportadas**.
+
+Los tipos TypeScript están en `lib/supabase/tipos.ts`, escritos a mano y fieles
+al esquema: si cambia la migración, cambian ellos en la misma tarea.
+
+## Migraciones y configuración de Supabase
+- Todo cambio de esquema es una **migración nueva**:
+  `npx supabase migration new <nombre>`, aplicada con `npx supabase db push`.
+- **Nunca se edita una migración ya aplicada.**
+- **Ningún comando destructivo contra la base remota** (`db reset`, `drop`,
+  `delete`, `truncate`) sin preguntar antes.
+- `supabase/verificacion.sql` son consultas de solo lectura para revisar RLS,
+  políticas y constraints.
+- **`supabase/config.toml` es la fuente de verdad de la configuración de auth.**
+  Todo cambio se hace ahí y se sube con `npx supabase config push`, nunca solo
+  en el dashboard.
+- La plantilla de correo vive en `docs/supabase/plantilla-correo.html`.
+  **Pendiente:** Supabase no acepta plantillas propias en plan free con el
+  proveedor de correo por defecto (400 al hacer `config push`, y el rechazo es
+  atómico: bloquea todos los demás ajustes de auth). Por eso las dos secciones
+  `[auth.email.template.*]` están comentadas en `config.toml`. Para activarlas
+  hay que configurar SMTP propio o subir de plan, y descomentarlas.
 
 ## Convenciones
 - **Idioma:** toda la UI en español de Chile. Nombres de componentes, props y
@@ -80,8 +156,8 @@ Advertencias:
 ## Las 11 tareas
 | # | Tarea | Estado |
 |---|---|---|
-| 1 | Base del proyecto | En curso |
-| 2 | Esquema y autenticación | Pendiente |
+| 1 | Base del proyecto | Terminada |
+| 2 | Esquema y autenticación | En curso |
 | 3 | Datos semilla | Pendiente |
 | 4 | Hoy: registro de comidas | Pendiente |
 | 5 | Hoy: resto del día | Pendiente |
@@ -92,10 +168,14 @@ Advertencias:
 | 10 | Configuración | Pendiente |
 | 11 | Pulido PWA | Pendiente |
 
-## Estado actual (tarea 1)
-Esqueleto, sistema de diseño, componentes compartidos y utilidades. Sin datos ni
-lógica de negocio: cada pantalla muestra solo su encabezado y "En construcción".
+## Estado actual (tarea 2)
+Esqueleto, sistema de diseño y componentes (tarea 1), más el esquema completo con
+RLS y el login por código. **Todavía no hay datos ni pantallas**: cada pantalla
+muestra solo su encabezado y "En construcción".
 
 - Rutas: `/hoy`, `/semana`, `/progreso`, `/menus`, `/recuperacion`, `/configuracion`,
   todas bajo el grupo `app/(app)/` con el shell común. `/` redirige a `/hoy`.
+- `/entrar` y `/auth/confirmar` viven fuera del shell.
+- `/configuracion` tiene un bloque **provisorio** (correo, estado de la base y
+  cerrar sesión) que la tarea 10 reemplaza.
 - `app/componentes/` es una página temporal de revisión visual: **se elimina en la tarea 11**.
