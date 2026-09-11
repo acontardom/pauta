@@ -25,8 +25,9 @@ y de la recuperación de una operación de tobillo.
    de atención y se usa con moderación.
 4. Se puede navegar a días anteriores para completarlos.
 5. Los deltas de InBody tienen **dirección semántica**:
-   - Bajar es bueno en peso, masa grasa, % de grasa y grasa visceral.
+   - Bajar es bueno en peso, masa grasa y % de grasa.
    - Bajar es malo en masa musculoesquelética, masa libre de grasa y agua corporal total.
+   - **El diseño muestra grasa visceral: ignorarla, el campo no existe.**
 6. Los hitos de recuperación guardan **fecha planificada** y **fecha real**,
    y muestran la diferencia en días.
 
@@ -112,6 +113,31 @@ al esquema: si cambia la migración, cambian ellos en la misma tarea.
   defecto, Supabase rechaza las plantillas propias con un 400 que además bloquea
   el resto del `config push`.
 
+## Semilla
+Los datos iniciales viven en `supabase/semilla/datos.json` y se cargan con un
+script, **nunca desde una migración ni desde `seed.sql`**.
+
+```
+editar datos.json  →  npm run semilla:revisar  →  npm run semilla
+```
+
+- `npm run semilla:revisar` muestra lo que haría sin escribir nada.
+- `npm run semilla` **solo inserta lo que falta**, comparando por clave natural.
+  Nunca hace update ni delete, así que se puede correr las veces que sea.
+- Valida el archivo completo antes de escribir: un solo error y no inserta nada.
+  Cada error indica su ruta exacta (`menus[3].porciones.aceite`).
+- **Corolario importante:** cambiar un dato ya cargado en `datos.json` NO lo
+  actualiza en la base. Las correcciones de datos ya cargados se hacen desde la app.
+
+### SUPABASE_SECRET_KEY
+El script usa la clave secreta de Supabase, que **salta RLS**. Reglas:
+
+- Vive solo en `.env.local`, que está en `.gitignore`.
+- **Nunca en Vercel**, nunca con prefijo `NEXT_PUBLIC_`, nunca en un archivo versionado.
+- **Nunca se imprime** en logs ni en la salida del script.
+- Solo la usa `scripts/`. Nada de `app/`, `components/` ni `lib/` puede importar
+  desde `scripts/`.
+
 ## Convenciones
 - **Idioma:** toda la UI en español de Chile. Nombres de componentes, props y
   funciones también en español.
@@ -164,7 +190,7 @@ Advertencias:
 |---|---|---|
 | 1 | Base del proyecto | Terminada |
 | 2 | Esquema y autenticación | Terminada |
-| 3 | Datos semilla | Pendiente |
+| 3 | Datos semilla | Terminada |
 | 4 | Hoy: registro de comidas | Pendiente |
 | 5 | Hoy: resto del día | Pendiente |
 | 6 | Menús | Pendiente |
@@ -174,10 +200,14 @@ Advertencias:
 | 10 | Configuración | Pendiente |
 | 11 | Pulido PWA | Pendiente |
 
-## Estado actual (tareas 1 y 2 terminadas)
-Esqueleto, sistema de diseño y componentes (tarea 1), más el esquema completo con
-RLS y el login con correo y contraseña (tarea 2). **Todavía no hay datos ni
-pantallas**: cada pantalla muestra solo su encabezado y "En construcción".
+## Estado actual (tareas 1, 2 y 3 terminadas)
+Esqueleto y componentes (1), esquema con RLS y login (2), datos iniciales cargados
+(3). **Todavía no hay pantallas**: cada una muestra solo su encabezado y
+"En construcción".
+
+Ya hay datos en la base: configuración, 5 hitos, 21 menús, 105 alimentos, 1 medida,
+1 InBody, 4 entradas de recuperación y 7 preguntas. `dias` y `comidas` están vacías:
+las llena la app.
 
 - Rutas: `/hoy`, `/semana`, `/progreso`, `/menus`, `/recuperacion`, `/configuracion`,
   todas bajo el grupo `app/(app)/` con el shell común. `/` redirige a `/hoy`.

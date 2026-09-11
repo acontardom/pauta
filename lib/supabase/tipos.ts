@@ -96,7 +96,6 @@ export type Inbody = Comun & {
   pct_grasa: number | null;
   masa_musculoesqueletica: number | null;
   masa_libre_grasa: number | null;
-  grasa_visceral: number | null;
   agua_total: number | null;
 };
 

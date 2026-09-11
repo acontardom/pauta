@@ -1,0 +1,1239 @@
+{
+  "_nota": "Semilla inicial de la app Pauta. Se carga con 'npm run semilla'. Solo inserta lo que falta: nunca actualiza ni borra. Las kcal de los menús son estimadas.",
+  "configuracion": {
+    "metas_porciones": {
+      "cereales": 3,
+      "verduras": 4,
+      "fruta": 1,
+      "proteicos": 11,
+      "lacteos": 2,
+      "aceite": 1,
+      "grasas": 1.5
+    },
+    "meta_agua_ml": 2000,
+    "meta_pct_grasa": 13,
+    "meta_peso": 76.5,
+    "meta_cintura": 88,
+    "horarios": {
+      "desayuno": "08:30",
+      "colacion_am": "11:30",
+      "almuerzo": "13:30",
+      "colacion_pm": "17:00",
+      "cena": "20:00"
+    },
+    "fecha_operacion": "2026-09-04",
+    "fecha_retorno": "2027-01-01"
+  },
+  "hitos": [
+    {
+      "clave": "operacion",
+      "nombre": "Operación de tobillo",
+      "fecha_planificada": "2026-09-04",
+      "fecha_real": "2026-09-04"
+    },
+    {
+      "clave": "fin_sin_apoyo",
+      "nombre": "Fin del período sin apoyo",
+      "fecha_planificada": "2026-10-02",
+      "fecha_real": null
+    },
+    {
+      "clave": "carga_completa",
+      "nombre": "Inicio de carga completa",
+      "fecha_planificada": "2026-10-16",
+      "fecha_real": null
+    },
+    {
+      "clave": "marcha_sin_muletas",
+      "nombre": "Vuelta a la marcha sin muletas",
+      "fecha_planificada": null,
+      "fecha_real": null
+    },
+    {
+      "clave": "retorno",
+      "nombre": "Retorno a la actividad normal",
+      "fecha_planificada": "2027-01-01",
+      "fecha_real": null
+    }
+  ],
+  "menus": [
+    {
+      "tiempo": "desayuno",
+      "nombre": "Avena con leche protein",
+      "ingredientes": [
+        "35 g avena instantánea",
+        "300 cc leche protein Loncoleche",
+        "2 huevos",
+        "30 g frutos secos"
+      ],
+      "observacion": "La avena se prepara directo con la leche protein caliente. Los huevos van aparte.",
+      "porciones": {
+        "cereales": 1,
+        "proteicos": 3,
+        "grasas": 1
+      },
+      "kcal": 600
+    },
+    {
+      "tiempo": "desayuno",
+      "nombre": "Pan con huevos",
+      "ingredientes": [
+        "2 rebanadas pan de molde integral (60 g)",
+        "2 huevos revueltos",
+        "1 yogurt proteico Loncoleche (140 g)",
+        "1/2 palta chica (90 g)"
+      ],
+      "observacion": "El yogurt completa la tercera porción proteica; no lo saltes.",
+      "porciones": {
+        "cereales": 1,
+        "proteicos": 3,
+        "grasas": 1
+      },
+      "kcal": 530
+    },
+    {
+      "tiempo": "desayuno",
+      "nombre": "Pan con quesillo",
+      "ingredientes": [
+        "2 rebanadas pan de molde integral (60 g)",
+        "6 trozos de quesillo (180 g)",
+        "1/2 palta chica (90 g) o 30 g frutos secos"
+      ],
+      "observacion": "Opción sin cocinar. Ideal para los días en que nadie está en la cocina.",
+      "porciones": {
+        "cereales": 1,
+        "proteicos": 3,
+        "grasas": 1
+      },
+      "kcal": 490
+    },
+    {
+      "tiempo": "desayuno",
+      "nombre": "Bowl frío",
+      "ingredientes": [
+        "1 yogurt proteico Loncoleche (140 g)",
+        "2 huevos duros",
+        "35 g avena instantánea",
+        "30 g frutos secos"
+      ],
+      "observacion": "La avena y los frutos secos van sobre el yogurt. Cero cocina.",
+      "porciones": {
+        "cereales": 1,
+        "proteicos": 3,
+        "grasas": 1
+      },
+      "kcal": 550
+    },
+    {
+      "tiempo": "colacion_am",
+      "nombre": "Yogurt light",
+      "ingredientes": [
+        "1 yogurt light sin azúcar (125 cc)"
+      ],
+      "observacion": "Quillayes 0%, Activia triple cero, Surlat light.",
+      "porciones": {
+        "lacteos": 1
+      },
+      "kcal": 65
+    },
+    {
+      "tiempo": "colacion_am",
+      "nombre": "Leche descremada",
+      "ingredientes": [
+        "1 vaso leche descremada (200 cc)"
+      ],
+      "observacion": "Saborizada sin azúcar también sirve.",
+      "porciones": {
+        "lacteos": 1
+      },
+      "kcal": 90
+    },
+    {
+      "tiempo": "colacion_am",
+      "nombre": "Protein shot",
+      "ingredientes": [
+        "1 protein shot Loncoleche (100 ml)"
+      ],
+      "observacion": "La más práctica para tener a mano.",
+      "porciones": {
+        "lacteos": 1
+      },
+      "kcal": 80
+    },
+    {
+      "tiempo": "colacion_am",
+      "nombre": "Quesillo descremado",
+      "ingredientes": [
+        "1 rodela quesillo descremado (30 g)"
+      ],
+      "observacion": "Como lácteo la porción es 30 g, la mitad de la porción proteica de quesillo (60 g).",
+      "porciones": {
+        "lacteos": 1
+      },
+      "kcal": 60
+    },
+    {
+      "tiempo": "almuerzo",
+      "nombre": "Pollo con arroz",
+      "ingredientes": [
+        "200 g pollo cocido",
+        "1 taza arroz cocido (100 g)",
+        "1 tomate (120 g)",
+        "1/2 taza zanahoria rallada (60 g)",
+        "2 cucharaditas aceite de oliva"
+      ],
+      "observacion": "El plato base de la casa. La lechuga se agrega libre.",
+      "porciones": {
+        "cereales": 1,
+        "verduras": 2,
+        "proteicos": 4,
+        "aceite": 0.5
+      },
+      "kcal": 600
+    },
+    {
+      "tiempo": "almuerzo",
+      "nombre": "Fideos con carne",
+      "ingredientes": [
+        "200 g carne molida 4% cocida",
+        "1 taza fideos cocidos (100 g)",
+        "1 tomate (120 g) en salsa o ensalada",
+        "1/2 taza zanahoria (60 g)",
+        "2 cucharaditas aceite de oliva"
+      ],
+      "observacion": "La salsa se hace con tomate natural, sin crema ni queso.",
+      "porciones": {
+        "cereales": 1,
+        "verduras": 2,
+        "proteicos": 4,
+        "aceite": 0.5
+      },
+      "kcal": 570
+    },
+    {
+      "tiempo": "almuerzo",
+      "nombre": "Pollo o carne con papas",
+      "ingredientes": [
+        "200 g pollo o carne cocida",
+        "2 papas chicas cocidas (150 g)",
+        "1/2 taza zapallo camote cocido (60 g)",
+        "1/2 taza acelga cocida (60 g)",
+        "2 cucharaditas aceite de oliva"
+      ],
+      "observacion": "Las verduras cocidas reemplazan la ensalada cuando no hay.",
+      "porciones": {
+        "cereales": 1,
+        "verduras": 2,
+        "proteicos": 4,
+        "aceite": 0.5
+      },
+      "kcal": 580
+    },
+    {
+      "tiempo": "almuerzo",
+      "nombre": "Atún con huevo",
+      "ingredientes": [
+        "1 tarro atún al agua (120 g)",
+        "2 huevos duros",
+        "2 papas chicas cocidas (150 g)",
+        "1 tomate (120 g)",
+        "1/2 taza zanahoria (60 g)",
+        "2 cucharaditas aceite de oliva"
+      ],
+      "observacion": "Sin cocinar. Para cuando el almuerzo de la casa no calza.",
+      "porciones": {
+        "cereales": 1,
+        "verduras": 2,
+        "proteicos": 4,
+        "aceite": 0.5
+      },
+      "kcal": 530
+    },
+    {
+      "tiempo": "colacion_pm",
+      "nombre": "Manzana",
+      "ingredientes": [
+        "1 manzana (100 g)",
+        "1 yogurt light",
+        "15 g frutos secos"
+      ],
+      "observacion": "La de todos los días.",
+      "porciones": {
+        "fruta": 1,
+        "lacteos": 1,
+        "grasas": 0.5
+      },
+      "kcal": 220
+    },
+    {
+      "tiempo": "colacion_pm",
+      "nombre": "Naranja",
+      "ingredientes": [
+        "1 naranja (120 g)",
+        "1 protein shot",
+        "15 g semillas"
+      ],
+      "observacion": "Las semillas pueden ir sobre la naranja picada.",
+      "porciones": {
+        "fruta": 1,
+        "lacteos": 1,
+        "grasas": 0.5
+      },
+      "kcal": 230
+    },
+    {
+      "tiempo": "colacion_pm",
+      "nombre": "Berries",
+      "ingredientes": [
+        "1 taza frutillas o arándanos (200 g)",
+        "1 vaso leche descremada (200 cc)",
+        "15 g frutos secos"
+      ],
+      "observacion": "Probar tolerancia. Partir con las otras dos opciones.",
+      "porciones": {
+        "fruta": 1,
+        "lacteos": 1,
+        "grasas": 0.5
+      },
+      "kcal": 200
+    },
+    {
+      "tiempo": "cena",
+      "nombre": "Crema de zapallo con pollo",
+      "ingredientes": [
+        "1 taza crema de zapallo camote (200 cc)",
+        "200 g pollo desmenuzado",
+        "2 rebanadas pan de molde integral (60 g)",
+        "2 cucharaditas aceite de oliva"
+      ],
+      "observacion": "La de los días de reposo: un plato, una cuchara. El pollo se pesa y se agrega al servir.",
+      "porciones": {
+        "cereales": 1,
+        "verduras": 2,
+        "proteicos": 4,
+        "aceite": 0.5
+      },
+      "kcal": 590
+    },
+    {
+      "tiempo": "cena",
+      "nombre": "Cazuela simple",
+      "ingredientes": [
+        "200 g pollo cocido",
+        "2 papas chicas (150 g)",
+        "1/2 taza zapallo camote (60 g)",
+        "1/2 taza zanahoria (60 g)",
+        "2 cucharaditas aceite de oliva"
+      ],
+      "observacion": "Sin choclo ni arroz: la papa ya es el cereal. Se cocina igual para toda la casa.",
+      "porciones": {
+        "cereales": 1,
+        "verduras": 2,
+        "proteicos": 4,
+        "aceite": 0.5
+      },
+      "kcal": 610
+    },
+    {
+      "tiempo": "cena",
+      "nombre": "Omelette",
+      "ingredientes": [
+        "3 huevos",
+        "50 g pollo o carne picada",
+        "1/2 taza acelga cocida (60 g)",
+        "1 tomate (120 g)",
+        "2 rebanadas pan de molde integral (60 g)",
+        "1/4 palta chica (45 g)"
+      ],
+      "observacion": "Los 50 g de pollo dentro del omelette completan la cuarta porción proteica.",
+      "porciones": {
+        "cereales": 1,
+        "verduras": 2,
+        "proteicos": 4,
+        "grasas": 0.5
+      },
+      "kcal": 540
+    },
+    {
+      "tiempo": "cena",
+      "nombre": "Hamburguesa casera",
+      "ingredientes": [
+        "200 g carne molida 4%",
+        "1 taza arroz cocido (100 g) o 2 papas chicas (150 g)",
+        "1/2 taza zapallo camote (60 g)",
+        "1 tomate (120 g)",
+        "2 cucharaditas aceite de oliva"
+      ],
+      "observacion": "Sin pan rallado ni huevo en la mezcla; solo carne y condimentos.",
+      "porciones": {
+        "cereales": 1,
+        "verduras": 2,
+        "proteicos": 4,
+        "aceite": 0.5
+      },
+      "kcal": 595
+    },
+    {
+      "tiempo": "cena",
+      "nombre": "Once-cena de respaldo",
+      "ingredientes": [
+        "8 trozos de quesillo (240 g)",
+        "2 rebanadas pan de molde integral (60 g)",
+        "1 tomate (120 g)",
+        "1/2 taza zanahoria (60 g)",
+        "1/4 palta chica (45 g)"
+      ],
+      "observacion": "Para cuando no hay nada cocinado. Cumple igual.",
+      "porciones": {
+        "cereales": 1,
+        "verduras": 2,
+        "proteicos": 4,
+        "grasas": 0.5
+      },
+      "kcal": 540
+    },
+    {
+      "tiempo": "cena",
+      "nombre": "Carne con camote y pebre",
+      "ingredientes": [
+        "150 g carne molida 4% cocida",
+        "60 g queso cottage",
+        "150 g papa camote cocida",
+        "1 tomate (120 g) y 1/2 taza cebolla morada (60 g) en pebre con limón, sal y cilantro",
+        "1/4 palta chica (45 g)"
+      ],
+      "observacion": "El camote es el cereal, no verdura. Verificar el cottage en el envase: 60 g equivale a 1 proteica si tiene ~11 g de proteína por 100 g.",
+      "porciones": {
+        "cereales": 1,
+        "verduras": 2,
+        "proteicos": 4,
+        "grasas": 0.5
+      },
+      "kcal": 560
+    }
+  ],
+  "alimentos": [
+    {
+      "grupo": "cereales",
+      "nombre": "pan marraqueta",
+      "medida_casera": "1/2 unidad (1 diente)",
+      "gramos": 50,
+      "orden": 1
+    },
+    {
+      "grupo": "cereales",
+      "nombre": "pan hallulla",
+      "medida_casera": "1/2 unidad",
+      "gramos": 50,
+      "orden": 2
+    },
+    {
+      "grupo": "cereales",
+      "nombre": "pan de molde",
+      "medida_casera": "2 rebanadas",
+      "gramos": 60,
+      "orden": 3
+    },
+    {
+      "grupo": "cereales",
+      "nombre": "pan de molde integral",
+      "medida_casera": "2 rebanadas",
+      "gramos": 60,
+      "orden": 4
+    },
+    {
+      "grupo": "cereales",
+      "nombre": "avena tradicional, integral o instantánea",
+      "medida_casera": "1/2 taza",
+      "gramos": 35,
+      "orden": 5
+    },
+    {
+      "grupo": "cereales",
+      "nombre": "granola sin azúcar",
+      "medida_casera": "1/2 taza",
+      "gramos": 30,
+      "orden": 6
+    },
+    {
+      "grupo": "cereales",
+      "nombre": "cereal en línea / cereal vivo sin azúcar",
+      "medida_casera": "3/4 taza",
+      "gramos": 40,
+      "orden": 7
+    },
+    {
+      "grupo": "cereales",
+      "nombre": "cereal en línea inflado de maíz",
+      "medida_casera": "1/2 taza",
+      "gramos": 30,
+      "orden": 8
+    },
+    {
+      "grupo": "cereales",
+      "nombre": "pipoca de amaranto sin azúcar",
+      "medida_casera": "3 cucharadas",
+      "gramos": 30,
+      "orden": 9
+    },
+    {
+      "grupo": "cereales",
+      "nombre": "galletas de agua",
+      "medida_casera": "5 unidades",
+      "gramos": 40,
+      "orden": 10
+    },
+    {
+      "grupo": "cereales",
+      "nombre": "galletas de arroz",
+      "medida_casera": "2 unidades",
+      "gramos": null,
+      "orden": 11
+    },
+    {
+      "grupo": "cereales",
+      "nombre": "arroz cocido",
+      "medida_casera": "1 taza",
+      "gramos": 100,
+      "orden": 12
+    },
+    {
+      "grupo": "cereales",
+      "nombre": "fideos cocidos",
+      "medida_casera": "1 taza",
+      "gramos": 100,
+      "orden": 13
+    },
+    {
+      "grupo": "cereales",
+      "nombre": "choclo cocido",
+      "medida_casera": "1 taza",
+      "gramos": 100,
+      "orden": 14
+    },
+    {
+      "grupo": "cereales",
+      "nombre": "arvejitas cocidas",
+      "medida_casera": "1 taza",
+      "gramos": 100,
+      "orden": 15
+    },
+    {
+      "grupo": "cereales",
+      "nombre": "habas cocidas",
+      "medida_casera": "1 taza",
+      "gramos": 150,
+      "orden": 16
+    },
+    {
+      "grupo": "cereales",
+      "nombre": "papa cocida",
+      "medida_casera": "2 unidades chicas",
+      "gramos": 150,
+      "orden": 17
+    },
+    {
+      "grupo": "cereales",
+      "nombre": "quinoa cocida",
+      "medida_casera": "1 taza",
+      "gramos": 100,
+      "orden": 18
+    },
+    {
+      "grupo": "cereales",
+      "nombre": "cuscús cocido",
+      "medida_casera": "1/2 taza",
+      "gramos": 80,
+      "orden": 19
+    },
+    {
+      "grupo": "cereales",
+      "nombre": "yuca o plátano maduro",
+      "medida_casera": "1/2 taza",
+      "gramos": 80,
+      "orden": 20
+    },
+    {
+      "grupo": "cereales",
+      "nombre": "amaranto cocido",
+      "medida_casera": "1/2 taza",
+      "gramos": 80,
+      "orden": 21
+    },
+    {
+      "grupo": "verduras",
+      "nombre": "acelga cocida",
+      "medida_casera": "1/2 taza",
+      "gramos": 60,
+      "orden": 1
+    },
+    {
+      "grupo": "verduras",
+      "nombre": "poroto verde cocido",
+      "medida_casera": "1/2 taza",
+      "gramos": 60,
+      "orden": 2
+    },
+    {
+      "grupo": "verduras",
+      "nombre": "pimentón",
+      "medida_casera": "1/2 taza",
+      "gramos": 60,
+      "orden": 3
+    },
+    {
+      "grupo": "verduras",
+      "nombre": "cebolla",
+      "medida_casera": "1/2 taza",
+      "gramos": 60,
+      "orden": 4
+    },
+    {
+      "grupo": "verduras",
+      "nombre": "zanahoria",
+      "medida_casera": "1/2 taza",
+      "gramos": 60,
+      "orden": 5
+    },
+    {
+      "grupo": "verduras",
+      "nombre": "palmitos",
+      "medida_casera": "1/2 taza",
+      "gramos": 60,
+      "orden": 6
+    },
+    {
+      "grupo": "verduras",
+      "nombre": "cochayuyo",
+      "medida_casera": "1/2 taza",
+      "gramos": 60,
+      "orden": 7
+    },
+    {
+      "grupo": "verduras",
+      "nombre": "zapallo camote",
+      "medida_casera": "1/2 taza",
+      "gramos": 60,
+      "orden": 8
+    },
+    {
+      "grupo": "verduras",
+      "nombre": "betarraga cocida",
+      "medida_casera": "1/2 taza",
+      "gramos": 90,
+      "orden": 9
+    },
+    {
+      "grupo": "verduras",
+      "nombre": "champiñones cocidos",
+      "medida_casera": "3/4 taza",
+      "gramos": 100,
+      "orden": 10
+    },
+    {
+      "grupo": "verduras",
+      "nombre": "coliflor",
+      "medida_casera": "1 taza",
+      "gramos": 100,
+      "orden": 11
+    },
+    {
+      "grupo": "verduras",
+      "nombre": "brócoli",
+      "medida_casera": "1 taza",
+      "gramos": 100,
+      "orden": 12
+    },
+    {
+      "grupo": "verduras",
+      "nombre": "champiñones crudos",
+      "medida_casera": "1 1/2 taza",
+      "gramos": 150,
+      "orden": 13
+    },
+    {
+      "grupo": "verduras",
+      "nombre": "berenjena",
+      "medida_casera": "1 1/2 taza",
+      "gramos": 150,
+      "orden": 14
+    },
+    {
+      "grupo": "verduras",
+      "nombre": "tomate",
+      "medida_casera": "1 unidad",
+      "gramos": 120,
+      "orden": 15
+    },
+    {
+      "grupo": "verduras",
+      "nombre": "alcachofa",
+      "medida_casera": "1 unidad",
+      "gramos": 120,
+      "orden": 16
+    },
+    {
+      "grupo": "verduras",
+      "nombre": "espárrago",
+      "medida_casera": "5 unidades",
+      "gramos": 100,
+      "orden": 17
+    },
+    {
+      "grupo": "verduras",
+      "nombre": "lechuga, apio, zapallo italiano crudo, espinaca cruda, pepino, kale, rúcula, repollo",
+      "medida_casera": "libre consumo",
+      "gramos": null,
+      "orden": 18
+    },
+    {
+      "grupo": "fruta",
+      "nombre": "manzana",
+      "medida_casera": "1 unidad regular",
+      "gramos": 100,
+      "orden": 1
+    },
+    {
+      "grupo": "fruta",
+      "nombre": "durazno",
+      "medida_casera": "1 unidad regular",
+      "gramos": 100,
+      "orden": 2
+    },
+    {
+      "grupo": "fruta",
+      "nombre": "caqui",
+      "medida_casera": "1 unidad regular",
+      "gramos": 100,
+      "orden": 3
+    },
+    {
+      "grupo": "fruta",
+      "nombre": "membrillo",
+      "medida_casera": "1 unidad regular",
+      "gramos": 100,
+      "orden": 4
+    },
+    {
+      "grupo": "fruta",
+      "nombre": "pera",
+      "medida_casera": "1 unidad regular",
+      "gramos": 100,
+      "orden": 5
+    },
+    {
+      "grupo": "fruta",
+      "nombre": "pepino dulce",
+      "medida_casera": "2 unidades o 1 grande",
+      "gramos": 240,
+      "orden": 6
+    },
+    {
+      "grupo": "fruta",
+      "nombre": "frambuesa",
+      "medida_casera": "1 taza",
+      "gramos": 200,
+      "orden": 7
+    },
+    {
+      "grupo": "fruta",
+      "nombre": "frutilla",
+      "medida_casera": "1 taza",
+      "gramos": 200,
+      "orden": 8
+    },
+    {
+      "grupo": "fruta",
+      "nombre": "arándano",
+      "medida_casera": "1 taza",
+      "gramos": 200,
+      "orden": 9
+    },
+    {
+      "grupo": "fruta",
+      "nombre": "sandía",
+      "medida_casera": "1 taza",
+      "gramos": 200,
+      "orden": 10
+    },
+    {
+      "grupo": "fruta",
+      "nombre": "melón",
+      "medida_casera": "1 taza",
+      "gramos": 200,
+      "orden": 11
+    },
+    {
+      "grupo": "fruta",
+      "nombre": "piña",
+      "medida_casera": "3/4 taza",
+      "gramos": 120,
+      "orden": 12
+    },
+    {
+      "grupo": "fruta",
+      "nombre": "naranja",
+      "medida_casera": "1 unidad",
+      "gramos": 120,
+      "orden": 13
+    },
+    {
+      "grupo": "fruta",
+      "nombre": "huesillo",
+      "medida_casera": "3 unidades",
+      "gramos": 150,
+      "orden": 14
+    },
+    {
+      "grupo": "fruta",
+      "nombre": "ciruela",
+      "medida_casera": "3 unidades",
+      "gramos": 150,
+      "orden": 15
+    },
+    {
+      "grupo": "fruta",
+      "nombre": "papaya",
+      "medida_casera": "3 unidades",
+      "gramos": 150,
+      "orden": 16
+    },
+    {
+      "grupo": "fruta",
+      "nombre": "kiwi",
+      "medida_casera": "2 unidades",
+      "gramos": 150,
+      "orden": 17
+    },
+    {
+      "grupo": "fruta",
+      "nombre": "tuna",
+      "medida_casera": "2 unidades",
+      "gramos": 150,
+      "orden": 18
+    },
+    {
+      "grupo": "fruta",
+      "nombre": "mandarina",
+      "medida_casera": "2 unidades",
+      "gramos": 150,
+      "orden": 19
+    },
+    {
+      "grupo": "fruta",
+      "nombre": "breva",
+      "medida_casera": "2 unidades",
+      "gramos": 150,
+      "orden": 20
+    },
+    {
+      "grupo": "fruta",
+      "nombre": "chirimoya",
+      "medida_casera": "1/2 unidad",
+      "gramos": 90,
+      "orden": 21
+    },
+    {
+      "grupo": "fruta",
+      "nombre": "mango",
+      "medida_casera": "1/2 unidad",
+      "gramos": 90,
+      "orden": 22
+    },
+    {
+      "grupo": "fruta",
+      "nombre": "cerezas",
+      "medida_casera": "15 unidades",
+      "gramos": 90,
+      "orden": 23
+    },
+    {
+      "grupo": "fruta",
+      "nombre": "uvas",
+      "medida_casera": "10 unidades",
+      "gramos": 90,
+      "orden": 24
+    },
+    {
+      "grupo": "fruta",
+      "nombre": "plátano",
+      "medida_casera": "1 chico o 1/2 grande",
+      "gramos": 60,
+      "orden": 25
+    },
+    {
+      "grupo": "proteicos",
+      "nombre": "pollo cocido",
+      "medida_casera": "lo que cabe en la palma sin los dedos",
+      "gramos": 50,
+      "orden": 1
+    },
+    {
+      "grupo": "proteicos",
+      "nombre": "pavo cocido",
+      "medida_casera": "lo que cabe en la palma sin los dedos",
+      "gramos": 50,
+      "orden": 2
+    },
+    {
+      "grupo": "proteicos",
+      "nombre": "posta rosada cocida",
+      "medida_casera": "lo que cabe en la palma sin los dedos",
+      "gramos": 50,
+      "orden": 3
+    },
+    {
+      "grupo": "proteicos",
+      "nombre": "posta negra cocida",
+      "medida_casera": "lo que cabe en la palma sin los dedos",
+      "gramos": 50,
+      "orden": 4
+    },
+    {
+      "grupo": "proteicos",
+      "nombre": "punta de ganso cocida",
+      "medida_casera": "lo que cabe en la palma sin los dedos",
+      "gramos": 50,
+      "orden": 5
+    },
+    {
+      "grupo": "proteicos",
+      "nombre": "carne molida 4% cocida",
+      "medida_casera": "lo que cabe en la palma sin los dedos",
+      "gramos": 50,
+      "orden": 6
+    },
+    {
+      "grupo": "proteicos",
+      "nombre": "jamón de pavo cocido",
+      "medida_casera": "3 láminas delgadas o 1 larga",
+      "gramos": 30,
+      "orden": 7
+    },
+    {
+      "grupo": "proteicos",
+      "nombre": "pescado (reineta, merluza)",
+      "medida_casera": "1 presa chica",
+      "gramos": 80,
+      "orden": 8
+    },
+    {
+      "grupo": "proteicos",
+      "nombre": "lomitos de atún al agua",
+      "medida_casera": "1/2 tarro",
+      "gramos": 60,
+      "orden": 9
+    },
+    {
+      "grupo": "proteicos",
+      "nombre": "machas, almejas, choritos",
+      "medida_casera": "1/2 tarro",
+      "gramos": 60,
+      "orden": 10
+    },
+    {
+      "grupo": "proteicos",
+      "nombre": "jurel",
+      "medida_casera": "1/4 tarro",
+      "gramos": 60,
+      "orden": 11
+    },
+    {
+      "grupo": "proteicos",
+      "nombre": "poroto cocido",
+      "medida_casera": "3/4 taza",
+      "gramos": 100,
+      "orden": 12
+    },
+    {
+      "grupo": "proteicos",
+      "nombre": "garbanzo cocido",
+      "medida_casera": "3/4 taza",
+      "gramos": 130,
+      "orden": 13
+    },
+    {
+      "grupo": "proteicos",
+      "nombre": "lentejas cocidas",
+      "medida_casera": "3/4 taza",
+      "gramos": 140,
+      "orden": 14
+    },
+    {
+      "grupo": "proteicos",
+      "nombre": "huevo",
+      "medida_casera": "1 unidad",
+      "gramos": 60,
+      "orden": 15
+    },
+    {
+      "grupo": "proteicos",
+      "nombre": "yogurt proteico sin azúcar (Loncoleche)",
+      "medida_casera": "1 unidad",
+      "gramos": 140,
+      "orden": 16
+    },
+    {
+      "grupo": "proteicos",
+      "nombre": "leche protein milk (Loncoleche)",
+      "medida_casera": "1 tazón",
+      "gramos": 300,
+      "orden": 17
+    },
+    {
+      "grupo": "proteicos",
+      "nombre": "carne de soya cocida",
+      "medida_casera": "1/2 taza",
+      "gramos": 50,
+      "orden": 18
+    },
+    {
+      "grupo": "proteicos",
+      "nombre": "tofu",
+      "medida_casera": "1/2 taza",
+      "gramos": 45,
+      "orden": 19
+    },
+    {
+      "grupo": "proteicos",
+      "nombre": "hamburguesa de soya",
+      "medida_casera": "1/2 unidad",
+      "gramos": null,
+      "orden": 20
+    },
+    {
+      "grupo": "proteicos",
+      "nombre": "quesillo",
+      "medida_casera": "2 trozos",
+      "gramos": 60,
+      "orden": 21
+    },
+    {
+      "grupo": "proteicos",
+      "nombre": "camarones",
+      "medida_casera": "1 taza",
+      "gramos": 85,
+      "orden": 22
+    },
+    {
+      "grupo": "lacteos",
+      "nombre": "leche semidescremada",
+      "medida_casera": "1 taza",
+      "gramos": 200,
+      "orden": 1
+    },
+    {
+      "grupo": "lacteos",
+      "nombre": "leche cultivada descremada sin azúcar",
+      "medida_casera": "1 taza",
+      "gramos": 200,
+      "orden": 2
+    },
+    {
+      "grupo": "lacteos",
+      "nombre": "yogurt diet o light descremado sin azúcar",
+      "medida_casera": "1 unidad",
+      "gramos": 125,
+      "orden": 3
+    },
+    {
+      "grupo": "lacteos",
+      "nombre": "quesillo descremado",
+      "medida_casera": "1 rodela",
+      "gramos": 30,
+      "orden": 4
+    },
+    {
+      "grupo": "lacteos",
+      "nombre": "ricotta light",
+      "medida_casera": "2 cucharadas",
+      "gramos": 30,
+      "orden": 5
+    },
+    {
+      "grupo": "lacteos",
+      "nombre": "queso",
+      "medida_casera": "1 rebanada",
+      "gramos": 20,
+      "orden": 6
+    },
+    {
+      "grupo": "lacteos",
+      "nombre": "protein shot (Loncoleche)",
+      "medida_casera": "1 unidad",
+      "gramos": 100,
+      "orden": 7
+    },
+    {
+      "grupo": "lacteos",
+      "nombre": "yogurt proteico (Loncoleche)",
+      "medida_casera": "1/2 unidad",
+      "gramos": 70,
+      "orden": 8
+    },
+    {
+      "grupo": "lacteos",
+      "nombre": "bebida vegetal (almendras, arroz, avellana, coco, soya, not milk)",
+      "medida_casera": "1 vaso",
+      "gramos": 200,
+      "orden": 9
+    },
+    {
+      "grupo": "lacteos",
+      "nombre": "yogurt de soya (Loncoleche)",
+      "medida_casera": "1 vaso",
+      "gramos": 200,
+      "orden": 10
+    },
+    {
+      "grupo": "aceite",
+      "nombre": "aceite de oliva extra virgen",
+      "medida_casera": "4 cucharaditas",
+      "gramos": 20,
+      "orden": 1
+    },
+    {
+      "grupo": "aceite",
+      "nombre": "aceite de maravilla",
+      "medida_casera": "4 cucharaditas",
+      "gramos": 20,
+      "orden": 2
+    },
+    {
+      "grupo": "aceite",
+      "nombre": "aceite de pepita de uva",
+      "medida_casera": "4 cucharaditas",
+      "gramos": 20,
+      "orden": 3
+    },
+    {
+      "grupo": "aceite",
+      "nombre": "aceite de canola",
+      "medida_casera": "4 cucharaditas",
+      "gramos": 20,
+      "orden": 4
+    },
+    {
+      "grupo": "grasas",
+      "nombre": "aceitunas",
+      "medida_casera": "11 unidades",
+      "gramos": 115,
+      "orden": 1
+    },
+    {
+      "grupo": "grasas",
+      "nombre": "palta",
+      "medida_casera": "1/2 palta chica",
+      "gramos": 90,
+      "orden": 2
+    },
+    {
+      "grupo": "grasas",
+      "nombre": "frutos secos",
+      "medida_casera": "2 puñados cerrados",
+      "gramos": 30,
+      "orden": 3
+    },
+    {
+      "grupo": "grasas",
+      "nombre": "semillas (chía, linaza, calabaza, maravilla)",
+      "medida_casera": "3 cucharadas",
+      "gramos": 30,
+      "orden": 4
+    },
+    {
+      "grupo": "grasas",
+      "nombre": "not mayo",
+      "medida_casera": "2 cucharadas",
+      "gramos": 12,
+      "orden": 5
+    }
+  ],
+  "medidas": [
+    {
+      "fecha": "2026-09-01",
+      "peso": 83.4,
+      "cintura": 95.7
+    }
+  ],
+  "inbody": [
+    {
+      "fecha": "2026-09-01",
+      "peso": 83.4,
+      "masa_grasa": 16.7,
+      "pct_grasa": 20.0,
+      "masa_musculoesqueletica": 38.6,
+      "masa_libre_grasa": 66.7,
+      "agua_total": 48.7
+    }
+  ],
+  "entradas_recuperacion": [
+    {
+      "fecha": "2026-09-08",
+      "tipo": "kine",
+      "numero_sesion": 1,
+      "autorizado": [
+        "Movilidad activa"
+      ],
+      "hinchazon": "menos",
+      "indicaciones": null,
+      "nota": "Mejora en hinchazón y movilidad. Solo arriba y abajo. Dolor superficial de heridas y puntos, no articular.",
+      "proximo_control": null
+    },
+    {
+      "fecha": "2026-09-09",
+      "tipo": "control",
+      "numero_sesion": null,
+      "autorizado": [],
+      "hinchazon": null,
+      "indicaciones": null,
+      "nota": "Control con la doctora, todo se ve bien",
+      "proximo_control": "2026-09-23"
+    },
+    {
+      "fecha": "2026-09-10",
+      "tipo": "kine",
+      "numero_sesion": 2,
+      "autorizado": [
+        "Bicicleta"
+      ],
+      "hinchazon": null,
+      "indicaciones": null,
+      "nota": "15 minutos de bicicleta reclinada al mínimo",
+      "proximo_control": null
+    },
+    {
+      "fecha": "2026-09-11",
+      "tipo": "kine",
+      "numero_sesion": 3,
+      "autorizado": [],
+      "hinchazon": null,
+      "indicaciones": null,
+      "nota": "15 minutos de bicicleta reclinada carga 2",
+      "proximo_control": null
+    }
+  ],
+  "preguntas_control": [
+    {
+      "texto": "¿La equivalencia de aceite dice 16 cucharaditas = 20 g; debería ser 4 cucharaditas?"
+    },
+    {
+      "texto": "¿Cómo contar el pescado graso (salmón) frente al pescado magro en las porciones proteicas?"
+    },
+    {
+      "texto": "¿Puedo cambiar los lácteos de las colaciones por yogurt proteico de forma habitual?"
+    },
+    {
+      "texto": "¿Es compatible la barra de proteína (45 g, 15 g proteína, 18 g azúcar) con la pauta?"
+    },
+    {
+      "texto": "¿Cuándo ajustar las calorías al retomar el entrenamiento?"
+    },
+    {
+      "texto": "Confirmar metas de peso y cintura para llegar a 13% de grasa."
+    },
+    {
+      "texto": "¿Para cuándo se espera la vuelta a la marcha sin muletas?"
+    }
+  ]
+}

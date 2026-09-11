@@ -6,14 +6,19 @@
   constantes: viven en la tabla configuracion.
 */
 
+/*
+  `paso` es el incremento mínimo de ese grupo: aceite y grasas se cuentan en
+  medias porciones, el resto en enteras. Lo usan la validación de la semilla y
+  el selector de porciones.
+*/
 export const GRUPOS = [
-  { clave: "cereales", etiqueta: "Cereales", corta: "Cer" },
-  { clave: "verduras", etiqueta: "Verduras", corta: "Ver" },
-  { clave: "fruta", etiqueta: "Fruta", corta: "Fru" },
-  { clave: "proteicos", etiqueta: "Proteicos", corta: "Pro" },
-  { clave: "lacteos", etiqueta: "Lácteos", corta: "Lác" },
-  { clave: "aceite", etiqueta: "Aceite", corta: "Ace" },
-  { clave: "grasas", etiqueta: "Grasas", corta: "Gra" },
+  { clave: "cereales", etiqueta: "Cereales", corta: "Cer", paso: 1 },
+  { clave: "verduras", etiqueta: "Verduras", corta: "Ver", paso: 1 },
+  { clave: "fruta", etiqueta: "Fruta", corta: "Fru", paso: 1 },
+  { clave: "proteicos", etiqueta: "Proteicos", corta: "Pro", paso: 1 },
+  { clave: "lacteos", etiqueta: "Lácteos", corta: "Lác", paso: 1 },
+  { clave: "aceite", etiqueta: "Aceite", corta: "Ace", paso: 0.5 },
+  { clave: "grasas", etiqueta: "Grasas", corta: "Gra", paso: 0.5 },
 ] as const;
 
 export const TIEMPOS = [

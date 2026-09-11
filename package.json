@@ -8,7 +8,9 @@
     "start": "next start",
     "lint": "eslint",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "semilla": "tsx --env-file=.env.local scripts/semilla/cargar.ts",
+    "semilla:revisar": "tsx --env-file=.env.local scripts/semilla/cargar.ts --revisar"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.7",
@@ -26,6 +28,7 @@
     "eslint-config-next": "16.3.4",
     "supabase": "^2.117.0",
     "tailwindcss": "^4",
+    "tsx": "^4.23.13",
     "typescript": "^5",
     "vitest": "^5.0.0"
   }
