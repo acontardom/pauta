@@ -1,26 +1,123 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/*
+  Tokens de diseño de "Pauta".
+  Fuente de verdad visual: docs/diseno/diseno-fuente.html.
+  Este es el ÚNICO archivo de la app donde pueden aparecer colores en hex.
+  Regla de producto: nada se pinta en rojo; el ámbar es el único color de atención.
+*/
+@theme {
+  /* Superficies */
+  --color-fondo: #FAF7F2;
+  --color-marco: #E9E5DC;
+  --color-superficie: #FFFFFF;
+  --color-superficie-suave: #F6F2EA;
+  --color-vacio: #ECE6DB;
+  --color-fondo-pasado: #F4EFE5;
+  --color-fondo-destacado: #F8F5EE;
+  --color-barra-vacia: #EEE8DD;
+
+  /* Tinta */
+  --color-tinta: #2E2A24;
+  --color-tinta-cuerpo: #4A443B;
+  --color-tinta-2: #6B6359;
+  --color-tinta-3: #8A8175;
+  --color-tinta-4: #9A9184;
+  --color-tinta-5: #A59C8E;
+  --color-tinta-6: #C9C1B4;
+
+  /* Líneas y bordes */
+  --color-linea: #EAE4D9;
+  --color-linea-suave: #F1ECE2;
+  --color-borde: #E2DBCF;
+  --color-borde-fuerte: #DDD5C8;
+  --color-borde-suave: #E6DFD2;
+  --color-borde-pasado: #E3DACA;
+  --color-borde-apagado: #EDE7DC;
+  --color-tinta-apagada: #CFC7B8;
+
+  /* Verde */
+  --color-verde: #4F7A5D;
+  --color-verde-oscuro: #3D5F49;
+  --color-verde-fondo: #F0F5F0;
+  --color-verde-fondo-2: #F5F9F5;
+  --color-verde-borde: #CFDCD2;
+  --color-verde-medio: #8AA892;
+  --color-verde-claro: #C6D3C6;
+  --color-verde-barra: #B9C7BA;
+  --color-verde-apagado: #C6CFC4;
+  --color-verde-texto-suave: #7E9484;
+
+  /* Azul: comidas estimadas */
+  --color-azul: #7C94AD;
+  --color-azul-texto: #5B7590;
+  --color-azul-borde: #D4DDE4;
+  --color-azul-claro: #C3D2DD;
+  --color-azul-fondo: #F5F8FA;
+
+  /* Acentos */
+  --color-ambar: #C98B2A;
+  --color-terracota: #B5674D;
+  --color-arena: #8A7F6A;
+  --color-arena-fondo: #F3EEE1;
+  --color-arena-borde: #B6A98D;
+  --color-arena-texto: #5D5442;
+
+  /* Sombra de la columna sobre el marco */
+  --shadow-columna: 0 0 40px rgb(46 42 36 / 0.08);
+
+  /* Velo de las hojas inferiores */
+  --color-velo: rgb(38 34 28 / 0.34);
+
+  /* Radios */
+  --radius-control: 11px;
+  --radius-tarjeta: 14px;
+  --radius-hoja: 20px;
+
+  /* Tipografías (variables definidas por next/font en el layout raíz) */
+  --font-sans: var(--font-plex-sans), system-ui, sans-serif;
+  --font-serif: var(--font-plex-serif), Georgia, serif;
+  --font-mono: var(--font-plex-mono), ui-monospace, monospace;
+
+  /* Animaciones de las hojas inferiores */
+  --animate-velo: velo 0.18s ease;
+  --animate-hoja: hoja 0.26s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+@keyframes velo {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@keyframes hoja {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
+@layer base {
+  html,
+  body {
+    margin: 0;
+    padding: 0;
+    -webkit-font-smoothing: antialiased;
   }
-}
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  * {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  button {
+    font-family: inherit;
+    cursor: pointer;
+  }
+
+  input,
+  textarea,
+  select {
+    font-family: inherit;
+  }
+
+  ::-webkit-scrollbar {
+    display: none;
+  }
 }

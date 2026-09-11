@@ -1,0 +1,93 @@
+"use client";
+
+import { useId, useRef } from "react";
+
+type Props = {
+  etiqueta: string;
+  valor: string;
+  onChange: (valor: string) => void;
+  modo?: "entero" | "decimal";
+  placeholder?: string;
+  sufijo?: string;
+  className?: string;
+};
+
+/*
+  Campo numérico único de la app.
+
+  Dos decisiones deliberadas:
+  - type="text" con inputMode, nunca type="number": en iOS el teclado chileno
+    escribe coma decimal y type="number" la descarta.
+  - font-size de 16px como mínimo: por debajo de eso iOS hace zoom al enfocar.
+*/
+export default function CampoNumerico({
+  etiqueta,
+  valor,
+  onChange,
+  modo = "decimal",
+  placeholder = "—",
+  sufijo,
+  className = "",
+}: Props) {
+  const id = useId();
+  const ref = useRef<HTMLInputElement>(null);
+
+  const permitido = modo === "entero" ? /[^\d]/g : /[^\d.,]/g;
+
+  function manejarCambio(texto: string) {
+    let limpio = texto.replace(permitido, "");
+    if (modo === "decimal") {
+      // Se conserva solo el primer separador decimal.
+      const primero = limpio.search(/[.,]/);
+      if (primero !== -1) {
+        limpio =
+          limpio.slice(0, primero + 1) +
+          limpio.slice(primero + 1).replace(/[.,]/g, "");
+      }
+    }
+    onChange(limpio);
+  }
+
+  /*
+    Con el teclado de iOS abierto el campo puede quedar tapado. Se lo centra
+    en su contenedor con scroll después de que el teclado terminó de subir.
+  */
+  function alEnfocar() {
+    window.setTimeout(() => {
+      ref.current?.scrollIntoView({ block: "center", behavior: "smooth" });
+    }, 300);
+  }
+
+  return (
+    <div className={className}>
+      <label
+        htmlFor={id}
+        className="block text-[12.5px] text-tinta-3"
+      >
+        {etiqueta}
+      </label>
+      <div className="relative mt-1.5">
+        <input
+          id={id}
+          ref={ref}
+          type="text"
+          inputMode={modo === "entero" ? "numeric" : "decimal"}
+          enterKeyHint="done"
+          autoComplete="off"
+          value={valor}
+          placeholder={placeholder}
+          onFocus={alEnfocar}
+          onChange={(e) => manejarCambio(e.target.value)}
+          className={`h-[54px] w-full rounded-control border border-borde bg-superficie px-[14px] font-serif text-[19px] text-tinta placeholder:text-tinta-5 focus:border-verde-borde focus:outline-none ${
+            sufijo ? "pr-12" : ""
+          }`}
+        />
+        {sufijo ? (
+          <span className="pointer-events-none absolute right-[14px] top-1/2 -translate-y-1/2 text-[14px] text-tinta-4">
+            {sufijo}
+          </span>
+        ) : null}
+      </div>
+    </div>
+  );
+}

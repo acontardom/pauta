@@ -1,0 +1,2187 @@
+<!--
+  REFERENCIA DE DISEÑO — App "Pauta" (exportada desde Claude Design)
+  ==================================================================
+  Este archivo es la versión legible del bundle Pauta_nutricional_vf.html
+  (misma carpeta). Se extrajo el marcado y la lógica; se quitaron las
+  fuentes embebidas y el runtime de Claude Design. NO se renderiza solo:
+  para ver el diseño, abrir Pauta_nutricional_vf.html en el navegador.
+
+  Cómo leerlo:
+  - El marcado usa la sintaxis de plantillas de Claude Design:
+      {{ valor }}            -> valor calculado en renderVals()
+      <sc-if value="...">    -> render condicional
+      <sc-for list="..." as="x"> -> iteración
+      sc-camel-on-click / sc-camel-on-change / sc-camel-input-mode
+                             -> onClick / onChange / inputMode
+  - Los estilos están en línea (style="..."): son la fuente de verdad
+    para colores, tamaños, radios, espaciados y tipografía.
+  - La lógica está en el <script type="text/x-dc"> del final (clase
+    Component): constantes (GROUPS, MEALS, INBODY_FIELDS, TRAINING,
+    AUTH_TAGS), cálculos de cada pantalla y handlers.
+  - Cada pantalla está marcada con data-screen-label="Hoy", "Semana",
+    "Progreso", "Menús", "Recuperación", "Configuración".
+
+  Advertencias:
+  - Es una referencia VISUAL y DE COMPORTAMIENTO. No copiar su
+    arquitectura: usa localStorage y estado en memoria; la app real usa
+    Supabase y rutas de Next.js.
+  - seed(), defaultRecovery() y los datos de días, pesos, InBody y
+    sesiones de kinesiología son DATOS DE EJEMPLO. No deben llegar a la
+    base de datos real salvo que se indique explícitamente.
+  - Las fechas en el prototipo se calculan en hora local del navegador;
+    en la app real se calculan siempre en America/Santiago.
+-->
+<!DOCTYPE html>
+<html><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<style>
+  html, body { margin: 0; padding: 0; background: #E9E5DC; -webkit-font-smoothing: antialiased; }
+  * { -webkit-tap-highlight-color: transparent; }
+  button { font-family: inherit; cursor: pointer; }
+  input, textarea, select { font-family: inherit; }
+  a { color: #4F7A5D; }
+  a:hover { color: #3D5F49; }
+  ::-webkit-scrollbar { display: none; }
+  @keyframes sheetUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+</style>
+</helmet>
+<div style="display:flex; justify-content:center; background:#E9E5DC; min-height:100vh; font-family:'IBM Plex Sans', system-ui, sans-serif; color:#2E2A24;">
+<div style="width:100%; max-width:430px; background:#FAF7F2; min-height:100vh; position:relative; overflow:hidden; box-shadow:0 0 40px rgba(46,42,36,0.08);">
+
+  <button sc-camel-on-click="{{ toggleConfig }}" style="position:absolute; top:calc(env(safe-area-inset-top) + 18px); right:16px; z-index:45; width:38px; height:38px; border:1px solid #EAE4D9; background:rgba(250,247,242,0.92); border-radius:11px; display:flex; align-items:center; justify-content:center; padding:0;">
+    <svg width="20" height="20" sc-camel-view-box="-12 -12 24 24" fill="none" stroke="#8A8175" stroke-width="1.6">
+      <circle r="4.2"></circle>
+      <circle r="9" stroke-dasharray="3 2.4"></circle>
+    </svg>
+  </button>
+
+  <div data-screen-label="Hoy">
+    <sc-if value="{{ isHoy }}" hint-placeholder-val="{{ true }}">
+    <div style="padding-bottom:200px;">
+    <div style="{{ headerStyle }}">
+      <div style="display:flex; align-items:center; gap:6px; padding-right:48px;">
+        <button sc-camel-on-click="{{ prevDay }}" style="flex:0 0 40px; height:40px; border:1px solid #E2DBCF; background:#fff; border-radius:11px; font-size:20px; line-height:1; color:#6B6359; padding:0;">‹</button>
+        <div style="flex:1; min-width:0; text-align:center;">
+          <div style="font-family:'IBM Plex Serif', serif; font-size:20px; font-weight:500; letter-spacing:-0.01em;">{{ viewDateLong }}</div>
+          <div style="display:flex; align-items:baseline; gap:6px; justify-content:center; margin-top:2px;">
+            <div style="font-size:12.5px; color:#8A8175;">{{ headerSub }}</div>
+            <div style="font-size:12.5px; color:#4F7A5D;">{{ headerRatio }}</div>
+          </div>
+        </div>
+        <button sc-camel-on-click="{{ nextDay }}" style="{{ nextDayStyle }}">›</button>
+      </div>
+      <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; margin-top:12px; min-height:24px;">
+        <div style="{{ dayStateStyle }}">{{ dayStateLabel }}</div>
+        <sc-if value="{{ notToday }}" hint-placeholder-val="{{ false }}">
+          <button sc-camel-on-click="{{ backToToday }}" style="border:none; background:none; font-size:13px; color:#4F7A5D; padding:4px 0;">Volver a hoy</button>
+        </sc-if>
+      </div>
+      <div style="display:flex; gap:8px; margin-top:12px; overflow-x:auto; padding-bottom:2px;">
+        <sc-for list="{{ counters }}" as="c" hint-placeholder-count="7">
+          <div style="flex:0 0 auto; min-width:72px; border:1px solid #EAE4D9; border-radius:10px; padding:8px 10px 9px 10px; background:#fff;">
+            <div style="font-size:10.5px; letter-spacing:0.06em; text-transform:uppercase; color:#8A8175;">{{ c.label }}</div>
+            <div style="font-family:'IBM Plex Serif', serif; font-size:17px; margin-top:2px;">{{ c.text }}</div>
+            <div style="height:3px; border-radius:2px; background:#EEE8DD; margin-top:7px; overflow:hidden;">
+              <div style="{{ c.barStyle }}"></div>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+
+    <div style="display:flex; flex-direction:column; gap:10px; padding:16px 20px 0 20px;">
+      <sc-for list="{{ mealCards }}" as="m" hint-placeholder-count="5">
+        <button sc-camel-on-click="{{ m.onClick }}" style="{{ m.cardStyle }}" style-active="transform:scale(0.99)">
+          <div style="display:flex; align-items:baseline; justify-content:space-between; gap:10px;">
+            <div style="font-family:'IBM Plex Serif', serif; font-size:19px; font-weight:500;">{{ m.name }}</div>
+            <div style="font-size:12.5px; color:#9A9184; font-variant-numeric:tabular-nums;">{{ m.time }}</div>
+          </div>
+          <div style="display:flex; align-items:center; gap:8px; margin-top:8px;">
+            <div style="{{ m.dotStyle }}"></div>
+            <div style="{{ m.statusStyle }}">{{ m.statusLabel }}</div>
+          </div>
+          <sc-if value="{{ m.hasSummary }}" hint-placeholder-val="{{ false }}">
+            <div style="font-size:14.5px; color:#4A443B; margin-top:8px; line-height:1.45; text-wrap:pretty;">{{ m.summary }}</div>
+          </sc-if>
+          <sc-if value="{{ m.hasPortions }}" hint-placeholder-val="{{ false }}">
+            <div style="font-family:'IBM Plex Mono', monospace; font-size:11.5px; color:#8A8175; margin-top:7px; line-height:1.5;">{{ m.portionText }}</div>
+          </sc-if>
+        </button>
+      </sc-for>
+    </div>
+
+    <div style="padding:22px 20px 0 20px; display:flex; flex-direction:column; gap:12px;">
+      <div style="border:1px solid #EAE4D9; border-radius:14px; background:#fff; padding:16px;">
+        <div style="display:flex; align-items:baseline; justify-content:space-between;">
+          <div style="font-size:13px; letter-spacing:0.06em; text-transform:uppercase; color:#8A8175;">Agua</div>
+          <div style="font-family:'IBM Plex Serif', serif; font-size:18px;">{{ waterText }}</div>
+        </div>
+        <div style="display:flex; gap:5px; margin-top:12px;">
+          <sc-for list="{{ waterCells }}" as="w" hint-placeholder-count="8">
+            <div style="{{ w.style }}"></div>
+          </sc-for>
+        </div>
+        <div style="display:flex; gap:10px; margin-top:14px;">
+          <button sc-camel-on-click="{{ waterMinus }}" style="flex:0 0 58px; height:48px; border:1px solid #E2DBCF; background:#FAF7F2; border-radius:11px; font-size:20px; color:#6B6359;">−</button>
+          <button sc-camel-on-click="{{ waterPlus }}" style="flex:1; height:48px; border:1px solid #CFDCD2; background:#F0F5F0; border-radius:11px; font-size:15px; color:#3D5F49; font-weight:500;">+250 ml</button>
+        </div>
+      </div>
+
+      <div style="border:1px solid #EAE4D9; border-radius:14px; background:#fff; padding:16px;">
+        <div style="font-size:13px; letter-spacing:0.06em; text-transform:uppercase; color:#8A8175;">Calorías activas</div>
+        <div style="display:flex; align-items:center; gap:12px; margin-top:10px;">
+          <input type="number" sc-camel-input-mode="numeric" value="{{ calValue }}" sc-camel-on-change="{{ setCal }}" placeholder="0" style="flex:1; min-width:0; height:56px; border:1px solid #E2DBCF; border-radius:11px; background:#FAF7F2; font-family:'IBM Plex Serif', serif; font-size:26px; padding:0 14px; color:#2E2A24;">
+          <div style="font-size:14px; color:#8A8175;">kcal del reloj</div>
+        </div>
+      </div>
+
+      <div style="border:1px solid #EAE4D9; border-radius:14px; background:#fff; padding:16px;">
+        <div style="font-size:13px; letter-spacing:0.06em; text-transform:uppercase; color:#8A8175;">Entrenamiento</div>
+        <div style="display:flex; flex-wrap:wrap; gap:7px; margin-top:12px;">
+          <sc-for list="{{ trainChips }}" as="t" hint-placeholder-count="5">
+            <button sc-camel-on-click="{{ t.onClick }}" style="{{ t.style }}">{{ t.label }}</button>
+          </sc-for>
+        </div>
+        <div style="display:flex; align-items:center; gap:12px; margin-top:12px;">
+          <input type="number" sc-camel-input-mode="numeric" value="{{ trainMinutes }}" sc-camel-on-change="{{ setTrainMinutes }}" placeholder="—" style="flex:0 0 110px; box-sizing:border-box; height:52px; border:1px solid #E2DBCF; border-radius:11px; background:#FAF7F2; font-family:'IBM Plex Serif', serif; font-size:22px; padding:0 14px; color:#2E2A24;">
+          <div style="font-size:14px; color:#8A8175;">minutos (opcional)</div>
+        </div>
+      </div>
+
+      <div style="border:1px solid #EAE4D9; border-radius:14px; background:#fff; padding:16px;">
+        <div style="font-size:13px; letter-spacing:0.06em; text-transform:uppercase; color:#8A8175;">Tobillo</div>
+        <div style="display:flex; gap:8px; margin-top:12px;">
+          <sc-for list="{{ ankleOpts }}" as="a" hint-placeholder-count="3">
+            <button sc-camel-on-click="{{ a.onClick }}" style="{{ a.style }}">{{ a.label }}</button>
+          </sc-for>
+        </div>
+      </div>
+    </div>
+
+    <div style="position:fixed; left:50%; transform:translateX(-50%); bottom:calc(env(safe-area-inset-bottom) + 74px); width:100%; max-width:430px; padding:0 20px; box-sizing:border-box; z-index:41;">
+      <button sc-camel-on-click="{{ onCloseDay }}" style="{{ closeDayStyle }}">{{ closeDayLabel }}</button>
+    </div>
+    </div>
+    </sc-if>
+  </div>
+
+  <div data-screen-label="Semana">
+    <sc-if value="{{ isSemana }}" hint-placeholder-val="{{ false }}">
+    <div style="padding:calc(env(safe-area-inset-top) + 22px) 20px 130px 20px;">
+      <div style="padding-right:52px;">
+        <div style="font-size:13px; letter-spacing:0.06em; text-transform:uppercase; color:#8A8175;">Días registrados</div>
+        <div style="display:flex; align-items:baseline; gap:12px; margin-top:6px;">
+          <div style="font-family:'IBM Plex Serif', serif; font-size:64px; line-height:1; letter-spacing:-0.02em;">{{ weekRegistered }}</div>
+          <div style="font-family:'IBM Plex Serif', serif; font-size:26px; color:#9A9184;">/7</div>
+        </div>
+      </div>
+      <div style="font-size:14.5px; color:#6B6359; margin-top:8px; line-height:1.5; text-wrap:pretty;">{{ weekLead }}</div>
+
+      <div style="margin-top:26px; border:1px solid #EAE4D9; border-radius:14px; background:#fff; padding:14px 10px;">
+        <div style="display:flex; gap:6px; padding-left:40px; padding-right:14px;">
+          <sc-for list="{{ groupCols }}" as="g" hint-placeholder-count="7">
+            <div style="flex:1; text-align:center; font-size:9.5px; letter-spacing:0.04em; text-transform:uppercase; color:#9A9184;">{{ g.short }}</div>
+          </sc-for>
+        </div>
+        <div style="display:flex; flex-direction:column; gap:4px; margin-top:8px;">
+          <sc-for list="{{ weekRows }}" as="r" hint-placeholder-count="7">
+            <button sc-camel-on-click="{{ r.onClick }}" style="{{ r.rowStyle }}" style-active="transform:scale(0.995)">
+              <div style="{{ r.labelStyle }}">{{ r.label }}</div>
+              <div style="flex:1; display:flex; gap:6px;">
+                <sc-for list="{{ r.cells }}" as="c" hint-placeholder-count="7">
+                  <div style="{{ c.style }}"></div>
+                </sc-for>
+              </div>
+              <div style="flex:0 0 10px; text-align:right; font-size:15px; line-height:1; color:#C9C1B4;">›</div>
+            </button>
+          </sc-for>
+        </div>
+        <div style="display:flex; gap:14px; margin-top:14px; padding-left:40px; flex-wrap:wrap;">
+          <div style="display:flex; align-items:center; gap:6px; font-size:11.5px; color:#8A8175;"><div style="width:10px; height:10px; border-radius:3px; background:#4F7A5D;"></div>Cumplido</div>
+          <div style="display:flex; align-items:center; gap:6px; font-size:11.5px; color:#8A8175;"><div style="width:10px; height:10px; border-radius:3px; background:#7C94AD;"></div>Estimado</div>
+          <div style="display:flex; align-items:center; gap:6px; font-size:11.5px; color:#8A8175;"><div style="width:10px; height:10px; border-radius:3px; background:#ECE6DB;"></div>Faltante</div>
+        </div>
+      </div>
+
+      <div style="display:flex; gap:10px; margin-top:12px;">
+        <div style="flex:1; border:1px solid #EAE4D9; border-radius:14px; background:#fff; padding:14px;">
+          <div style="font-size:11px; letter-spacing:0.05em; text-transform:uppercase; color:#8A8175;">Agua / día</div>
+          <div style="font-family:'IBM Plex Serif', serif; font-size:24px; margin-top:6px;">{{ avgWater }}</div>
+        </div>
+        <div style="flex:1; border:1px solid #EAE4D9; border-radius:14px; background:#fff; padding:14px;">
+          <div style="font-size:11px; letter-spacing:0.05em; text-transform:uppercase; color:#8A8175;">Kcal activas</div>
+          <div style="font-family:'IBM Plex Serif', serif; font-size:24px; margin-top:6px;">{{ avgCal }}</div>
+        </div>
+      </div>
+
+      <div style="font-size:13px; letter-spacing:0.06em; text-transform:uppercase; color:#8A8175; margin:26px 0 10px 0;">Observaciones</div>
+      <div style="display:flex; flex-direction:column; gap:10px;">
+        <sc-for list="{{ insights }}" as="i" hint-placeholder-count="3">
+          <div style="border:1px solid #EAE4D9; border-left:3px solid #C98B2A; border-radius:12px; background:#fff; padding:14px 15px;">
+            <div style="font-size:15px; line-height:1.5; text-wrap:pretty; color:#3C372F;">{{ i.text }}</div>
+            <div style="font-size:12.5px; color:#8A8175; margin-top:6px;">{{ i.hint }}</div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+    </sc-if>
+  </div>
+
+  <div data-screen-label="Progreso">
+    <sc-if value="{{ isProgreso }}" hint-placeholder-val="{{ false }}">
+    <div style="padding:calc(env(safe-area-inset-top) + 22px) 20px 130px 20px;">
+      <div style="font-family:'IBM Plex Serif', serif; font-size:27px; font-weight:500; padding-right:52px;">Progreso</div>
+      <div style="border:1px solid #CFDCD2; background:#F0F5F0; border-radius:12px; padding:13px 15px; margin-top:12px;">
+        <div style="font-size:14.5px; line-height:1.5; color:#3D5F49; text-wrap:pretty;">Meta: bajar grasa preservando masa magra. La masa musculoesquelética se mira igual que el peso.</div>
+      </div>
+
+      <button sc-camel-on-click="{{ openWeekly }}" style="width:100%; height:54px; margin-top:14px; border:1px solid #4F7A5D; background:#4F7A5D; color:#fff; border-radius:12px; font-size:16px; font-weight:500;">Registrar peso y cintura</button>
+      <button sc-camel-on-click="{{ openWeeklyList }}" style="width:100%; border:none; background:none; color:#4F7A5D; font-size:13.5px; padding:10px 0 2px 0;">{{ weeklyListLabel }}</button>
+
+      <div style="border:1px solid #EAE4D9; border-radius:14px; background:#fff; padding:18px 16px; margin-top:14px;">
+        <div style="font-size:13px; letter-spacing:0.06em; text-transform:uppercase; color:#8A8175;">% de grasa</div>
+        <sc-if value="{{ hasFat }}" hint-placeholder-val="{{ true }}">
+          <div>
+            <div style="display:flex; align-items:baseline; gap:12px; margin-top:6px;">
+              <div style="font-family:'IBM Plex Serif', serif; font-size:46px; line-height:1; letter-spacing:-0.02em;">{{ fatNow }}</div>
+              <div style="font-size:14px; color:#8A8175;">{{ fatMeta }}</div>
+            </div>
+            <div style="height:8px; border-radius:4px; background:#ECE6DB; margin-top:16px; overflow:hidden;">
+              <div style="{{ fatBarStyle }}"></div>
+            </div>
+            <div style="display:flex; justify-content:space-between; margin-top:7px; font-family:'IBM Plex Mono', monospace; font-size:10.5px; color:#9A9184;">
+              <div>{{ fatStartLabel }}</div>
+              <div>{{ fatGoalLabel }}</div>
+            </div>
+          </div>
+        </sc-if>
+        <sc-if value="{{ noFat }}" hint-placeholder-val="{{ false }}">
+          <div>
+            <div style="font-size:14.5px; color:#6B6359; line-height:1.5; margin-top:8px; text-wrap:pretty;">Agrega una medición InBody para ver tu % de grasa y su distancia a la meta.</div>
+            <button sc-camel-on-click="{{ openInbodyForm }}" style="width:100%; height:48px; margin-top:12px; border:1px solid #CFDCD2; background:#F0F5F0; color:#3D5F49; border-radius:11px; font-size:14.5px; font-weight:500;">Agregar medición InBody</button>
+          </div>
+        </sc-if>
+      </div>
+
+      <div style="border:1px solid #EAE4D9; border-radius:14px; background:#fff; padding:16px; margin-top:12px;">
+        <div style="font-size:13px; letter-spacing:0.06em; text-transform:uppercase; color:#8A8175;">Grasa y músculo</div>
+        <sc-if value="{{ hasInbodyChart }}" hint-placeholder-val="{{ true }}">
+          <div>
+            <div style="display:flex; gap:16px; margin-top:9px; flex-wrap:wrap;">
+              <sc-for list="{{ inbodyLegend }}" as="l" hint-placeholder-count="2">
+                <div style="display:flex; align-items:center; gap:7px; font-size:12.5px; color:#6B6359;">
+                  <div style="{{ l.swatch }}"></div>
+                  <div>{{ l.label }}</div>
+                </div>
+              </sc-for>
+            </div>
+            <svg sc-camel-view-box="0 0 320 120" width="100%" height="140" style="display:block; margin-top:8px; overflow:visible;">
+              <sc-for list="{{ inbodySets }}" as="s" hint-placeholder-count="2">
+                <path d="{{ s.path }}" fill="none" stroke="{{ s.color }}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"></path>
+              </sc-for>
+              <sc-for list="{{ inbodyPoints }}" as="d" hint-placeholder-count="6">
+                <circle cx="{{ d.cx }}" cy="{{ d.cy }}" r="3.2" fill="#FAF7F2" stroke="{{ d.color }}" stroke-width="2"></circle>
+              </sc-for>
+              <sc-for list="{{ inbodyValueLabels }}" as="v" hint-placeholder-count="4">
+                <text x="{{ v.x }}" y="{{ v.y }}" font-size="9.5" fill="{{ v.color }}" text-anchor="{{ v.anchor }}" font-family="IBM Plex Sans">{{ v.t }}</text>
+              </sc-for>
+              <sc-for list="{{ inbodyLabels }}" as="l" hint-placeholder-count="3">
+                <text x="{{ l.x }}" y="118" font-size="9" fill="#A59C8E" text-anchor="{{ l.anchor }}" font-family="IBM Plex Sans">{{ l.t }}</text>
+              </sc-for>
+            </svg>
+          </div>
+        </sc-if>
+        <sc-if value="{{ noInbodyChart }}" hint-placeholder-val="{{ false }}">
+          <div>
+            <div style="font-size:14.5px; color:#6B6359; line-height:1.5; margin-top:8px; text-wrap:pretty;">Con dos mediciones InBody aparece la tendencia de grasa y músculo.</div>
+            <button sc-camel-on-click="{{ openInbodyForm }}" style="width:100%; height:48px; margin-top:12px; border:1px solid #CFDCD2; background:#F0F5F0; color:#3D5F49; border-radius:11px; font-size:14.5px; font-weight:500;">Agregar medición InBody</button>
+          </div>
+        </sc-if>
+      </div>
+
+      <div style="border:1px solid #EAE4D9; border-radius:14px; background:#fff; padding:16px; margin-top:12px;">
+        <div style="display:flex; align-items:baseline; justify-content:space-between;">
+          <div style="font-size:13px; letter-spacing:0.06em; text-transform:uppercase; color:#8A8175;">Peso</div>
+          <div style="font-family:'IBM Plex Serif', serif; font-size:20px;">{{ weightLast }}</div>
+        </div>
+        <sc-if value="{{ hasWeight }}" hint-placeholder-val="{{ true }}">
+          <div>
+            <div style="font-size:12.5px; color:#8A8175; margin-top:2px;">{{ weightDelta }}</div>
+            <svg sc-camel-view-box="0 0 320 120" width="100%" height="120" style="display:block; margin-top:10px; overflow:visible;">
+              <sc-if value="{{ weightHasTarget }}" hint-placeholder-val="{{ false }}">
+                <line x1="6" x2="314" y1="{{ weightTargetY }}" y2="{{ weightTargetY }}" stroke="#8A7F6A" stroke-width="1" stroke-dasharray="4 4" opacity="0.65"></line>
+              </sc-if>
+              <sc-if value="{{ weightHasTarget }}" hint-placeholder-val="{{ false }}">
+                <text x="314" y="{{ weightTargetTextY }}" font-size="9" fill="#8A8175" text-anchor="end" font-family="IBM Plex Sans">{{ weightTargetLabel }}</text>
+              </sc-if>
+              <path d="{{ weightPath }}" fill="none" stroke="#4F7A5D" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"></path>
+              <sc-for list="{{ weightDots }}" as="d" hint-placeholder-count="8">
+                <circle cx="{{ d.cx }}" cy="{{ d.cy }}" r="3" fill="#FAF7F2" stroke="#4F7A5D" stroke-width="2"></circle>
+              </sc-for>
+              <sc-for list="{{ weightLabels }}" as="l" hint-placeholder-count="3">
+                <text x="{{ l.x }}" y="118" font-size="9" fill="#A59C8E" text-anchor="{{ l.anchor }}" font-family="IBM Plex Sans">{{ l.t }}</text>
+              </sc-for>
+            </svg>
+          </div>
+        </sc-if>
+        <sc-if value="{{ noWeight }}" hint-placeholder-val="{{ false }}">
+          <div>
+            <div style="font-size:14.5px; color:#6B6359; line-height:1.5; margin-top:8px; text-wrap:pretty;">{{ noWeightText }}</div>
+            <button sc-camel-on-click="{{ openWeekly }}" style="width:100%; height:48px; margin-top:12px; border:1px solid #CFDCD2; background:#F0F5F0; color:#3D5F49; border-radius:11px; font-size:14.5px; font-weight:500;">Registrar peso</button>
+          </div>
+        </sc-if>
+      </div>
+
+      <div style="border:1px solid #EAE4D9; border-radius:14px; background:#fff; padding:16px; margin-top:12px;">
+        <div style="display:flex; align-items:baseline; justify-content:space-between;">
+          <div style="font-size:13px; letter-spacing:0.06em; text-transform:uppercase; color:#8A8175;">Cintura</div>
+          <div style="font-family:'IBM Plex Serif', serif; font-size:20px;">{{ waistLast }}</div>
+        </div>
+        <sc-if value="{{ hasWaist }}" hint-placeholder-val="{{ true }}">
+          <div>
+            <div style="font-size:12.5px; color:#8A8175; margin-top:2px;">{{ waistDelta }}</div>
+            <svg sc-camel-view-box="0 0 320 120" width="100%" height="120" style="display:block; margin-top:10px; overflow:visible;">
+              <sc-if value="{{ waistHasTarget }}" hint-placeholder-val="{{ false }}">
+                <line x1="6" x2="314" y1="{{ waistTargetY }}" y2="{{ waistTargetY }}" stroke="#8A7F6A" stroke-width="1" stroke-dasharray="4 4" opacity="0.65"></line>
+              </sc-if>
+              <sc-if value="{{ waistHasTarget }}" hint-placeholder-val="{{ false }}">
+                <text x="314" y="{{ waistTargetTextY }}" font-size="9" fill="#8A8175" text-anchor="end" font-family="IBM Plex Sans">{{ waistTargetLabel }}</text>
+              </sc-if>
+              <path d="{{ waistPath }}" fill="none" stroke="#8A7F6A" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"></path>
+              <sc-for list="{{ waistDots }}" as="d" hint-placeholder-count="8">
+                <circle cx="{{ d.cx }}" cy="{{ d.cy }}" r="3" fill="#FAF7F2" stroke="#8A7F6A" stroke-width="2"></circle>
+              </sc-for>
+              <sc-for list="{{ waistLabels }}" as="l" hint-placeholder-count="3">
+                <text x="{{ l.x }}" y="118" font-size="9" fill="#A59C8E" text-anchor="{{ l.anchor }}" font-family="IBM Plex Sans">{{ l.t }}</text>
+              </sc-for>
+            </svg>
+          </div>
+        </sc-if>
+        <sc-if value="{{ noWaist }}" hint-placeholder-val="{{ false }}">
+          <div>
+            <div style="font-size:14.5px; color:#6B6359; line-height:1.5; margin-top:8px; text-wrap:pretty;">{{ noWaistText }}</div>
+            <button sc-camel-on-click="{{ openWeekly }}" style="width:100%; height:48px; margin-top:12px; border:1px solid #CFDCD2; background:#F0F5F0; color:#3D5F49; border-radius:11px; font-size:14.5px; font-weight:500;">Registrar cintura</button>
+          </div>
+        </sc-if>
+      </div>
+
+      <div style="display:flex; align-items:baseline; justify-content:space-between; margin:28px 0 10px 0;">
+        <div style="font-family:'IBM Plex Serif', serif; font-size:22px; font-weight:500;">InBody</div>
+        <button sc-camel-on-click="{{ toggleInbodyForm }}" style="border:none; background:none; font-size:13.5px; color:#4F7A5D; padding:4px 0;">{{ inbodyFormLabel }}</button>
+      </div>
+
+      <sc-if value="{{ inbodyFormOpen }}" hint-placeholder-val="{{ false }}">
+        <div style="border:1px solid #EAE4D9; border-radius:14px; background:#fff; padding:16px; margin-bottom:12px;">
+          <div style="display:flex; flex-wrap:wrap; gap:10px;">
+            <sc-for list="{{ inbodyFields }}" as="f" hint-placeholder-count="7">
+              <div style="flex:1 1 44%;">
+                <div style="font-size:11.5px; color:#8A8175; margin-bottom:5px;">{{ f.label }}</div>
+                <input type="number" sc-camel-input-mode="decimal" value="{{ f.value }}" sc-camel-on-change="{{ f.onChange }}" placeholder="—" style="width:100%; box-sizing:border-box; height:50px; border:1px solid #E2DBCF; border-radius:10px; background:#FAF7F2; font-family:'IBM Plex Serif', serif; font-size:19px; padding:0 11px; color:#2E2A24;">
+              </div>
+            </sc-for>
+          </div>
+          <button sc-camel-on-click="{{ addInbody }}" style="width:100%; height:50px; margin-top:14px; border:1px solid #CFDCD2; background:#F0F5F0; color:#3D5F49; border-radius:11px; font-size:15px; font-weight:500;">Guardar medición</button>
+        </div>
+      </sc-if>
+
+      <div style="display:flex; flex-direction:column; gap:12px;">
+        <sc-for list="{{ inbodyCards }}" as="b" hint-placeholder-count="2">
+          <div style="border:1px solid #EAE4D9; border-radius:14px; background:#fff; padding:16px;">
+            <div style="display:flex; align-items:baseline; justify-content:space-between;">
+              <div style="font-family:'IBM Plex Serif', serif; font-size:18px;">{{ b.date }}</div>
+              <div style="font-size:12px; color:#9A9184;">{{ b.vs }}</div>
+            </div>
+            <div style="display:flex; flex-direction:column; gap:0; margin-top:10px;">
+              <sc-for list="{{ b.rows }}" as="r" hint-placeholder-count="7">
+                <div style="{{ r.rowStyle }}">
+                  <div style="font-size:14px; color:#4A443B;">{{ r.label }}</div>
+                  <div style="display:flex; align-items:baseline; gap:10px;">
+                    <div style="font-family:'IBM Plex Serif', serif; font-size:17px;">{{ r.value }}</div>
+                    <div style="{{ r.deltaStyle }}">{{ r.delta }}</div>
+                  </div>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+    </sc-if>
+  </div>
+
+  <div data-screen-label="Menús">
+    <sc-if value="{{ isMenus }}" hint-placeholder-val="{{ false }}">
+    <div style="padding:calc(env(safe-area-inset-top) + 22px) 20px 130px 20px;">
+      <div style="display:flex; align-items:baseline; justify-content:space-between; padding-right:52px;">
+        <div style="font-family:'IBM Plex Serif', serif; font-size:27px; font-weight:500;">Menús</div>
+        <button sc-camel-on-click="{{ newMenu }}" style="border:1px solid #CFDCD2; background:#F0F5F0; color:#3D5F49; border-radius:10px; font-size:14px; padding:9px 14px; font-weight:500;">Nuevo</button>
+      </div>
+      <div style="display:flex; flex-direction:column; gap:24px; margin-top:22px;">
+        <sc-for list="{{ menuGroups }}" as="g" hint-placeholder-count="5">
+          <div>
+            <div style="font-size:12.5px; letter-spacing:0.06em; text-transform:uppercase; color:#8A8175; padding-bottom:9px; border-bottom:1px solid #EAE4D9;">{{ g.label }}</div>
+            <div style="display:flex; flex-direction:column; gap:10px; margin-top:12px;">
+              <sc-for list="{{ g.items }}" as="m" hint-placeholder-count="2">
+                <div style="border:1px solid #EAE4D9; border-radius:14px; background:#fff; padding:16px;">
+                  <div style="display:flex; align-items:baseline; justify-content:space-between; gap:10px;">
+                    <div style="font-family:'IBM Plex Serif', serif; font-size:18.5px; font-weight:500;">{{ m.name }}</div>
+                    <button sc-camel-on-click="{{ m.onEdit }}" style="border:none; background:none; font-size:13.5px; color:#4F7A5D; padding:2px 0; flex:0 0 auto;">Editar</button>
+                  </div>
+                  <div style="display:flex; flex-direction:column; gap:3px; margin-top:9px;">
+                    <sc-for list="{{ m.ingredients }}" as="ing" hint-placeholder-count="3">
+                      <div style="font-size:14.5px; color:#4A443B; line-height:1.4;">{{ ing }}</div>
+                    </sc-for>
+                  </div>
+                  <sc-if value="{{ m.hasNote }}" hint-placeholder-val="{{ false }}">
+                    <div style="font-size:13.5px; color:#8A8175; font-style:italic; margin-top:9px; line-height:1.45;">{{ m.note }}</div>
+                  </sc-if>
+                  <div style="font-family:'IBM Plex Mono', monospace; font-size:11.5px; color:#8A8175; margin-top:11px; padding-top:10px; border-top:1px solid #F1ECE2; line-height:1.5;">{{ m.portionText }}</div>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+    </sc-if>
+  </div>
+
+  <div data-screen-label="Recuperación">
+    <sc-if value="{{ isRec }}" hint-placeholder-val="{{ false }}">
+    <div style="padding:calc(env(safe-area-inset-top) + 22px) 20px 130px 20px;">
+      <div style="padding-right:52px;">
+        <div style="font-family:'IBM Plex Serif', serif; font-size:27px; font-weight:500;">Recuperación</div>
+        <div style="font-size:13px; color:#8A8175; margin-top:4px;">{{ recSubtitle }}</div>
+      </div>
+
+      <div style="border:1px solid #EAE4D9; border-radius:14px; background:#fff; padding:18px 16px; margin-top:14px;">
+        <div style="display:flex; align-items:baseline; justify-content:space-between; gap:10px;">
+          <div style="font-family:'IBM Plex Serif', serif; font-size:24px;">{{ recWeekLabel }}</div>
+          <div style="font-size:12.5px; color:#8A8175;">{{ recDaysLabel }}</div>
+        </div>
+        <div style="position:relative; height:10px; border-radius:5px; background:#ECE6DB; margin-top:16px;">
+          <div style="{{ recBarStyle }}"></div>
+          <sc-for list="{{ milestoneMarks }}" as="m" hint-placeholder-count="4">
+            <div style="{{ m.style }}"></div>
+          </sc-for>
+        </div>
+        <div style="display:flex; justify-content:space-between; margin-top:8px; font-family:'IBM Plex Mono', monospace; font-size:10.5px; color:#9A9184;">
+          <div>{{ recStartLabel }}</div>
+          <div>{{ recEndLabel }}</div>
+        </div>
+        <div style="{{ recNextStyle }}">{{ recNextText }}</div>
+      </div>
+
+      <button sc-camel-on-click="{{ openEntry }}" style="width:100%; height:54px; margin-top:12px; border:1px solid #4F7A5D; background:#4F7A5D; color:#fff; border-radius:12px; font-size:16px; font-weight:500;">Agregar registro</button>
+
+      <div style="border:1px solid #EAE4D9; border-radius:14px; background:#fff; padding:18px 16px; margin-top:12px;">
+        <div style="font-size:13px; letter-spacing:0.06em; text-transform:uppercase; color:#8A8175;">Kinesiología</div>
+        <div style="display:flex; align-items:baseline; gap:12px; margin-top:6px;">
+          <div style="font-family:'IBM Plex Serif', serif; font-size:46px; line-height:1; letter-spacing:-0.02em;">{{ kineCount }}</div>
+          <div style="font-size:14px; color:#8A8175; text-wrap:pretty;">{{ kineSubtitle }}</div>
+        </div>
+        <sc-if value="{{ hasAuth }}" hint-placeholder-val="{{ true }}">
+          <div style="margin-top:16px; padding-top:14px; border-top:1px solid #F1ECE2;">
+            <div style="font-size:12px; color:#8A8175; margin-bottom:10px;">Autorizado hasta ahora</div>
+            <div style="display:flex; flex-wrap:wrap; gap:7px;">
+              <sc-for list="{{ authTags }}" as="a" hint-placeholder-count="3">
+                <div style="display:flex; align-items:baseline; gap:6px; border:1px solid #CFDCD2; background:#F0F5F0; border-radius:20px; padding:7px 12px;">
+                  <div style="font-size:13.5px; color:#3D5F49;">{{ a.label }}</div>
+                  <div style="font-size:11.5px; color:#7E9484;">{{ a.session }}</div>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
+        <sc-if value="{{ noAuth }}" hint-placeholder-val="{{ false }}">
+          <div>
+            <div style="font-size:14.5px; color:#6B6359; line-height:1.5; margin-top:14px; text-wrap:pretty;">Registra una sesión de kinesiología para ir armando la lista de lo autorizado.</div>
+            <button sc-camel-on-click="{{ openKineEntry }}" style="width:100%; height:48px; margin-top:12px; border:1px solid #CFDCD2; background:#F0F5F0; color:#3D5F49; border-radius:11px; font-size:14.5px; font-weight:500;">Agregar sesión</button>
+          </div>
+        </sc-if>
+      </div>
+
+      <div style="border:1px solid #EAE4D9; border-radius:14px; background:#fff; padding:16px; margin-top:12px;">
+        <div style="font-size:13px; letter-spacing:0.06em; text-transform:uppercase; color:#8A8175;">Tobillo, últimos 30 días</div>
+        <div style="display:flex; gap:3px; margin-top:12px;">
+          <sc-for list="{{ ankleStrip }}" as="a" hint-placeholder-count="30">
+            <div style="{{ a.style }}"></div>
+          </sc-for>
+        </div>
+        <div style="display:flex; gap:14px; margin-top:10px; flex-wrap:wrap;">
+          <sc-for list="{{ ankleLegend }}" as="l" hint-placeholder-count="4">
+            <div style="display:flex; align-items:center; gap:6px; font-size:11.5px; color:#8A8175;">
+              <div style="{{ l.swatch }}"></div>
+              <div>{{ l.label }}</div>
+            </div>
+          </sc-for>
+        </div>
+        <div style="font-size:14.5px; color:#3C372F; line-height:1.5; margin-top:14px; padding-top:13px; border-top:1px solid #F1ECE2; text-wrap:pretty;">{{ ankleNote }}</div>
+      </div>
+
+      <div style="display:flex; align-items:baseline; justify-content:space-between; margin:28px 0 12px 0;">
+        <div style="font-family:'IBM Plex Serif', serif; font-size:22px; font-weight:500;">Línea de tiempo</div>
+        <button sc-camel-on-click="{{ openMilestone }}" style="border:none; background:none; font-size:13.5px; color:#4F7A5D; padding:4px 0;">Nuevo hito</button>
+      </div>
+
+      <div style="display:flex; gap:6px; margin-bottom:14px;">
+        <sc-for list="{{ timelineFilters }}" as="f" hint-placeholder-count="3">
+          <button sc-camel-on-click="{{ f.onClick }}" style="{{ f.style }}">{{ f.label }}</button>
+        </sc-for>
+      </div>
+
+      <div style="display:flex; flex-direction:column; gap:0;">
+        <sc-for list="{{ timeline }}" as="t" hint-placeholder-count="6">
+          <div style="display:flex; gap:12px; align-items:stretch;">
+            <div style="flex:0 0 18px; display:flex; flex-direction:column; align-items:center;">
+              <div style="{{ t.lineTopStyle }}"></div>
+              <div style="{{ t.dotStyle }}"></div>
+              <div style="{{ t.lineBottomStyle }}"></div>
+            </div>
+            <button sc-camel-on-click="{{ t.onClick }}" style="{{ t.cardStyle }}" style-active="transform:scale(0.995)">
+              <div style="display:flex; align-items:baseline; justify-content:space-between; gap:10px;">
+                <div style="{{ t.titleStyle }}">{{ t.title }}</div>
+                <div style="font-size:12px; color:#9A9184; white-space:nowrap;">{{ t.date }}</div>
+              </div>
+              <div style="{{ t.kindStyle }}">{{ t.kind }}</div>
+              <sc-for list="{{ t.lines }}" as="l" hint-placeholder-count="2">
+                <div style="font-size:14px; color:#4A443B; line-height:1.45; margin-top:6px; text-wrap:pretty;">{{ l }}</div>
+              </sc-for>
+              <sc-if value="{{ t.hasMoved }}" hint-placeholder-val="{{ false }}">
+                <div style="{{ t.movedStyle }}">{{ t.movedText }}</div>
+              </sc-if>
+            </button>
+          </div>
+        </sc-for>
+      </div>
+
+      <div style="font-size:12.5px; letter-spacing:0.06em; text-transform:uppercase; color:#8A8175; margin:28px 0 12px 0; padding-bottom:9px; border-bottom:1px solid #EAE4D9;">Preguntas para el próximo control</div>
+      <div style="font-size:13px; color:#8A8175; margin-bottom:12px;">{{ recNextShort }}</div>
+      <div style="display:flex; gap:8px;">
+        <input type="text" value="{{ questionDraft }}" sc-camel-on-change="{{ setQuestionDraft }}" placeholder="¿Puedo empezar bicicleta de pie?" style="flex:1; min-width:0; box-sizing:border-box; height:52px; border:1px solid #E2DBCF; border-radius:11px; background:#fff; font-size:16px; padding:0 14px; color:#2E2A24;">
+        <button sc-camel-on-click="{{ addQuestion }}" style="flex:0 0 56px; height:52px; border:1px solid #CFDCD2; background:#F0F5F0; color:#3D5F49; border-radius:11px; font-size:22px; padding:0;">+</button>
+      </div>
+      <div style="display:flex; flex-direction:column; gap:8px; margin-top:12px;">
+        <sc-for list="{{ questions }}" as="q" hint-placeholder-count="3">
+          <div style="border:1px solid #EAE4D9; border-radius:12px; background:#fff; padding:12px 14px; display:flex; align-items:center; gap:12px;">
+            <button sc-camel-on-click="{{ q.onToggle }}" style="{{ q.checkStyle }}">{{ q.check }}</button>
+            <div style="{{ q.textStyle }}">{{ q.text }}</div>
+            <button sc-camel-on-click="{{ q.onDelete }}" style="flex:0 0 auto; border:none; background:none; font-size:13px; color:#9A9184; padding:6px 0;">Quitar</button>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+    </sc-if>
+  </div>
+
+  <div data-screen-label="Configuración">
+    <sc-if value="{{ isConfig }}" hint-placeholder-val="{{ false }}">
+    <div style="padding:calc(env(safe-area-inset-top) + 22px) 20px 130px 20px;">
+      <div style="padding-right:52px;">
+        <div style="font-family:'IBM Plex Serif', serif; font-size:27px; font-weight:500;">Configuración</div>
+        <div style="font-size:13px; color:#8A8175; margin-top:4px;">Lo que entregó la nutricionista, editable acá.</div>
+      </div>
+
+      <div style="font-size:12.5px; letter-spacing:0.06em; text-transform:uppercase; color:#8A8175; margin:26px 0 12px 0; padding-bottom:9px; border-bottom:1px solid #EAE4D9;">Metas diarias de porciones</div>
+      <div style="display:flex; flex-wrap:wrap; gap:10px;">
+        <sc-for list="{{ cfgPortionFields }}" as="f" hint-placeholder-count="7">
+          <div style="flex:1 1 44%;">
+            <div style="font-size:12px; color:#8A8175; margin-bottom:5px;">{{ f.label }}</div>
+            <input type="number" sc-camel-input-mode="decimal" value="{{ f.value }}" sc-camel-on-change="{{ f.onChange }}" style="width:100%; box-sizing:border-box; height:52px; border:1px solid #E2DBCF; border-radius:11px; background:#fff; font-family:'IBM Plex Serif', serif; font-size:21px; padding:0 12px; color:#2E2A24;">
+          </div>
+        </sc-for>
+      </div>
+
+      <div style="font-size:12.5px; letter-spacing:0.06em; text-transform:uppercase; color:#8A8175; margin:26px 0 12px 0; padding-bottom:9px; border-bottom:1px solid #EAE4D9;">Metas objetivo</div>
+      <div style="display:flex; flex-wrap:wrap; gap:10px;">
+        <sc-for list="{{ cfgTargetFields }}" as="f" hint-placeholder-count="4">
+          <div style="flex:1 1 44%;">
+            <div style="font-size:12px; color:#8A8175; margin-bottom:5px;">{{ f.label }}</div>
+            <input type="number" sc-camel-input-mode="decimal" value="{{ f.value }}" sc-camel-on-change="{{ f.onChange }}" style="width:100%; box-sizing:border-box; height:52px; border:1px solid #E2DBCF; border-radius:11px; background:#fff; font-family:'IBM Plex Serif', serif; font-size:21px; padding:0 12px; color:#2E2A24;">
+          </div>
+        </sc-for>
+      </div>
+
+      <div style="font-size:12.5px; letter-spacing:0.06em; text-transform:uppercase; color:#8A8175; margin:26px 0 12px 0; padding-bottom:9px; border-bottom:1px solid #EAE4D9;">Horarios sugeridos</div>
+      <div style="display:flex; flex-direction:column; gap:10px;">
+        <sc-for list="{{ cfgTimeFields }}" as="f" hint-placeholder-count="5">
+          <div style="display:flex; align-items:center; justify-content:space-between; gap:12px;">
+            <div style="font-size:15px; color:#4A443B;">{{ f.label }}</div>
+            <input type="time" value="{{ f.value }}" sc-camel-on-change="{{ f.onChange }}" style="flex:0 0 132px; box-sizing:border-box; height:52px; border:1px solid #E2DBCF; border-radius:11px; background:#fff; font-family:'IBM Plex Serif', serif; font-size:20px; padding:0 12px; color:#2E2A24;">
+          </div>
+        </sc-for>
+      </div>
+
+      <div style="font-size:12.5px; letter-spacing:0.06em; text-transform:uppercase; color:#8A8175; margin:26px 0 12px 0; padding-bottom:9px; border-bottom:1px solid #EAE4D9;">Recuperación</div>
+      <div style="display:flex; flex-direction:column; gap:12px;">
+        <sc-for list="{{ cfgRecFields }}" as="f" hint-placeholder-count="2">
+          <div>
+            <div style="font-size:12px; color:#8A8175; margin-bottom:5px;">{{ f.label }}</div>
+            <input type="date" value="{{ f.value }}" sc-camel-on-change="{{ f.onChange }}" style="width:100%; box-sizing:border-box; height:52px; border:1px solid #E2DBCF; border-radius:11px; background:#fff; font-family:'IBM Plex Serif', serif; font-size:19px; padding:0 12px; color:#2E2A24;">
+          </div>
+        </sc-for>
+      </div>
+
+      <button sc-camel-on-click="{{ closeConfig }}" style="width:100%; height:52px; margin-top:26px; border:1px solid #CFDCD2; background:#F0F5F0; color:#3D5F49; border-radius:12px; font-size:15.5px; font-weight:500;">Volver</button>
+    </div>
+    </sc-if>
+  </div>
+
+  <div style="position:fixed; bottom:0; left:50%; transform:translateX(-50%); width:100%; max-width:430px; background:rgba(250,247,242,0.94); backdrop-filter:blur(12px); border-top:1px solid #EAE4D9; padding:8px 8px calc(env(safe-area-inset-bottom) + 10px) 8px; display:flex; z-index:42;">
+    <sc-for list="{{ navItems }}" as="n" hint-placeholder-count="4">
+      <button sc-camel-on-click="{{ n.onClick }}" style="{{ n.style }}">
+        <div style="{{ n.dotStyle }}"></div>
+        <div>{{ n.label }}</div>
+      </button>
+    </sc-for>
+  </div>
+
+  <sc-if value="{{ sheetOpen }}" hint-placeholder-val="{{ false }}">
+    <div style="position:fixed; inset:0; background:rgba(38,34,28,0.34); z-index:50; display:flex; align-items:flex-end; justify-content:center; animation:fadeIn 0.18s ease;">
+      <div sc-camel-on-click="{{ closeSheet }}" style="position:absolute; inset:0;"></div>
+      <div style="position:relative; width:100%; max-width:430px; background:#FAF7F2; border-radius:20px 20px 0 0; max-height:88vh; overflow-y:auto; animation:sheetUp 0.26s cubic-bezier(0.22,1,0.36,1); padding-bottom:calc(env(safe-area-inset-bottom) + 16px);">
+        <div style="position:sticky; top:0; background:#FAF7F2; padding:14px 20px 12px 20px; border-bottom:1px solid #EAE4D9; z-index:2;">
+          <div style="width:38px; height:4px; border-radius:2px; background:#DDD5C8; margin:0 auto 14px auto;"></div>
+          <div style="display:flex; align-items:baseline; justify-content:space-between;">
+            <div>
+              <div style="font-family:'IBM Plex Serif', serif; font-size:22px; font-weight:500;">{{ sheetTitle }}</div>
+              <div style="font-size:12.5px; color:#8A8175; margin-top:2px;">{{ sheetSub }}</div>
+            </div>
+            <button sc-camel-on-click="{{ closeSheet }}" style="border:none; background:none; font-size:14px; color:#8A8175; padding:6px 0;">Cerrar</button>
+          </div>
+          <div style="display:flex; gap:6px; margin-top:14px;">
+            <button sc-camel-on-click="{{ tabMenu }}" style="{{ tabMenuStyle }}">Elegir menú</button>
+            <button sc-camel-on-click="{{ tabPor }}" style="{{ tabPorStyle }}">Marcar porciones</button>
+            <button sc-camel-on-click="{{ tabOut }}" style="{{ tabOutStyle }}">Comí fuera</button>
+          </div>
+        </div>
+
+        <div style="padding:16px 20px 8px 20px;">
+          <sc-if value="{{ modeIsMenu }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex; flex-direction:column; gap:10px;">
+              <sc-for list="{{ sheetMenus }}" as="m" hint-placeholder-count="2">
+                <button sc-camel-on-click="{{ m.onChoose }}" style="text-align:left; border:1px solid #EAE4D9; border-radius:14px; background:#fff; padding:16px; width:100%;" style-active="transform:scale(0.99)">
+                  <div style="font-family:'IBM Plex Serif', serif; font-size:18.5px; font-weight:500;">{{ m.name }}</div>
+                  <div style="display:flex; flex-direction:column; gap:3px; margin-top:9px;">
+                    <sc-for list="{{ m.ingredients }}" as="ing" hint-placeholder-count="3">
+                      <div style="font-size:14.5px; color:#4A443B; line-height:1.4;">{{ ing }}</div>
+                    </sc-for>
+                  </div>
+                  <sc-if value="{{ m.hasNote }}" hint-placeholder-val="{{ false }}">
+                    <div style="font-size:13.5px; color:#8A8175; font-style:italic; margin-top:9px; line-height:1.45;">{{ m.note }}</div>
+                  </sc-if>
+                  <div style="font-family:'IBM Plex Mono', monospace; font-size:11.5px; color:#8A8175; margin-top:11px; padding-top:10px; border-top:1px solid #F1ECE2; line-height:1.5;">{{ m.portionText }}</div>
+                </button>
+              </sc-for>
+              <div style="font-size:13px; color:#9A9184; text-align:center; padding:10px 0 4px 0; line-height:1.5;">Al elegir un menú las porciones se suman solas.</div>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ modeIsPor }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex; flex-direction:column; gap:8px;">
+              <sc-for list="{{ sheetRows }}" as="r" hint-placeholder-count="7">
+                <div style="border:1px solid #EAE4D9; border-radius:14px; background:#fff; padding:12px 14px;">
+                  <div style="display:flex; align-items:center; gap:12px;">
+                    <div style="flex:1; min-width:0;">
+                      <div style="font-size:15.5px; font-weight:500;">{{ r.label }}</div>
+                      <div style="font-size:12px; color:#9A9184; margin-top:2px;">meta {{ r.goalText }}</div>
+                    </div>
+                    <button sc-camel-on-click="{{ r.onMinus }}" style="flex:0 0 46px; height:46px; border:1px solid #E2DBCF; background:#FAF7F2; border-radius:11px; font-size:20px; color:#6B6359;">−</button>
+                    <div style="flex:0 0 40px; text-align:center; font-family:'IBM Plex Serif', serif; font-size:22px;">{{ r.valText }}</div>
+                    <button sc-camel-on-click="{{ r.onPlus }}" style="flex:0 0 46px; height:46px; border:1px solid #CFDCD2; background:#F0F5F0; border-radius:11px; font-size:20px; color:#3D5F49;">+</button>
+                  </div>
+                  <button sc-camel-on-click="{{ r.onToggle }}" style="border:none; background:none; padding:8px 0 2px 0; font-size:12.5px; color:#4F7A5D;">{{ r.eqLabel }}</button>
+                  <sc-if value="{{ r.eqOpen }}" hint-placeholder-val="{{ false }}">
+                    <div style="font-family:'IBM Plex Mono', monospace; font-size:11.5px; color:#6B6359; line-height:1.65; background:#F6F2EA; border-radius:9px; padding:10px 11px; margin-top:6px;">{{ r.eqText }}</div>
+                  </sc-if>
+                </div>
+              </sc-for>
+              <button sc-camel-on-click="{{ savePortions }}" style="width:100%; height:54px; margin-top:8px; border:1px solid #4F7A5D; background:#4F7A5D; color:#fff; border-radius:12px; font-size:16px; font-weight:500;">Guardar comida</button>
+              <sc-if value="{{ canClear }}" hint-placeholder-val="{{ false }}">
+                <button sc-camel-on-click="{{ clearMeal }}" style="width:100%; height:46px; border:none; background:none; color:#9A9184; font-size:13.5px;">Borrar registro de esta comida</button>
+              </sc-if>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ modeIsOut }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex; flex-direction:column; gap:12px;">
+              <div style="border:1px solid #EAE4D9; border-radius:14px; background:#fff; padding:14px;">
+                <div style="font-size:12.5px; color:#8A8175; margin-bottom:8px;">¿Qué comiste?</div>
+                <input type="text" value="{{ outText }}" sc-camel-on-change="{{ setOutText }}" placeholder="Almuerzo en el trabajo" style="width:100%; box-sizing:border-box; height:56px; border:1px solid #E2DBCF; border-radius:11px; background:#FAF7F2; font-size:17px; padding:0 14px; color:#2E2A24;">
+              </div>
+              <div style="font-size:13.5px; color:#8A8175; line-height:1.55; padding:0 2px; text-wrap:pretty;">Comer fuera no es una falla. El día queda registrado igual, marcado como estimado.</div>
+              <button sc-camel-on-click="{{ toggleOutPor }}" style="border:none; background:none; text-align:left; font-size:13.5px; color:#4F7A5D; padding:2px;">{{ outPorLabel }}</button>
+              <sc-if value="{{ outPorOpen }}" hint-placeholder-val="{{ false }}">
+                <div style="display:flex; flex-direction:column; gap:8px;">
+                  <sc-for list="{{ sheetRows }}" as="r" hint-placeholder-count="7">
+                    <div style="border:1px solid #EAE4D9; border-radius:14px; background:#fff; padding:12px 14px; display:flex; align-items:center; gap:12px;">
+                      <div style="flex:1; min-width:0; font-size:15.5px;">{{ r.label }}</div>
+                      <button sc-camel-on-click="{{ r.onMinus }}" style="flex:0 0 46px; height:46px; border:1px solid #E2DBCF; background:#FAF7F2; border-radius:11px; font-size:20px; color:#6B6359;">−</button>
+                      <div style="flex:0 0 40px; text-align:center; font-family:'IBM Plex Serif', serif; font-size:22px;">{{ r.valText }}</div>
+                      <button sc-camel-on-click="{{ r.onPlus }}" style="flex:0 0 46px; height:46px; border:1px solid #CFDCD2; background:#F0F5F0; border-radius:11px; font-size:20px; color:#3D5F49;">+</button>
+                    </div>
+                  </sc-for>
+                </div>
+              </sc-if>
+              <button sc-camel-on-click="{{ saveOut }}" style="width:100%; height:54px; border:1px solid #7C94AD; background:#7C94AD; color:#fff; border-radius:12px; font-size:16px; font-weight:500;">Cerrar comida como estimada</button>
+            </div>
+          </sc-if>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ overlayOpen }}" hint-placeholder-val="{{ false }}">
+    <div style="position:fixed; inset:0; background:rgba(38,34,28,0.34); z-index:55; display:flex; align-items:flex-end; justify-content:center; animation:fadeIn 0.18s ease;">
+      <div sc-camel-on-click="{{ closeOverlay }}" style="position:absolute; inset:0;"></div>
+      <div style="position:relative; width:100%; max-width:430px; background:#FAF7F2; border-radius:20px 20px 0 0; max-height:88vh; overflow-y:auto; animation:sheetUp 0.26s cubic-bezier(0.22,1,0.36,1); padding-bottom:calc(env(safe-area-inset-bottom) + 16px);">
+        <div style="position:sticky; top:0; background:#FAF7F2; padding:14px 20px 12px 20px; border-bottom:1px solid #EAE4D9; z-index:2;">
+          <div style="width:38px; height:4px; border-radius:2px; background:#DDD5C8; margin:0 auto 14px auto;"></div>
+          <div style="display:flex; align-items:baseline; justify-content:space-between;">
+            <div>
+              <div style="font-family:'IBM Plex Serif', serif; font-size:22px; font-weight:500;">{{ overlayTitle }}</div>
+              <div style="font-size:12.5px; color:#8A8175; margin-top:2px;">{{ overlaySub }}</div>
+            </div>
+            <button sc-camel-on-click="{{ closeOverlay }}" style="border:none; background:none; font-size:14px; color:#8A8175; padding:6px 0;">Cerrar</button>
+          </div>
+        </div>
+
+        <div style="padding:16px 20px 8px 20px;">
+          <sc-if value="{{ overlayIsClose }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex; flex-direction:column; gap:8px;">
+              <sc-for list="{{ daySummary }}" as="s" hint-placeholder-count="8">
+                <div style="border:1px solid #EAE4D9; border-radius:12px; background:#fff; padding:13px 15px; display:flex; align-items:center; gap:12px;">
+                  <div style="{{ s.dotStyle }}"></div>
+                  <div style="flex:1; min-width:0; font-size:15px; color:#3C372F;">{{ s.label }}</div>
+                  <div style="{{ s.valueStyle }}">{{ s.value }}</div>
+                </div>
+              </sc-for>
+              <div style="font-size:13.5px; color:#8A8175; line-height:1.55; padding:8px 2px 0 2px; text-wrap:pretty;">{{ closeSheetNote }}</div>
+              <button sc-camel-on-click="{{ confirmCloseDay }}" style="width:100%; height:54px; margin-top:6px; border:1px solid #4F7A5D; background:#4F7A5D; color:#fff; border-radius:12px; font-size:16px; font-weight:500;">Dar el día por registrado</button>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ overlayIsWeekly }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex; flex-direction:column; gap:14px;">
+              <div>
+                <div style="font-size:12.5px; color:#8A8175; margin-bottom:6px;">Peso (kg)</div>
+                <input type="number" sc-camel-input-mode="decimal" value="{{ formWeight }}" sc-camel-on-change="{{ setFormWeight }}" placeholder="—" style="width:100%; box-sizing:border-box; height:60px; border:1px solid #E2DBCF; border-radius:12px; background:#fff; font-family:'IBM Plex Serif', serif; font-size:26px; padding:0 14px; color:#2E2A24;">
+              </div>
+              <div>
+                <div style="font-size:12.5px; color:#8A8175; margin-bottom:6px;">Cintura (cm)</div>
+                <input type="number" sc-camel-input-mode="decimal" value="{{ formWaist }}" sc-camel-on-change="{{ setFormWaist }}" placeholder="—" style="width:100%; box-sizing:border-box; height:60px; border:1px solid #E2DBCF; border-radius:12px; background:#fff; font-family:'IBM Plex Serif', serif; font-size:26px; padding:0 14px; color:#2E2A24;">
+              </div>
+              <div style="font-size:13.5px; color:#8A8175; line-height:1.55; padding:0 2px;">Puedes guardar solo uno de los dos.</div>
+              <button sc-camel-on-click="{{ saveWeekly }}" style="{{ saveWeeklyStyle }}">{{ saveWeeklyLabel }}</button>
+              <sc-if value="{{ weeklyCanDelete }}" hint-placeholder-val="{{ false }}">
+                <button sc-camel-on-click="{{ deleteWeekly }}" style="width:100%; height:46px; border:none; background:none; color:#9A9184; font-size:13.5px;">Eliminar este registro</button>
+              </sc-if>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ overlayIsList }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex; flex-direction:column; gap:8px;">
+              <sc-for list="{{ weeklyList }}" as="w" hint-placeholder-count="4">
+                <button sc-camel-on-click="{{ w.onEdit }}" style="text-align:left; width:100%; border:1px solid #EAE4D9; border-radius:12px; background:#fff; padding:14px 15px; display:flex; align-items:center; gap:12px;" style-active="transform:scale(0.995)">
+                  <div style="flex:1; min-width:0;">
+                    <div style="font-family:'IBM Plex Serif', serif; font-size:17px;">{{ w.values }}</div>
+                    <div style="font-size:12.5px; color:#8A8175; margin-top:3px;">{{ w.date }}</div>
+                  </div>
+                  <div style="font-size:13.5px; color:#4F7A5D;">Editar</div>
+                </button>
+              </sc-for>
+              <sc-if value="{{ weeklyListEmpty }}" hint-placeholder-val="{{ false }}">
+                <div style="font-size:14.5px; color:#6B6359; line-height:1.5; padding:6px 2px;">Todavía no hay registros de peso ni cintura.</div>
+              </sc-if>
+              <button sc-camel-on-click="{{ openWeekly }}" style="width:100%; height:54px; margin-top:6px; border:1px solid #4F7A5D; background:#4F7A5D; color:#fff; border-radius:12px; font-size:16px; font-weight:500;">Nuevo registro</button>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ overlayIsEntry }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex; flex-direction:column; gap:14px;">
+              <div>
+                <div style="font-size:12.5px; color:#8A8175; margin-bottom:6px;">Tipo de registro</div>
+                <div style="display:flex; gap:6px;">
+                  <sc-for list="{{ entryTypes }}" as="t" hint-placeholder-count="3">
+                    <button sc-camel-on-click="{{ t.onClick }}" style="{{ t.style }}">{{ t.label }}</button>
+                  </sc-for>
+                </div>
+              </div>
+              <div>
+                <div style="font-size:12.5px; color:#8A8175; margin-bottom:6px;">Fecha</div>
+                <input type="date" value="{{ entryDate }}" sc-camel-on-change="{{ setEntryDate }}" style="width:100%; box-sizing:border-box; height:54px; border:1px solid #E2DBCF; border-radius:11px; background:#fff; font-family:'IBM Plex Serif', serif; font-size:19px; padding:0 14px; color:#2E2A24;">
+              </div>
+
+              <sc-if value="{{ entryIsKine }}" hint-placeholder-val="{{ false }}">
+                <div style="display:flex; flex-direction:column; gap:14px;">
+                  <div>
+                    <div style="font-size:12.5px; color:#8A8175; margin-bottom:6px;">Número de sesión</div>
+                    <input type="number" sc-camel-input-mode="numeric" value="{{ entrySession }}" sc-camel-on-change="{{ setEntrySession }}" placeholder="{{ entrySessionHint }}" style="width:120px; box-sizing:border-box; height:52px; border:1px solid #E2DBCF; border-radius:11px; background:#fff; font-family:'IBM Plex Serif', serif; font-size:22px; padding:0 14px; color:#2E2A24;">
+                  </div>
+                  <div>
+                    <div style="font-size:12.5px; color:#8A8175; margin-bottom:8px;">Autorizado hoy (opcional)</div>
+                    <div style="display:flex; flex-wrap:wrap; gap:7px;">
+                      <sc-for list="{{ entryAuthChips }}" as="a" hint-placeholder-count="8">
+                        <button sc-camel-on-click="{{ a.onClick }}" style="{{ a.style }}">{{ a.label }}</button>
+                      </sc-for>
+                    </div>
+                    <sc-if value="{{ entryOtherOn }}" hint-placeholder-val="{{ false }}">
+                      <input type="text" value="{{ entryOther }}" sc-camel-on-change="{{ setEntryOther }}" placeholder="¿Qué se autorizó?" style="width:100%; box-sizing:border-box; height:52px; margin-top:10px; border:1px solid #E2DBCF; border-radius:11px; background:#fff; font-size:16px; padding:0 14px; color:#2E2A24;">
+                    </sc-if>
+                  </div>
+                  <div>
+                    <div style="font-size:12.5px; color:#8A8175; margin-bottom:6px;">Hinchazón</div>
+                    <div style="display:flex; gap:8px;">
+                      <sc-for list="{{ entrySwell }}" as="s" hint-placeholder-count="3">
+                        <button sc-camel-on-click="{{ s.onClick }}" style="{{ s.style }}">{{ s.label }}</button>
+                      </sc-for>
+                    </div>
+                  </div>
+                </div>
+              </sc-if>
+
+              <sc-if value="{{ entryIsDoc }}" hint-placeholder-val="{{ false }}">
+                <div style="display:flex; flex-direction:column; gap:14px;">
+                  <div>
+                    <div style="font-size:12.5px; color:#8A8175; margin-bottom:6px;">Indicaciones nuevas</div>
+                    <textarea value="{{ entryOrders }}" sc-camel-on-change="{{ setEntryOrders }}" rows="3" placeholder="Iniciar carga parcial, 20 minutos de pie al día" style="width:100%; box-sizing:border-box; border:1px solid #E2DBCF; border-radius:11px; background:#fff; font-size:16px; padding:12px 14px; color:#2E2A24; line-height:1.5; resize:vertical;"></textarea>
+                  </div>
+                  <div>
+                    <div style="font-size:12.5px; color:#8A8175; margin-bottom:6px;">Próximo control</div>
+                    <input type="date" value="{{ entryNext }}" sc-camel-on-change="{{ setEntryNext }}" style="width:100%; box-sizing:border-box; height:54px; border:1px solid #E2DBCF; border-radius:11px; background:#fff; font-family:'IBM Plex Serif', serif; font-size:19px; padding:0 14px; color:#2E2A24;">
+                  </div>
+                  <div style="border:1px solid #EAE4D9; border-radius:12px; background:#fff; padding:14px;">
+                    <div style="font-size:12.5px; color:#8A8175;">Marcar un hito como cumplido en esta fecha</div>
+                    <div style="display:flex; flex-wrap:wrap; gap:6px; margin-top:10px;">
+                      <sc-for list="{{ entryDoneOptions }}" as="m" hint-placeholder-count="3">
+                        <button sc-camel-on-click="{{ m.onClick }}" style="{{ m.style }}">{{ m.label }}</button>
+                      </sc-for>
+                    </div>
+                  </div>
+                  <div style="border:1px solid #EAE4D9; border-radius:12px; background:#fff; padding:14px;">
+                    <div style="font-size:12.5px; color:#8A8175;">Reprogramar la fecha planificada de un hito</div>
+                    <div style="display:flex; flex-wrap:wrap; gap:6px; margin-top:10px;">
+                      <sc-for list="{{ entryMsOptions }}" as="m" hint-placeholder-count="3">
+                        <button sc-camel-on-click="{{ m.onClick }}" style="{{ m.style }}">{{ m.label }}</button>
+                      </sc-for>
+                    </div>
+                    <sc-if value="{{ entryMsPicked }}" hint-placeholder-val="{{ false }}">
+                      <div style="display:flex; flex-direction:column; gap:10px; margin-top:12px;">
+                        <input type="date" value="{{ entryMsDate }}" sc-camel-on-change="{{ setEntryMsDate }}" style="width:100%; box-sizing:border-box; height:52px; border:1px solid #E2DBCF; border-radius:11px; background:#FAF7F2; font-family:'IBM Plex Serif', serif; font-size:19px; padding:0 14px; color:#2E2A24;">
+                        <input type="text" value="{{ entryMsReason }}" sc-camel-on-change="{{ setEntryMsReason }}" placeholder="Motivo del cambio" style="width:100%; box-sizing:border-box; height:52px; border:1px solid #E2DBCF; border-radius:11px; background:#FAF7F2; font-size:16px; padding:0 14px; color:#2E2A24;">
+                      </div>
+                    </sc-if>
+                  </div>
+                </div>
+              </sc-if>
+
+              <div>
+                <div style="font-size:12.5px; color:#8A8175; margin-bottom:6px;">{{ entryNotesLabel }}</div>
+                <textarea value="{{ entryNotes }}" sc-camel-on-change="{{ setEntryNotes }}" rows="4" placeholder="Cómo se sintió el tobillo, qué dijo el equipo" style="width:100%; box-sizing:border-box; border:1px solid #E2DBCF; border-radius:11px; background:#fff; font-size:16px; padding:12px 14px; color:#2E2A24; line-height:1.5; resize:vertical;"></textarea>
+              </div>
+
+              <button sc-camel-on-click="{{ saveEntry }}" style="width:100%; height:54px; border:1px solid #4F7A5D; background:#4F7A5D; color:#fff; border-radius:12px; font-size:16px; font-weight:500;">Guardar registro</button>
+              <sc-if value="{{ entryCanDelete }}" hint-placeholder-val="{{ false }}">
+                <button sc-camel-on-click="{{ deleteEntry }}" style="width:100%; height:46px; border:none; background:none; color:#9A9184; font-size:13.5px;">Eliminar registro</button>
+              </sc-if>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ overlayIsMilestone }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex; flex-direction:column; gap:14px;">
+              <div>
+                <div style="font-size:12.5px; color:#8A8175; margin-bottom:6px;">Nombre del hito</div>
+                <input type="text" value="{{ msName }}" sc-camel-on-change="{{ setMsName }}" placeholder="Inicio de carga completa" style="width:100%; box-sizing:border-box; height:54px; border:1px solid #E2DBCF; border-radius:11px; background:#fff; font-size:17px; padding:0 14px; color:#2E2A24;">
+              </div>
+              <div>
+                <div style="font-size:12.5px; color:#8A8175; margin-bottom:6px;">Fecha planificada</div>
+                <input type="date" value="{{ msDate }}" sc-camel-on-change="{{ setMsDate }}" style="width:100%; box-sizing:border-box; height:54px; border:1px solid #E2DBCF; border-radius:11px; background:#fff; font-family:'IBM Plex Serif', serif; font-size:19px; padding:0 14px; color:#2E2A24;">
+              </div>
+              <div style="border:1px solid #EAE4D9; border-radius:12px; background:#fff; padding:14px;">
+                <div style="display:flex; align-items:center; justify-content:space-between; gap:12px;">
+                  <div style="font-size:15px; color:#3C372F;">Ya se cumplió</div>
+                  <button sc-camel-on-click="{{ toggleMsDone }}" style="{{ msDoneStyle }}">{{ msDoneLabel }}</button>
+                </div>
+                <sc-if value="{{ msDone }}" hint-placeholder-val="{{ false }}">
+                  <div style="margin-top:12px;">
+                    <div style="font-size:12.5px; color:#8A8175; margin-bottom:6px;">Fecha real</div>
+                    <input type="date" value="{{ msReal }}" sc-camel-on-change="{{ setMsReal }}" style="width:100%; box-sizing:border-box; height:52px; border:1px solid #E2DBCF; border-radius:11px; background:#FAF7F2; font-family:'IBM Plex Serif', serif; font-size:19px; padding:0 14px; color:#2E2A24;">
+                    <div style="{{ msDiffStyle }}">{{ msDiffText }}</div>
+                  </div>
+                </sc-if>
+              </div>
+              <sc-if value="{{ msDateChanged }}" hint-placeholder-val="{{ false }}">
+                <div>
+                  <div style="font-size:12.5px; color:#8A8175; margin-bottom:6px;">{{ msReasonLabel }}</div>
+                  <input type="text" value="{{ msReason }}" sc-camel-on-change="{{ setMsReason }}" placeholder="Motivo del cambio" style="width:100%; box-sizing:border-box; height:54px; border:1px solid #E2DBCF; border-radius:11px; background:#fff; font-size:16px; padding:0 14px; color:#2E2A24;">
+                </div>
+              </sc-if>
+              <sc-if value="{{ msHasHistory }}" hint-placeholder-val="{{ false }}">
+                <div style="display:flex; flex-direction:column; gap:6px;">
+                  <sc-for list="{{ msHistory }}" as="h" hint-placeholder-count="2">
+                    <div style="font-size:12.5px; color:#8A8175; line-height:1.5;">{{ h }}</div>
+                  </sc-for>
+                </div>
+              </sc-if>
+              <button sc-camel-on-click="{{ saveMilestone }}" style="width:100%; height:54px; border:1px solid #4F7A5D; background:#4F7A5D; color:#fff; border-radius:12px; font-size:16px; font-weight:500;">Guardar hito</button>
+              <sc-if value="{{ msCanDelete }}" hint-placeholder-val="{{ false }}">
+                <button sc-camel-on-click="{{ deleteMilestone }}" style="width:100%; height:46px; border:none; background:none; color:#9A9184; font-size:13.5px;">Eliminar hito</button>
+              </sc-if>
+            </div>
+          </sc-if>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ menuFormOpen }}" hint-placeholder-val="{{ false }}">
+    <div style="position:fixed; inset:0; background:rgba(38,34,28,0.34); z-index:60; display:flex; align-items:flex-end; justify-content:center; animation:fadeIn 0.18s ease;">
+      <div sc-camel-on-click="{{ closeMenuForm }}" style="position:absolute; inset:0;"></div>
+      <div style="position:relative; width:100%; max-width:430px; background:#FAF7F2; border-radius:20px 20px 0 0; max-height:90vh; overflow-y:auto; animation:sheetUp 0.26s cubic-bezier(0.22,1,0.36,1); padding-bottom:calc(env(safe-area-inset-bottom) + 16px);">
+        <div style="position:sticky; top:0; background:#FAF7F2; padding:14px 20px 12px 20px; border-bottom:1px solid #EAE4D9; z-index:2;">
+          <div style="width:38px; height:4px; border-radius:2px; background:#DDD5C8; margin:0 auto 14px auto;"></div>
+          <div style="display:flex; align-items:baseline; justify-content:space-between;">
+            <div style="font-family:'IBM Plex Serif', serif; font-size:22px; font-weight:500;">{{ menuFormTitle }}</div>
+            <button sc-camel-on-click="{{ closeMenuForm }}" style="border:none; background:none; font-size:14px; color:#8A8175; padding:6px 0;">Cerrar</button>
+          </div>
+        </div>
+        <div style="padding:16px 20px 8px 20px; display:flex; flex-direction:column; gap:14px;">
+          <div>
+            <div style="font-size:12.5px; color:#8A8175; margin-bottom:6px;">Nombre</div>
+            <input type="text" value="{{ menuFormName }}" sc-camel-on-change="{{ setMenuName }}" placeholder="Pollo con arroz" style="width:100%; box-sizing:border-box; height:54px; border:1px solid #E2DBCF; border-radius:11px; background:#fff; font-size:17px; padding:0 14px; color:#2E2A24;">
+          </div>
+          <div>
+            <div style="font-size:12.5px; color:#8A8175; margin-bottom:6px;">Tiempo de comida</div>
+            <div style="display:flex; gap:6px; flex-wrap:wrap;">
+              <sc-for list="{{ menuFormMeals }}" as="m" hint-placeholder-count="5">
+                <button sc-camel-on-click="{{ m.onClick }}" style="{{ m.style }}">{{ m.label }}</button>
+              </sc-for>
+            </div>
+          </div>
+          <div>
+            <div style="font-size:12.5px; color:#8A8175; margin-bottom:6px;">Ingredientes, uno por línea</div>
+            <textarea value="{{ menuFormIng }}" sc-camel-on-change="{{ setMenuIng }}" rows="5" placeholder="150 g pollo
+1 taza arroz cocido" style="width:100%; box-sizing:border-box; border:1px solid #E2DBCF; border-radius:11px; background:#fff; font-size:16px; padding:12px 14px; color:#2E2A24; line-height:1.5; resize:vertical;"></textarea>
+          </div>
+          <div>
+            <div style="font-size:12.5px; color:#8A8175; margin-bottom:6px;">Observación</div>
+            <input type="text" value="{{ menuFormNote }}" sc-camel-on-change="{{ setMenuNote }}" placeholder="Pesar el pollo al servirse" style="width:100%; box-sizing:border-box; height:54px; border:1px solid #E2DBCF; border-radius:11px; background:#fff; font-size:17px; padding:0 14px; color:#2E2A24;">
+          </div>
+          <div>
+            <div style="font-size:12.5px; color:#8A8175; margin-bottom:8px;">Porciones que aporta</div>
+            <div style="display:flex; flex-direction:column; gap:8px;">
+              <sc-for list="{{ menuFormRows }}" as="r" hint-placeholder-count="7">
+                <div style="border:1px solid #EAE4D9; border-radius:14px; background:#fff; padding:12px 14px; display:flex; align-items:center; gap:12px;">
+                  <div style="flex:1; min-width:0; font-size:15.5px;">{{ r.label }}</div>
+                  <button sc-camel-on-click="{{ r.onMinus }}" style="flex:0 0 46px; height:46px; border:1px solid #E2DBCF; background:#FAF7F2; border-radius:11px; font-size:20px; color:#6B6359;">−</button>
+                  <div style="flex:0 0 40px; text-align:center; font-family:'IBM Plex Serif', serif; font-size:22px;">{{ r.valText }}</div>
+                  <button sc-camel-on-click="{{ r.onPlus }}" style="flex:0 0 46px; height:46px; border:1px solid #CFDCD2; background:#F0F5F0; border-radius:11px; font-size:20px; color:#3D5F49;">+</button>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+          <button sc-camel-on-click="{{ saveMenu }}" style="width:100%; height:54px; border:1px solid #4F7A5D; background:#4F7A5D; color:#fff; border-radius:12px; font-size:16px; font-weight:500;">Guardar menú</button>
+          <sc-if value="{{ menuFormCanDelete }}" hint-placeholder-val="{{ false }}">
+            <button sc-camel-on-click="{{ deleteMenu }}" style="width:100%; height:46px; border:none; background:none; color:#9A9184; font-size:13.5px;">Eliminar menú</button>
+          </sc-if>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+</div>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script="" data-props="{&quot;$preview&quot;:{&quot;width&quot;:430,&quot;height&quot;:932}}">
+class Component extends DCLogic {
+  C = { green: '#4F7A5D', greenDark: '#3D5F49', blue: '#7C94AD', amber: '#C98B2A', terra: '#B5674D', sand: '#8A7F6A', ink: '#2E2A24', ink2: '#8A8175', line: '#EAE4D9' };
+  GROUPS = [
+    { key: 'cereales', label: 'Cereales', short: 'Cer', goal: 3, step: 1, eq: '1/2 marraqueta · 1 taza arroz o pasta cocida · 1 papa mediana · 4 galletas de agua · 3 cdas avena cruda' },
+    { key: 'verduras', label: 'Verduras', short: 'Ver', goal: 4, step: 1, eq: '1 taza lechuga o repollo · 1/2 taza zapallo italiano cocido · 1 tomate mediano · 1/2 taza brócoli · 1 zanahoria chica' },
+    { key: 'fruta', label: 'Fruta', short: 'Fru', goal: 1, step: 1, eq: '1 manzana chica · 1 naranja · 1 taza berries · 1/2 plátano · 10 uvas' },
+    { key: 'proteicos', label: 'Proteicos', short: 'Pro', goal: 11, step: 1, eq: '50 g pollo o carne · 1 huevo · 2 trozos quesillo (60 g) · 1/2 tarro atún · 1 yogurt proteico (140 g) · 1 tazón leche protein (300 cc)' },
+    { key: 'lacteos', label: 'Lácteos', short: 'Lác', goal: 2, step: 1, eq: '1 taza leche descremada (200 cc) · 1 yogurt natural · 1 rebanada queso fresco (30 g)' },
+    { key: 'aceite', label: 'Aceite', short: 'Ace', goal: 1, step: 0.5, eq: '1 cdta aceite de oliva · 1 cdta aceite de canola' },
+    { key: 'grasas', label: 'Grasas', short: 'Gra', goal: 1.5, step: 0.5, eq: '1/3 palta chica · 10 almendras · 6 nueces · 1 cda semillas de maravilla o chía' }
+  ];
+  MEALS = [
+    { key: 'desayuno', label: 'Desayuno', time: '08:00' },
+    { key: 'colacionAM', label: 'Colación AM', time: '11:00' },
+    { key: 'almuerzo', label: 'Almuerzo', time: '13:30' },
+    { key: 'colacionPM', label: 'Colación PM', time: '17:00' },
+    { key: 'cena', label: 'Cena', time: '20:30' }
+  ];
+  INBODY_FIELDS = [
+    { key: 'weight', label: 'Peso (kg)', unit: ' kg', better: 'down' },
+    { key: 'fatMass', label: 'Masa grasa (kg)', unit: ' kg', better: 'down' },
+    { key: 'fatPct', label: '% de grasa', unit: ' %', better: 'down' },
+    { key: 'smm', label: 'Masa musculoesquelética (kg)', unit: ' kg', better: 'up' },
+    { key: 'ffm', label: 'Masa libre de grasa (kg)', unit: ' kg', better: 'up' },
+    { key: 'visceral', label: 'Grasa visceral', unit: '', better: 'down' },
+    { key: 'water', label: 'Agua corporal total (L)', unit: ' L', better: 'up' }
+  ];
+  TRAINING = ['Tren superior', 'Core', 'Bicicleta', 'Kinesiología', 'Descanso'];
+  TARGET_FIELDS = [
+    { key: 'fatPct', label: '% de grasa' },
+    { key: 'weight', label: 'Peso (kg)' },
+    { key: 'waist', label: 'Cintura (cm)' },
+    { key: 'water', label: 'Agua diaria (ml)' }
+  ];
+  WEEKDAY_NAMES = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+  MONTH_NAMES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+
+  state = { screen: 'hoy', prevScreen: 'hoy', data: null, viewDate: null, sheet: null, overlay: null, menuForm: null, form: { weight: '', waist: '' }, inbodyForm: null, inbodyOpen: false, cfgDraft: {} };
+
+  componentDidMount() {
+    let data = null;
+    try { const raw = localStorage.getItem('pauta.v1'); if (raw) data = JSON.parse(raw); } catch (e) {}
+    if (!data || !data.menus) data = this.seed();
+    if (!data.config) data.config = this.defaultConfig();
+    Object.keys(data.days || {}).forEach(k => {
+      const d = data.days[k];
+      if (d.closed === undefined) d.closed = k !== this.today() && Object.keys(d.meals || {}).some(mk => d.meals[mk] && d.meals[mk].status !== 'pending');
+    });
+    data.recovery = this.migrateRecovery(data.recovery || this.defaultRecovery());
+    data.weekly = (data.weekly || []).map(w => (w.id ? w : Object.assign({}, w, { id: 'w' + Math.random().toString(36).slice(2, 8) })));
+    this.setState({ data, viewDate: this.today() });
+  }
+
+  defaultConfig() {
+    const goals = {};
+    this.GROUPS.forEach(g => { goals[g.key] = g.goal; });
+    const times = {};
+    this.MEALS.forEach(m => { times[m.key] = m.time; });
+    return { goals, times, targets: { fatPct: 13, weight: 76.5, waist: 88, water: 2000 } };
+  }
+
+  AUTH_TAGS = ['Apoyo parcial', 'Bicicleta', 'Movilidad activa', 'Fortalecimiento', 'Propiocepción', 'Caminar sin muletas', 'Trote', 'Otro'];
+
+  fixedMilestones() {
+    return [
+      { id: 'h_op', name: 'Operación de tobillo', date: '2026-09-04', real: '2026-09-04', fixed: true, history: [] },
+      { id: 'h_noload', name: 'Fin del período sin apoyo', date: '2026-10-02', real: null, fixed: true, history: [] },
+      { id: 'h_full', name: 'Inicio de carga completa', date: '2026-10-16', real: null, fixed: true, history: [] },
+      { id: 'h_walk', name: 'Vuelta a la marcha sin muletas', date: '', real: null, fixed: true, history: [] },
+      { id: 'h_return', name: 'Retorno a la actividad normal', date: '2027-01-01', real: null, fixed: true, history: [] }
+    ];
+  }
+  migrateRecovery(rec) {
+    const oldMap = { h1: 'h_op', h2: 'h_noload', h3: 'h_full', h4: 'h_return' };
+    const list = (rec.milestones || []).map(m => Object.assign({}, m, { id: oldMap[m.id] || m.id }));
+    this.fixedMilestones().forEach(f => {
+      const found = list.find(m => m.id === f.id);
+      if (!found) list.push(f);
+      else { found.fixed = true; if (found.real === undefined) found.real = f.id === 'h_op' ? found.date : null; if (found.id === 'h_full') found.name = f.name; }
+    });
+    rec.milestones = list.map(m => Object.assign({ real: null, fixed: false, history: [] }, m));
+    rec.entries = (rec.entries || []).map(e => {
+      if (e.type !== 'kine') return e;
+      const n = Object.assign({}, e);
+      if (!n.tags) n.tags = n.auth ? [n.auth] : [];
+      delete n.dorsi; delete n.planti; delete n.pain; delete n.auth;
+      if (n.other === undefined) n.other = '';
+      return n;
+    });
+    return rec;
+  }
+
+  defaultRecovery() {
+    return {
+      surgery: '2026-09-04',
+      target: '2027-01-01',
+      nextControl: '2026-09-25',
+      milestones: this.fixedMilestones(),
+      entries: [
+        { id: 'e1', type: 'doc', date: '2026-09-04', orders: 'Cuatro semanas sin apoyar el pie. Bota de marcha permanente.', next: '2026-09-25', notes: 'Operación sin complicaciones.' },
+        { id: 'e2', type: 'kine', date: '2026-09-05', session: 1, tags: ['Movilidad activa'], other: '', swell: 'más', notes: 'Primera sesión después de la operación.' },
+        { id: 'e3', type: 'kine', date: '2026-09-06', session: 2, tags: ['Bicicleta'], other: '', swell: 'igual', notes: '' },
+        { id: 'e4', type: 'kine', date: '2026-09-07', session: 3, tags: [], other: '', swell: 'igual', notes: '' },
+        { id: 'e5', type: 'doc', date: '2026-09-09', orders: 'Sigue sin apoyo. Autorizado trabajo de tren superior sentado.', next: '2026-09-25', notes: 'Herida cicatrizando bien.' },
+        { id: 'e6', type: 'kine', date: '2026-09-09', session: 4, tags: ['Fortalecimiento'], other: '', swell: 'menos', notes: 'Elásticos, sin carga en el tobillo.' },
+        { id: 'e7', type: 'kine', date: '2026-09-10', session: 5, tags: [], other: '', swell: 'menos', notes: '' },
+        { id: 'e8', type: 'nota', date: '2026-09-10', notes: 'El tobillo amanece más suelto los días que duermo con la pierna en alto.' },
+        { id: 'e9', type: 'kine', date: '2026-09-11', session: 6, tags: ['Apoyo parcial'], other: '', swell: 'igual', notes: 'Primeros apoyos con muletas, muy breves.' },
+        { id: 'e10', type: 'kine', date: '2026-09-11', session: 7, tags: ['Propiocepción'], other: '', swell: 'menos', notes: '' }
+      ],
+      questions: [
+        { id: 'q1', text: '¿Puedo aumentar la resistencia en la bicicleta reclinada?', asked: false },
+        { id: 'q2', text: '¿Cuándo puedo dejar la bota de marcha en casa?', asked: false }
+      ]
+    };
+  }
+
+  persist(data) {
+    this.setState({ data });
+    try { localStorage.setItem('pauta.v1', JSON.stringify(data)); } catch (e) {}
+  }
+
+  ymd(d) { return d.toISOString().slice(0, 10); }
+  dayOffset(n) { const d = new Date(); d.setHours(12, 0, 0, 0); d.setDate(d.getDate() + n); return d; }
+  shift(key, n) { const d = new Date(key + 'T12:00:00'); d.setDate(d.getDate() + n); return this.ymd(d); }
+  today() { return this.ymd(this.dayOffset(0)); }
+  vd() { return this.state.viewDate || this.today(); }
+  fmt(v) {
+    if (v === undefined || v === null || v === '' || isNaN(v)) return '—';
+    const r = Math.round(v * 10) / 10;
+    return Number.isInteger(r) ? String(r) : String(r).replace('.', ',');
+  }
+  num(v) { const n = parseFloat(String(v).replace(',', '.')); return isNaN(n) ? null : n; }
+  longDate(key) { const d = new Date(key + 'T12:00:00'); return this.WEEKDAY_NAMES[d.getDay()] + ' ' + d.getDate() + ' de ' + this.MONTH_NAMES[d.getMonth()]; }
+
+  seed() {
+    const m = (meal, name, ingredients, note, portions) => ({ id: 'm' + Math.random().toString(36).slice(2, 8), meal, name, ingredients, note, portions });
+    const menus = [
+      m('desayuno', 'Pan con quesillo y palta', ['1/2 marraqueta', '2 trozos quesillo (60 g)', '1/3 palta chica', 'Café o té sin azúcar'], 'La palta reemplaza la mantequilla.', { cereales: 1, proteicos: 2, grasas: 0.5 }),
+      m('desayuno', 'Avena con yogurt proteico', ['3 cdas avena', '1 yogurt proteico (140 g)', '1 taza berries'], 'Bien antes de entrenar tren superior.', { cereales: 1, proteicos: 1, fruta: 1 }),
+      m('colacionAM', 'Huevo duro y zanahoria', ['1 huevo duro', '1 zanahoria en bastones'], 'Cómodo para llevar.', { proteicos: 1, verduras: 1 }),
+      m('colacionAM', 'Leche protein', ['1 tazón leche protein (300 cc)'], 'Los días de bicicleta reclinada.', { proteicos: 1, lacteos: 1 }),
+      m('almuerzo', 'Pollo con arroz y ensalada', ['150 g pollo a la plancha', '1 taza arroz cocido', '2 tazas ensalada de lechuga y tomate', '1 cdta aceite de oliva'], 'Pesar el pollo al servirse.', { proteicos: 3, cereales: 1, verduras: 2, aceite: 1 }),
+      m('almuerzo', 'Carne con puré de zapallo', ['150 g posta molida', '1 taza puré de zapallo', '1 taza porotos verdes', '1 cdta aceite'], 'El puré de zapallo va en vez del arroz.', { proteicos: 3, verduras: 3, aceite: 1 }),
+      m('almuerzo', 'Atún con papa y ensalada', ['1 tarro atún al agua', '1 papa mediana', '2 tazas ensalada surtida', '1 cdta aceite'], 'Para los días que no alcanza a cocinar.', { proteicos: 2, cereales: 1, verduras: 2, aceite: 1 }),
+      m('colacionPM', 'Yogurt con almendras', ['1 yogurt proteico (140 g)', '10 almendras'], 'Dejarla lista en la mañana: es la que más se salta.', { proteicos: 1, grasas: 1 }),
+      m('colacionPM', 'Quesillo con tomate', ['2 trozos quesillo (60 g)', '1 tomate mediano'], '', { proteicos: 2, verduras: 1 }),
+      m('cena', 'Tortilla de verduras', ['2 huevos', '1 taza zapallo italiano', '1 taza espinaca', '1 cdta aceite'], '', { proteicos: 2, verduras: 2 }),
+      m('cena', 'Pescado al horno con ensalada', ['150 g reineta', '2 tazas ensalada', '1/2 taza brócoli'], '', { proteicos: 3, verduras: 3 }),
+      m('cena', 'Cazuela liviana', ['100 g pollo', '1 papa chica', '1 taza verduras de la cazuela'], 'Cuando cocinan para toda la familia.', { proteicos: 2, cereales: 1, verduras: 2 }),
+      m('desayuno', 'Huevos revueltos con tomate', ['2 huevos', '1 tomate mediano', '1/2 marraqueta', 'Té sin azúcar'], '', { proteicos: 2, verduras: 1, cereales: 1 }),
+      m('desayuno', 'Yogurt con avena y fruta', ['1 yogurt natural', '3 cdas avena', '1 manzana chica'], 'Para las mañanas apuradas.', { lacteos: 1, cereales: 1, fruta: 1 }),
+      m('colacionAM', 'Quesillo con galletas', ['2 trozos quesillo (60 g)', '4 galletas de agua'], '', { proteicos: 2, cereales: 1 }),
+      m('colacionAM', 'Fruta con almendras', ['1 naranja', '10 almendras'], '', { fruta: 1, grasas: 1 }),
+      m('almuerzo', 'Pescado con quinoa', ['150 g merluza al horno', '1 taza quinoa cocida', '2 tazas ensalada verde', '1 cdta aceite de oliva'], 'Pesar el pescado al servirse.', { proteicos: 3, cereales: 1, verduras: 2, aceite: 1 }),
+      m('colacionPM', 'Leche protein con fruta', ['1 tazón leche protein (300 cc)', '1 taza berries'], '', { proteicos: 1, lacteos: 1, fruta: 1 }),
+      m('colacionPM', 'Huevo duro con palta', ['1 huevo duro', '1/3 palta chica'], '', { proteicos: 1, grasas: 0.5 }),
+      m('cena', 'Pollo con zapallo italiano', ['150 g pollo', '2 tazas zapallo italiano salteado', '1 cdta aceite'], '', { proteicos: 3, verduras: 2, aceite: 1 }),
+      m('cena', 'Revuelto de quesillo y espinaca', ['2 huevos', '2 trozos quesillo (60 g)', '2 tazas espinaca'], 'Cena liviana para los días de kinesiología.', { proteicos: 4, verduras: 2 })
+    ];
+    const profiles = [
+      { cereales: 3, verduras: 4, fruta: 1, proteicos: 11, lacteos: 2, aceite: 1, grasas: 1.5 },
+      { cereales: 3, verduras: 3, fruta: 1, proteicos: 9, lacteos: 2, aceite: 1, grasas: 1 },
+      { cereales: 2, verduras: 4, fruta: 1, proteicos: 10, lacteos: 1, aceite: 1, grasas: 1.5 },
+      { cereales: 3, verduras: 4, fruta: 0, proteicos: 8, lacteos: 2, aceite: 0.5, grasas: 1 }
+    ];
+    const days = {};
+    const waters = [2000, 1750, 1500, 2000, 1250, 1750, 1500];
+    const cals = [420, 510, 260, 480, 390, 540, 300];
+    const ankles = ['mejor', 'igual', 'peor', 'peor', 'igual', 'mejor', 'igual'];
+    const trainings = [
+      { tags: ['Tren superior', 'Core'], minutes: 45 },
+      { tags: ['Bicicleta'], minutes: 30 },
+      { tags: ['Tren superior'], minutes: 50 },
+      { tags: ['Kinesiología'], minutes: 40 },
+      { tags: ['Descanso'], minutes: '' },
+      { tags: ['Bicicleta', 'Core'], minutes: 35 },
+      { tags: ['Tren superior', 'Bicicleta'], minutes: 55 }
+    ];
+    for (let i = 1; i <= 7; i++) {
+      const key = this.ymd(this.dayOffset(-i));
+      const prof = profiles[i % profiles.length];
+      const meals = {};
+      const share = [
+        { cereales: 1, proteicos: 2, grasas: 0.5, lacteos: 1 },
+        { proteicos: 1, verduras: 1 },
+        { proteicos: 4, cereales: 1, verduras: 2, aceite: prof.aceite, fruta: prof.fruta },
+        { proteicos: 2, lacteos: prof.lacteos - 1, grasas: prof.grasas - 0.5 },
+        { proteicos: prof.proteicos - 9, verduras: prof.verduras - 3, cereales: prof.cereales - 2 }
+      ];
+      this.MEALS.forEach((mm, idx) => {
+        const p = {};
+        Object.keys(share[idx]).forEach(k => { const v = share[idx][k]; if (v > 0) p[k] = v; });
+        if (i === 6 && mm.key === 'colacionPM') { meals[mm.key] = { status: 'pending' }; return; }
+        if (i === 3 && mm.key === 'cena') { meals[mm.key] = { status: 'out', text: 'Pizza en el cumpleaños de mi hermana', portions: { cereales: 2, proteicos: 3 } }; return; }
+        if (i === 5 && mm.key === 'almuerzo') { meals[mm.key] = { status: 'out', text: 'Almuerzo en el trabajo, pollo con ensalada', portions: { proteicos: 3, verduras: 2, cereales: 1 } }; return; }
+        meals[mm.key] = { status: 'done', menuName: idx === 2 ? 'Pollo con arroz y ensalada' : null, portions: p };
+      });
+      days[key] = { meals, water: waters[i - 1], cal: cals[i - 1], ankle: ankles[i - 1], training: trainings[i - 1], closed: true };
+    }
+    const weekly = [];
+    const w = [93.2, 92.6, 92.4, 91.5, 91.2, 90.4, 90.1, 89.4];
+    const c = [104, 103.5, 103, 102, 101.5, 100.5, 100, 99.2];
+    for (let i = 7; i >= 0; i--) weekly.push({ id: 'w' + i, date: this.ymd(this.dayOffset(-i * 7)), weight: w[7 - i], waist: c[7 - i] });
+    const inbody = [
+      { date: this.ymd(this.dayOffset(-84)), weight: 93.2, fatMass: 28.4, fatPct: 30.5, smm: 36.1, ffm: 64.8, visceral: 13, water: 47.4 },
+      { date: this.ymd(this.dayOffset(-56)), weight: 91.8, fatMass: 26.6, fatPct: 29.0, smm: 36.3, ffm: 65.2, visceral: 12, water: 47.7 },
+      { date: this.ymd(this.dayOffset(-28)), weight: 90.1, fatMass: 24.5, fatPct: 27.2, smm: 36.6, ffm: 65.6, visceral: 11, water: 48.0 }
+    ];
+    return { days, menus, weekly, inbody, config: this.defaultConfig(), recovery: this.defaultRecovery() };
+  }
+
+  day(key) {
+    const d = this.state.data;
+    return (d && d.days[key]) || { meals: {}, water: 0, cal: '', ankle: null, training: null, closed: false };
+  }
+  totals(dayObj) {
+    const t = {};
+    this.GROUPS.forEach(g => { t[g.key] = 0; });
+    Object.keys(dayObj.meals || {}).forEach(k => {
+      const p = (dayObj.meals[k] && dayObj.meals[k].portions) || {};
+      Object.keys(p).forEach(gk => { if (t[gk] !== undefined) t[gk] += p[gk] || 0; });
+    });
+    return t;
+  }
+  portionText(p) {
+    if (!p) return '';
+    return this.GROUPS.filter(g => p[g.key]).map(g => this.fmt(p[g.key]) + ' ' + g.label.toLowerCase()).join(' · ');
+  }
+  setDay(patch) {
+    const key = this.vd();
+    const data = JSON.parse(JSON.stringify(this.state.data));
+    const d = data.days[key] || { meals: {}, water: 0, cal: '', ankle: null };
+    data.days[key] = Object.assign({}, d, patch);
+    this.persist(data);
+  }
+  setMeal(mealKey, entry) {
+    const key = this.vd();
+    const data = JSON.parse(JSON.stringify(this.state.data));
+    const d = data.days[key] || { meals: {}, water: 0, cal: '', ankle: null };
+    d.meals = Object.assign({}, d.meals);
+    if (entry === null) delete d.meals[mealKey]; else d.meals[mealKey] = entry;
+    data.days[key] = d;
+    this.persist(data);
+  }
+  setConfig(path, value) {
+    const data = JSON.parse(JSON.stringify(this.state.data));
+    data.config = data.config || this.defaultConfig();
+    const parts = path.split('.');
+    let node = data.config;
+    for (let i = 0; i < parts.length - 1; i++) { node[parts[i]] = node[parts[i]] || {}; node = node[parts[i]]; }
+    node[parts[parts.length - 1]] = value;
+    this.persist(data);
+  }
+
+  multiChart(sets, target) {
+    const W = 320, H = 100, L = 6, R = 6, T = 14;
+    const all = [];
+    sets.forEach(s => s.points.forEach(p => all.push(p.v)));
+    if (target !== null && target !== undefined && !isNaN(target)) all.push(target);
+    if (!all.length) return { sets: [], labels: [], hasTarget: false, targetY: 0 };
+    let min = Math.min.apply(null, all), max = Math.max.apply(null, all);
+    if (max - min < 1) { max += 0.5; min -= 0.5; }
+    const pad = (max - min) * 0.16;
+    min -= pad; max += pad;
+    let n = 1;
+    sets.forEach(s => { n = Math.max(n, s.points.length); });
+    const x = i => L + (n <= 1 ? (W - L - R) / 2 : (i * (W - L - R)) / (n - 1));
+    const y = v => T + (H - T) * (1 - (v - min) / (max - min));
+    const outSets = sets.map(s => ({
+      color: s.color,
+      path: s.points.map((p, i) => (i ? 'L' : 'M') + x(i).toFixed(1) + ' ' + y(p.v).toFixed(1)).join(' '),
+      dots: s.points.map((p, i) => ({ cx: x(i).toFixed(1), cy: y(p.v).toFixed(1), color: s.color, v: p.v }))
+    }));
+    const longest = sets.reduce((a, b) => (b.points.length > a.points.length ? b : a), sets[0]);
+    const short = s => { const d = new Date(s + 'T12:00:00'); return d.getDate() + '/' + (d.getMonth() + 1); };
+    const idxs = n <= 1 ? [0] : n <= 4 ? [0, n - 1] : [0, Math.floor((n - 1) / 2), n - 1];
+    const labels = longest.points.length ? idxs.map((i, k) => ({
+      x: x(i), t: short(longest.points[i].date),
+      anchor: k === 0 ? 'start' : k === idxs.length - 1 ? 'end' : 'middle'
+    })) : [];
+    return { sets: outSets, labels, hasTarget: target !== null && target !== undefined && !isNaN(target), targetY: y(target) };
+  }
+  chart(series, valKey, target) {
+    const pts = (series || []).filter(s => typeof s[valKey] === 'number' && !isNaN(s[valKey])).map(s => ({ date: s.date, v: s[valKey] }));
+    const r = this.multiChart([{ points: pts, color: this.C.green }], target);
+    const s0 = r.sets[0] || { path: '', dots: [] };
+    return { path: s0.path, dots: s0.dots, labels: r.labels, hasTarget: r.hasTarget, targetY: r.targetY, count: pts.length };
+  }
+
+  renderVals() {
+    const S = this.state, data = S.data;
+    const navItems = ['hoy', 'semana', 'progreso', 'menus', 'recuperacion'].map(k => {
+      const labels = { hoy: 'Hoy', semana: 'Semana', progreso: 'Progreso', menus: 'Menús', recuperacion: 'Recuperación' };
+      const active = S.screen === k;
+      return {
+        label: labels[k],
+        onClick: () => this.setState({ screen: k }),
+        style: 'flex:1; min-width:0; border:none; background:none; padding:8px 2px 4px 2px; display:flex; flex-direction:column; align-items:center; gap:5px; font-size:10.5px; text-align:center; line-height:1.2; color:' + (active ? this.C.green : '#9A9184') + '; font-weight:' + (active ? '600' : '400') + ';',
+        dotStyle: 'width:5px; height:5px; border-radius:3px; background:' + (active ? this.C.green : 'transparent') + ';'
+      };
+    });
+    const base = {
+      isHoy: S.screen === 'hoy', isSemana: S.screen === 'semana', isProgreso: S.screen === 'progreso', isMenus: S.screen === 'menus', isRec: S.screen === 'recuperacion', isConfig: S.screen === 'config',
+      navItems, sheetOpen: false, menuFormOpen: false, overlayOpen: false,
+      toggleConfig: () => this.setState(s => (s.screen === 'config' ? { screen: s.prevScreen || 'hoy' } : { screen: 'config', prevScreen: s.screen })),
+      closeConfig: () => this.setState(s => ({ screen: s.prevScreen || 'hoy' }))
+    };
+    if (!data) return base;
+
+    const cfg = data.config || this.defaultConfig();
+    const goalOf = g => (cfg.goals && cfg.goals[g.key] != null ? cfg.goals[g.key] : g.goal);
+    const timeOf = m => (cfg.times && cfg.times[m.key]) || m.time;
+    const targets = cfg.targets || {};
+    const waterGoal = targets.water || 2000;
+
+    const viewKey = this.vd();
+    const isToday = viewKey === this.today();
+    const td = this.day(viewKey);
+    const tot = this.totals(td);
+    const registeredMeals = this.MEALS.filter(m => td.meals[m.key] && td.meals[m.key].status !== 'pending').length;
+    const dayClosed = !!td.closed;
+
+    const counters = this.GROUPS.map(g => {
+      const v = tot[g.key] || 0, goal = goalOf(g);
+      const pct = goal ? Math.min(100, (v / goal) * 100) : 0;
+      return {
+        label: g.short, text: this.fmt(v) + '/' + this.fmt(goal),
+        barStyle: 'height:100%; width:' + pct + '%; background:' + (v >= goal ? this.C.green : '#B9C7BA') + ';'
+      };
+    });
+
+    const mealCards = this.MEALS.map(m => {
+      const e = td.meals[m.key];
+      const st = e ? e.status : 'pending';
+      const done = st === 'done', out = st === 'out';
+      const accent = done ? this.C.green : out ? this.C.blue : '#DDD5C8';
+      return {
+        name: m.label, time: timeOf(m),
+        onClick: () => this.openMeal(m.key),
+        cardStyle: 'text-align:left; width:100%; border:1px solid ' + (done ? '#CFDCD2' : out ? '#D4DDE4' : this.C.line) + '; border-left:3px solid ' + accent + '; border-radius:14px; background:' + (done ? '#F5F9F5' : out ? '#F5F8FA' : '#fff') + '; padding:15px 16px; transition:transform 0.1s ease;',
+        dotStyle: 'width:7px; height:7px; border-radius:4px; background:' + accent + ';',
+        statusStyle: 'font-size:12.5px; letter-spacing:0.04em; text-transform:uppercase; color:' + (done ? this.C.greenDark : out ? '#5B7590' : '#9A9184') + ';',
+        statusLabel: done ? 'Completa' : out ? 'Estimada' : 'Pendiente',
+        hasSummary: !!(e && (e.menuName || e.text)),
+        summary: e ? (e.menuName || e.text || '') : '',
+        hasPortions: !!(e && e.portions && this.portionText(e.portions)),
+        portionText: e ? this.portionText(e.portions) : ''
+      };
+    });
+
+    const water = td.water || 0;
+    const cellCount = Math.min(12, Math.max(4, Math.round(waterGoal / 250)));
+    const waterCells = [];
+    for (let i = 0; i < cellCount; i++) waterCells.push({ style: 'flex:1; height:26px; border-radius:6px; background:' + (i * 250 < water ? this.C.blue : '#ECE6DB') + ';' });
+
+    const ankleOpts = ['mejor', 'igual', 'peor'].map(v => {
+      const on = td.ankle === v;
+      return {
+        label: v.charAt(0).toUpperCase() + v.slice(1),
+        onClick: () => this.setDay({ ankle: on ? null : v }),
+        style: 'flex:1; height:50px; border:1px solid ' + (on ? '#B6A98D' : '#E2DBCF') + '; background:' + (on ? '#F3EEE1' : '#FAF7F2') + '; border-radius:11px; font-size:15px; color:' + (on ? '#5D5442' : '#6B6359') + '; font-weight:' + (on ? '600' : '400') + ';'
+      };
+    });
+    const trTags = (td.training && td.training.tags) || [];
+    const trainChips = this.TRAINING.map(t => {
+      const on = trTags.indexOf(t) >= 0;
+      return {
+        label: t,
+        onClick: () => {
+          const next = on ? trTags.filter(x => x !== t) : trTags.concat([t]);
+          this.setDay({ training: { tags: next, minutes: (td.training && td.training.minutes) || '' } });
+        },
+        style: 'height:42px; padding:0 14px; border:1px solid ' + (on ? '#CFDCD2' : '#E2DBCF') + '; background:' + (on ? '#F0F5F0' : '#FAF7F2') + '; color:' + (on ? this.C.greenDark : '#6B6359') + '; border-radius:21px; font-size:14px; font-weight:' + (on ? '600' : '400') + ';'
+      };
+    });
+
+    // ---- semana ----
+    const weekKeys = [];
+    for (let i = 6; i >= 0; i--) weekKeys.push(this.ymd(this.dayOffset(-i)));
+    const dl = ['D', 'L', 'M', 'M', 'J', 'V', 'S'];
+    let registered = 0, waterSum = 0, waterN = 0, calSum = 0, calN = 0;
+    const weekRows = weekKeys.map(k => {
+      const d = this.day(k);
+      const t = this.totals(d);
+      const est = this.MEALS.some(m => d.meals[m.key] && d.meals[m.key].status === 'out');
+      if (d.closed) registered++;
+      if (d.water) { waterSum += d.water; waterN++; }
+      if (d.cal) { calSum += Number(d.cal) || 0; calN++; }
+      const dd = new Date(k + 'T12:00:00');
+      const isSel = k === viewKey;
+      return {
+        label: dl[dd.getDay()] + ' ' + dd.getDate(),
+        onClick: () => this.setState({ viewDate: k, screen: 'hoy' }),
+        rowStyle: 'display:flex; align-items:center; gap:8px; width:100%; text-align:left; border:1px solid ' + (isSel ? '#DDD5C8' : 'transparent') + '; background:' + (isSel ? '#F6F2EA' : 'transparent') + '; border-radius:8px; padding:3px 4px; transition:transform 0.1s ease;',
+        labelStyle: 'flex:0 0 34px; font-size:11.5px; color:' + (d.closed ? '#6B6359' : '#A59C8E') + '; font-weight:' + (d.closed ? '600' : '400') + ';',
+        cells: this.GROUPS.map(g => {
+          const goal = goalOf(g);
+          const ratio = goal ? Math.min(1, (t[g.key] || 0) / goal) : 0;
+          let bg = '#ECE6DB';
+          if (ratio > 0) bg = est ? (ratio >= 1 ? this.C.blue : '#C3D2DD') : (ratio >= 1 ? this.C.green : ratio >= 0.6 ? '#8AA892' : '#C6D3C6');
+          return { style: 'flex:1; height:22px; border-radius:5px; background:' + bg + ';' };
+        })
+      };
+    });
+    const avgWater = waterN ? (Math.round((waterSum / waterN) / 50) * 50 / 1000).toFixed(2).replace('.', ',') + ' L' : '—';
+    const avgCal = calN ? String(Math.round(calSum / calN)) + ' kcal' : '—';
+
+    const insights = [];
+    let streak = 0, maxStreak = 0;
+    const proGoal = goalOf(this.GROUPS[3]);
+    weekKeys.forEach(k => {
+      const d = this.day(k);
+      const t = this.totals(d);
+      const anyMeal = this.MEALS.some(m => d.meals[m.key]);
+      if (anyMeal && (t.proteicos || 0) < proGoal) { streak++; maxStreak = Math.max(maxStreak, streak); } else streak = 0;
+    });
+    if (maxStreak >= 3) insights.push({ text: 'Las proteicas quedaron bajo ' + this.fmt(proGoal) + ' ' + maxStreak + ' días seguidos.', hint: 'Un yogurt proteico en la colación PM cierra la diferencia.' });
+    const skips = {};
+    this.MEALS.forEach(m => { skips[m.key] = 0; });
+    weekKeys.forEach(k => {
+      const d = this.day(k);
+      if (!this.MEALS.some(mm => d.meals[mm.key])) return;
+      this.MEALS.forEach(m => { if (!d.meals[m.key] || d.meals[m.key].status === 'pending') skips[m.key]++; });
+    });
+    const worst = this.MEALS.slice().sort((a, b) => skips[b.key] - skips[a.key])[0];
+    if (skips[worst.key] > 0) insights.push({ text: 'La ' + worst.label.toLowerCase() + ' es la que más se salta: ' + skips[worst.key] + ' de 7 días.', hint: 'Dejarla armada la noche anterior suele bastar.' });
+    let ankleAfter = 0;
+    weekKeys.forEach((k, i) => {
+      if (i === 0) return;
+      const prev = this.day(weekKeys[i - 1]);
+      const tags = (prev.training && prev.training.tags) || [];
+      const trained = tags.filter(t => t !== 'Descanso' && t !== 'Kinesiología').length > 0;
+      if (trained && this.day(k).ankle === 'peor') ankleAfter++;
+    });
+    if (ankleAfter) insights.push({ text: 'El tobillo estuvo peor ' + ankleAfter + (ankleAfter === 1 ? ' día' : ' días') + ' justo después de entrenar.', hint: 'Vale la pena comentarlo en kinesiología.' });
+    const estDays = weekKeys.filter(k => this.MEALS.some(m => this.day(k).meals[m.key] && this.day(k).meals[m.key].status === 'out')).length;
+    if (estDays) insights.push({ text: estDays === 1 ? 'Un día tuvo una comida fuera de casa.' : estDays + ' días tuvieron comidas fuera de casa.', hint: 'Quedan registrados igual, marcados como estimados.' });
+    if (waterN && waterSum / waterN < waterGoal * 0.875) insights.push({ text: 'El agua promedió bajo la meta diaria.', hint: 'Los días de bicicleta conviene dejar la botella a la vista.' });
+
+    // ---- progreso ----
+    const weekly = (data.weekly || []).slice().sort((a, b) => (a.date < b.date ? -1 : 1));
+    const wc = this.chart(weekly, 'weight', targets.weight);
+    const cc = this.chart(weekly, 'waist', targets.waist);
+    const listW = weekly.filter(x => typeof x.weight === 'number');
+    const listC = weekly.filter(x => typeof x.waist === 'number');
+    const lw = listW[listW.length - 1] || {}, pw = listW[listW.length - 2] || {};
+    const lc = listC[listC.length - 1] || {}, pc = listC[listC.length - 2] || {};
+    const deltaTxt = (a, b, unit) => {
+      if (a === undefined || b === undefined) return 'Primer registro';
+      const d = a - b;
+      return (d > 0 ? '+' : d < 0 ? '−' : '±') + this.fmt(Math.abs(d)) + unit + ' vs. registro anterior';
+    };
+
+    const inbodyAsc = (data.inbody || []).slice().sort((a, b) => (a.date < b.date ? -1 : 1));
+    const fatSet = { color: this.C.terra, points: inbodyAsc.filter(b => typeof b.fatMass === 'number').map(b => ({ date: b.date, v: b.fatMass })) };
+    const smmSet = { color: this.C.green, points: inbodyAsc.filter(b => typeof b.smm === 'number').map(b => ({ date: b.date, v: b.smm })) };
+    const ic = this.multiChart([fatSet, smmSet], null);
+    const inbodyPoints = [];
+    ic.sets.forEach(s => s.dots.forEach(d => inbodyPoints.push(d)));
+    const valueLabels = [];
+    ic.sets.forEach(s => {
+      if (!s.dots.length) return;
+      const first = s.dots[0], last = s.dots[s.dots.length - 1];
+      valueLabels.push({ x: Number(last.cx), y: Number(last.cy) - 9, t: this.fmt(last.v), color: s.color, anchor: s.dots.length > 1 ? 'end' : 'middle' });
+      if (s.dots.length > 1) valueLabels.push({ x: Number(first.cx), y: Number(first.cy) - 9, t: this.fmt(first.v), color: s.color, anchor: 'start' });
+    });
+    const inbodyChartOk = Math.max(fatSet.points.length, smmSet.points.length) >= 2;
+
+    const fatPcts = inbodyAsc.filter(b => typeof b.fatPct === 'number');
+    const fatNowV = fatPcts.length ? fatPcts[fatPcts.length - 1].fatPct : null;
+    const fatStartV = fatPcts.length ? fatPcts[0].fatPct : null;
+    const fatGoalV = targets.fatPct != null ? targets.fatPct : null;
+    let fatPct = 0;
+    if (fatNowV != null && fatGoalV != null && fatStartV != null && fatStartV > fatGoalV) fatPct = Math.max(0, Math.min(100, ((fatStartV - fatNowV) / (fatStartV - fatGoalV)) * 100));
+    const gap = fatNowV != null && fatGoalV != null ? Math.max(0, Math.round((fatNowV - fatGoalV) * 10) / 10) : null;
+
+    const inbodyDesc = inbodyAsc.slice().reverse();
+    const inbodyCards = inbodyDesc.map((b, i) => {
+      const p = inbodyDesc[i + 1];
+      const bd = new Date(b.date + 'T12:00:00');
+      return {
+        date: bd.getDate() + ' ' + this.MONTH_NAMES[bd.getMonth()],
+        vs: p ? 'vs. ' + new Date(p.date + 'T12:00:00').getDate() + '/' + (new Date(p.date + 'T12:00:00').getMonth() + 1) : 'primera medición',
+        rows: this.INBODY_FIELDS.map((f, fi) => {
+          const v = b[f.key], pv = p ? p[f.key] : undefined;
+          let delta = '', good = null;
+          if (typeof pv === 'number' && typeof v === 'number') {
+            const d = Math.round((v - pv) * 10) / 10;
+            delta = (d > 0 ? '+' : d < 0 ? '−' : '±') + this.fmt(Math.abs(d));
+            if (d !== 0) good = (f.better === 'down') === (d < 0);
+          }
+          const keyMetric = f.key === 'smm' || f.key === 'fatPct';
+          return {
+            label: f.label, value: this.fmt(v) + f.unit, delta,
+            rowStyle: 'display:flex; align-items:baseline; justify-content:space-between; gap:10px; padding:9px 0;' + (fi ? ' border-top:1px solid #F1ECE2;' : '') + (keyMetric ? ' background:#F8F5EE; margin:0 -8px; padding-left:8px; padding-right:8px; border-radius:8px;' : ''),
+            deltaStyle: 'font-size:12.5px; min-width:52px; text-align:right; font-weight:' + (good === null ? '400' : '600') + '; color:' + (good === null ? '#9A9184' : good ? this.C.green : this.C.amber) + ';'
+          };
+        })
+      };
+    });
+
+    // ---- recuperación ----
+    const rec = data.recovery || this.defaultRecovery();
+    const MONTH_NAMES_SHORT = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+    const formatShortDate = k => { const d = new Date(k + 'T12:00:00'); return d.getDate() + ' ' + MONTH_NAMES_SHORT[d.getMonth()]; };
+    const formatLongDate = k => { const d = new Date(k + 'T12:00:00'); return d.getDate() + ' de ' + this.MONTH_NAMES[d.getMonth()] + ' de ' + d.getFullYear(); };
+    const toDayNumber = k => Math.round(new Date(k + 'T12:00:00').getTime() / 86400000);
+    const todayNumber = toDayNumber(this.today());
+    const surgeryDay = toDayNumber(rec.surgery), targetDay = toDayNumber(rec.target);
+    const span = Math.max(1, targetDay - surgeryDay);
+    const since = todayNumber - surgeryDay;
+    const left = Math.max(0, targetDay - todayNumber);
+    const weekNow = Math.max(1, Math.floor(since / 7) + 1);
+    const weekTotal = Math.max(1, Math.ceil(span / 7));
+    const progress = Math.max(0, Math.min(100, (since / span) * 100));
+    const milestoneSortKey = m => m.real || m.date || '9999-12-31';
+    const milestones = (rec.milestones || []).slice().sort((a, b) => (milestoneSortKey(a) < milestoneSortKey(b) ? -1 : 1));
+    const milestoneMarks = milestones.filter(m => m.date).map(m => {
+      const p = Math.max(0, Math.min(100, ((toDayNumber(m.date) - surgeryDay) / span) * 100));
+      return { style: 'position:absolute; top:-3px; left:' + p.toFixed(1) + '%; width:2px; height:16px; border-radius:1px; background:' + (m.real ? '#3D5F49' : '#C9C1B4') + ';' };
+    });
+
+    const kine = (rec.entries || []).filter(e => e.type === 'kine').sort((a, b) => (a.date < b.date ? -1 : 1));
+    const sessionNumberById = {};
+    kine.forEach((e, i) => { sessionNumberById[e.id] = typeof e.session === 'number' ? e.session : i + 1; });
+    const authorizedFirstSession = {};
+    kine.forEach(e => {
+      const tags = (e.tags || []).map(t => (t === 'Otro' ? (e.other || 'Otro') : t));
+      tags.forEach(t => { if (!authorizedFirstSession[t]) authorizedFirstSession[t] = sessionNumberById[e.id]; });
+    });
+    const authTags = Object.keys(authorizedFirstSession).map(t => ({ label: t, session: 'sesión ' + authorizedFirstSession[t] }));
+    const weekStartDay = todayNumber - 6;
+    const kineSessionsToDate = kine.filter(e => toDayNumber(e.date) <= todayNumber);
+    const kineSessionsThisWeek = kineSessionsToDate.filter(e => toDayNumber(e.date) >= weekStartDay).length;
+    const lastKineSession = kineSessionsToDate[kineSessionsToDate.length - 1];
+
+    const ankleColors = { mejor: this.C.green, igual: '#C6CFC4', peor: this.C.amber };
+    const ankleStrip = [];
+    let worseAfterTraining = 0, worseTotal = 0, betterTotal = 0;
+    for (let i = 29; i >= 0; i--) {
+      const k = this.ymd(this.dayOffset(-i));
+      const d = this.day(k);
+      const st = d.ankle;
+      if (st === 'peor') {
+        worseTotal++;
+        const prev = this.day(this.shift(k, -1));
+        const tags = (prev.training && prev.training.tags) || [];
+        if (tags.filter(t => t !== 'Descanso' && t !== 'Kinesiología').length) worseAfterTraining++;
+      }
+      if (st === 'mejor') betterTotal++;
+      ankleStrip.push({ style: 'flex:1; height:30px; border-radius:4px; background:' + (st ? ankleColors[st] : '#ECE6DB') + ';' });
+    }
+    let ankleNote = 'Todavía no hay suficientes registros de tobillo este mes.';
+    if (worseAfterTraining >= 2) ankleNote = 'El tobillo estuvo peor los días siguientes a entrenar en ' + worseAfterTraining + ' ocasiones.';
+    else if (worseTotal === 0 && betterTotal > 0) ankleNote = 'En los últimos 30 días el tobillo nunca se registró peor.';
+    else if (betterTotal >= worseTotal && betterTotal > 0) ankleNote = 'Más días mejor (' + betterTotal + ') que peor (' + worseTotal + ') en los últimos 30 días.';
+    else if (worseTotal > 0) ankleNote = worseTotal + ' días peor en el último mes, sin relación clara con el entrenamiento.';
+
+    const typeLabels = { doc: 'Control médico', kine: 'Kinesiología', nota: 'Nota' };
+    const timelineItems = milestones.map(m => {
+      const done = !!m.real;
+      const hist = (m.history || []);
+      const lastH = hist[hist.length - 1];
+      const notes = [];
+      let movedColor = '#8A8175';
+      if (done && m.date) {
+        const diff = toDayNumber(m.real) - toDayNumber(m.date);
+        if (diff === 0) notes.push('Cumplido en la fecha planificada.');
+        else if (diff < 0) { notes.push('Cumplido ' + (-diff) + ' días antes de lo previsto (' + formatShortDate(m.date) + ').'); movedColor = this.C.green; }
+        else notes.push('Cumplido ' + diff + ' días después de lo previsto (' + formatShortDate(m.date) + ').');
+      }
+      if (lastH) {
+        const earlier = lastH.from > lastH.to;
+        if (!done) movedColor = earlier ? this.C.green : this.C.amber;
+        notes.push((earlier ? 'Adelantado desde ' : 'Movido desde ') + formatShortDate(lastH.from) + (lastH.reason ? ' · ' + lastH.reason : ''));
+      }
+      const movedText = notes.join(' ');
+      return {
+        group: 'hito',
+        isKine: false,
+        sort: milestoneSortKey(m), kind: done ? 'Hito cumplido' : 'Hito planificado',
+        kindStyle: 'font-size:11.5px; letter-spacing:0.05em; text-transform:uppercase; margin-top:5px; color:' + (done ? this.C.greenDark : '#A59C8E') + ';',
+        title: m.name, date: m.real ? formatShortDate(m.real) : m.date ? formatShortDate(m.date) : 'sin fecha',
+        titleStyle: 'font-family:\'IBM Plex Serif\', serif; font-size:17.5px; font-weight:500; color:' + (done ? this.C.ink : '#6B6359') + ';',
+        cardStyle: 'flex:1; min-width:0; text-align:left; border:' + (done ? '1px solid #CFDCD2' : '1px dashed #DDD5C8') + '; border-radius:14px; background:' + (done ? '#F5F9F5' : '#fff') + '; padding:14px 15px; margin-bottom:10px; transition:transform 0.1s ease;',
+        dotStyle: 'width:12px; height:12px; border-radius:7px; border:2px solid ' + (done ? this.C.green : '#DDD5C8') + '; background:' + (done ? this.C.green : '#FAF7F2') + '; flex:0 0 auto;',
+        lines: [], hasMoved: !!movedText, movedText,
+        movedStyle: 'font-size:12.5px; line-height:1.45; margin-top:8px; padding-top:8px; border-top:1px solid #F1ECE2; color:' + movedColor + ';',
+        onClick: () => this.setState({ overlay: { type: 'milestone', id: m.id }, msForm: { id: m.id, name: m.name, date: m.date, orig: m.date, reason: '', done: !!m.real, real: m.real || this.today(), fixed: !!m.fixed } })
+      };
+    });
+    (rec.entries || []).forEach(e => {
+      const lines = [];
+      if (e.type === 'kine') {
+        const tags = (e.tags || []).map(t => (t === 'Otro' ? (e.other || 'Otro') : t));
+        const newAuth = tags.join(', ');
+        const hasNew = !!newAuth;
+        timelineItems.push({
+          group: 'kine', isKine: true, sort: e.date,
+          kind: '', kindStyle: 'display:none;',
+          title: 'Sesión ' + sessionNumberById[e.id] + (hasNew ? ' · ' + newAuth : ' · sin cambios'),
+          date: formatShortDate(e.date),
+          titleStyle: 'font-size:14.5px; line-height:1.35; text-wrap:pretty; color:' + (hasNew ? this.C.greenDark : '#A59C8E') + '; font-weight:' + (hasNew ? '500' : '400') + ';',
+          cardStyle: 'flex:1; min-width:0; text-align:left; border:1px solid ' + (hasNew ? '#CFDCD2' : 'transparent') + '; border-radius:10px; background:' + (hasNew ? '#F5F9F5' : 'transparent') + '; padding:8px 11px; margin-bottom:6px; transition:transform 0.1s ease;',
+          dotStyle: 'width:7px; height:7px; border-radius:4px; background:' + (hasNew ? this.C.green : '#DDD5C8') + '; flex:0 0 auto;',
+          lines: [], hasMoved: false, movedText: '', movedStyle: '',
+          onClick: () => this.openEntryForm(e.id)
+        });
+        return;
+      }
+      if (e.type === 'doc') {
+        if (e.orders) lines.push('Indicaciones: ' + e.orders);
+        if (e.next) lines.push('Próximo control: ' + formatLongDate(e.next));
+      }
+      if (e.notes) lines.push(e.notes);
+      const color = e.type === 'doc' ? this.C.blue : e.type === 'kine' ? this.C.sand : '#C9C1B4';
+      timelineItems.push({
+        group: e.type === 'doc' ? 'doc' : 'nota', isKine: false,
+        sort: e.date, kind: typeLabels[e.type] || 'Nota',
+        kindStyle: 'font-size:11.5px; letter-spacing:0.05em; text-transform:uppercase; margin-top:5px; color:#8A8175;',
+        title: typeLabels[e.type] || 'Nota', date: formatShortDate(e.date),
+        titleStyle: 'font-family:\'IBM Plex Serif\', serif; font-size:17.5px; font-weight:500; color:#2E2A24;',
+        cardStyle: 'flex:1; min-width:0; text-align:left; border:1px solid #EAE4D9; border-left:3px solid ' + color + '; border-radius:14px; background:#fff; padding:14px 15px; margin-bottom:10px; transition:transform 0.1s ease;',
+        dotStyle: 'width:9px; height:9px; border-radius:5px; background:' + color + '; flex:0 0 auto;',
+        lines, hasMoved: false, movedText: '', movedStyle: '',
+        onClick: () => this.openEntryForm(e.id)
+      });
+    });
+    timelineItems.sort((a, b) => (a.sort < b.sort ? -1 : a.sort > b.sort ? 1 : 0));
+    const timelineFilter = S.timelineFilter || 'todo';
+    const shown = timelineItems.filter(t => timelineFilter === 'todo' || (timelineFilter === 'doc' ? t.group === 'doc' || t.group === 'hito' : t.group === 'kine'));
+    const timeline = shown.map((t, i) => Object.assign({}, t, {
+      lineTopStyle: 'width:2px; flex:0 0 10px; background:' + (i === 0 ? 'transparent' : '#E6DFD2') + ';',
+      lineBottomStyle: 'width:2px; flex:1; background:' + (i === shown.length - 1 ? 'transparent' : '#E6DFD2') + '; min-height:' + (t.isKine ? '6px' : '14px') + ';'
+    }));
+    const timelineFilters = [{ k: 'todo', l: 'Todo' }, { k: 'doc', l: 'Controles' }, { k: 'kine', l: 'Kinesiología' }].map(f => ({
+      label: f.l,
+      onClick: () => this.setState({ timelineFilter: f.k }),
+      style: 'flex:1; height:40px; border:1px solid ' + (timelineFilter === f.k ? this.C.green : '#E2DBCF') + '; background:' + (timelineFilter === f.k ? this.C.green : '#fff') + '; color:' + (timelineFilter === f.k ? '#fff' : '#6B6359') + '; border-radius:10px; font-size:12.5px; padding:0 4px;'
+    }));
+
+    const nextControlDate = rec.nextControl;
+    const nextControlText = nextControlDate ? 'Próximo control: ' + formatLongDate(nextControlDate) : 'Sin próximo control agendado';
+
+    const menuGroups = this.MEALS.map(m => ({
+      label: m.label,
+      items: (data.menus || []).filter(x => x.meal === m.key).map(x => ({
+        name: x.name, ingredients: x.ingredients || [], note: x.note || '', hasNote: !!x.note,
+        portionText: this.portionText(x.portions) || 'sin porciones asignadas',
+        onEdit: () => this.openMenuForm(x.id)
+      }))
+    })).filter(g => g.items.length);
+
+    const draftVal = (path, val) => (S.cfgDraft[path] !== undefined ? S.cfgDraft[path] : (val == null ? '' : String(val).replace('.', ',')));
+    const cfgNumField = (path, label, val) => ({
+      label, value: draftVal(path, val),
+      onChange: e => {
+        const raw = e.target.value;
+        this.setState({ cfgDraft: Object.assign({}, S.cfgDraft, { [path]: raw }) });
+        const n = this.num(raw);
+        if (n !== null) this.setConfig(path, n);
+      }
+    });
+
+    const openWeekly = (rec) => this.setState({
+      overlay: { type: 'weekly', id: rec ? rec.id : null },
+      form: { weight: rec && rec.weight != null ? String(rec.weight).replace('.', ',') : '', waist: rec && rec.waist != null ? String(rec.waist).replace('.', ',') : '' }
+    });
+
+    const out = Object.assign(base, {
+      viewDateLong: this.longDate(viewKey),
+      notToday: !isToday,
+      headerStyle: 'padding:calc(env(safe-area-inset-top) + 22px) 20px 14px 20px; background:' + (isToday ? '#FAF7F2' : '#F4EFE5') + '; border-bottom:1px solid ' + (isToday ? '#EAE4D9' : '#E3DACA') + ';',
+      headerSub: registeredMeals ? registeredMeals + ' de 5 comidas' : 'Sin registros',
+      headerRatio: '· ' + this.fmt(tot.proteicos || 0) + '/' + this.fmt(proGoal) + ' proteicos',
+      prevDay: () => this.setState({ viewDate: this.shift(viewKey, -1) }),
+      nextDay: () => { if (!isToday) this.setState({ viewDate: this.shift(viewKey, 1) }); },
+      nextDayStyle: 'flex:0 0 40px; height:40px; border:1px solid ' + (isToday ? '#EDE7DC' : '#E2DBCF') + '; background:' + (isToday ? '#F6F2EA' : '#fff') + '; border-radius:11px; font-size:20px; line-height:1; color:' + (isToday ? '#CFC7B8' : '#6B6359') + '; padding:0;',
+      backToToday: () => this.setState({ viewDate: this.today() }),
+      dayStateLabel: dayClosed ? 'Día registrado' : isToday ? 'Día en curso' : 'Día sin cerrar',
+      dayStateStyle: 'font-size:12px; letter-spacing:0.05em; text-transform:uppercase; padding:4px 10px; border-radius:20px; border:1px solid ' + (dayClosed ? '#CFDCD2' : '#E2DBCF') + '; background:' + (dayClosed ? '#F0F5F0' : 'transparent') + '; color:' + (dayClosed ? this.C.greenDark : '#9A9184') + ';',
+      closeDayLabel: dayClosed ? 'Reabrir día' : 'Cerrar día',
+      closeDayStyle: 'width:100%; height:54px; border:1px solid ' + (dayClosed ? '#E2DBCF' : this.C.green) + '; background:' + (dayClosed ? '#FAF7F2' : this.C.green) + '; color:' + (dayClosed ? '#6B6359' : '#fff') + '; border-radius:14px; font-size:16px; font-weight:500; box-shadow:0 6px 20px rgba(46,42,36,0.14);',
+      onCloseDay: () => { if (dayClosed) this.setDay({ closed: false }); else this.setState({ overlay: { type: 'close' } }); },
+      counters, mealCards,
+      waterText: (water / 1000).toFixed(2).replace('.', ',') + ' / ' + (waterGoal / 1000).toFixed(1).replace('.', ',') + ' L',
+      waterCells,
+      waterPlus: () => this.setDay({ water: Math.min(waterGoal, water + 250) }),
+      waterMinus: () => this.setDay({ water: Math.max(0, water - 250) }),
+      calValue: td.cal === undefined || td.cal === null ? '' : String(td.cal),
+      setCal: e => this.setDay({ cal: e.target.value }),
+      ankleOpts, trainChips,
+      trainMinutes: (td.training && td.training.minutes) || '',
+      setTrainMinutes: e => this.setDay({ training: { tags: trTags, minutes: e.target.value } }),
+      weekRegistered: String(registered), groupCols: this.GROUPS, weekRows, avgWater, avgCal,
+      weekLead: registered >= 6 ? 'Semana bien cubierta. Lo que importa es que quede anotado.' : 'Cada día cerrado cuenta, aunque la comida haya sido fuera de casa.',
+      insights,
+      hasFat: fatNowV != null, noFat: fatNowV == null,
+      fatNow: fatNowV != null ? this.fmt(fatNowV) + ' %' : '—',
+      fatMeta: fatGoalV != null ? 'meta ' + this.fmt(fatGoalV) + ' % · ' + (gap ? 'faltan ' + this.fmt(gap) + ' puntos' : 'meta alcanzada') : 'sin meta definida',
+      fatBarStyle: 'height:100%; width:' + fatPct.toFixed(0) + '%; background:' + this.C.green + ';',
+      fatStartLabel: fatStartV != null ? 'inicio ' + this.fmt(fatStartV) + ' %' : '',
+      fatGoalLabel: fatGoalV != null ? 'meta ' + this.fmt(fatGoalV) + ' %' : '',
+      hasInbodyChart: inbodyChartOk, noInbodyChart: !inbodyChartOk,
+      inbodyLegend: [
+        { label: 'Masa grasa (kg)', swatch: 'width:14px; height:3px; border-radius:2px; background:' + this.C.terra + ';' },
+        { label: 'Masa musculoesquelética (kg)', swatch: 'width:14px; height:3px; border-radius:2px; background:' + this.C.green + ';' }
+      ],
+      inbodySets: ic.sets, inbodyPoints, inbodyLabels: ic.labels, inbodyValueLabels: valueLabels,
+      hasWeight: wc.count >= 2, noWeight: wc.count < 2,
+      noWeightText: wc.count === 0 ? 'Registra tu peso para ver la tendencia.' : 'Con un segundo registro aparece la tendencia de peso.',
+      hasWaist: cc.count >= 2, noWaist: cc.count < 2,
+      noWaistText: cc.count === 0 ? 'Registra tu cintura para ver la tendencia.' : 'Con un segundo registro aparece la tendencia de cintura.',
+      weightLast: lw.weight !== undefined ? this.fmt(lw.weight) + ' kg' : '—',
+      weightDelta: deltaTxt(lw.weight, pw.weight, ' kg'),
+      waistLast: lc.waist !== undefined ? this.fmt(lc.waist) + ' cm' : '—',
+      waistDelta: deltaTxt(lc.waist, pc.waist, ' cm'),
+      weightPath: wc.path, weightDots: wc.dots, weightLabels: wc.labels,
+      weightHasTarget: wc.hasTarget, weightTargetY: wc.targetY, weightTargetTextY: wc.targetY - 5,
+      weightTargetLabel: 'meta ' + this.fmt(targets.weight) + ' kg',
+      waistPath: cc.path, waistDots: cc.dots, waistLabels: cc.labels,
+      waistHasTarget: cc.hasTarget, waistTargetY: cc.targetY, waistTargetTextY: cc.targetY - 5,
+      waistTargetLabel: 'meta ' + this.fmt(targets.waist) + ' cm',
+      openWeekly: () => openWeekly(null),
+      openWeeklyList: () => this.setState({ overlay: { type: 'list' } }),
+      weeklyListLabel: 'Ver y corregir registros (' + weekly.length + ')',
+      openInbodyForm: () => this.setState({ inbodyOpen: true, inbodyForm: {} }),
+      inbodyFormOpen: S.inbodyOpen,
+      inbodyFormLabel: S.inbodyOpen ? 'Cancelar' : 'Agregar medición',
+      toggleInbodyForm: () => this.setState({ inbodyOpen: !S.inbodyOpen, inbodyForm: S.inbodyOpen ? null : {} }),
+      inbodyFields: this.INBODY_FIELDS.map(f => ({
+        label: f.label,
+        value: (S.inbodyForm && S.inbodyForm[f.key]) || '',
+        onChange: e => this.setState({ inbodyForm: Object.assign({}, S.inbodyForm, { [f.key]: e.target.value }) })
+      })),
+      addInbody: () => {
+        const f = S.inbodyForm || {};
+        const rec = { date: this.today() };
+        let any = false;
+        this.INBODY_FIELDS.forEach(k => { const v = this.num(f[k.key] || ''); if (v !== null) { rec[k.key] = v; any = true; } });
+        if (!any) return;
+        const d = JSON.parse(JSON.stringify(data));
+        d.inbody = (d.inbody || []).concat([rec]);
+        this.persist(d);
+        this.setState({ inbodyForm: null, inbodyOpen: false });
+      },
+      inbodyCards, menuGroups,
+      newMenu: () => this.openMenuForm(null),
+      cfgPortionFields: this.GROUPS.map(g => cfgNumField('goals.' + g.key, g.label, goalOf(g))),
+      cfgTargetFields: this.TARGET_FIELDS.map(f => cfgNumField('targets.' + f.key, f.label, targets[f.key])),
+      cfgTimeFields: this.MEALS.map(m => ({
+        label: m.label, value: timeOf(m),
+        onChange: e => this.setConfig('times.' + m.key, e.target.value)
+      }))
+    });
+
+    Object.assign(out, {
+      recSubtitle: 'Operación el ' + formatLongDate(rec.surgery),
+      recWeekLabel: 'Semana ' + weekNow + ' de ' + weekTotal,
+      recDaysLabel: since + ' días · faltan ' + left,
+      recBarStyle: 'height:100%; width:' + progress.toFixed(1) + '%; border-radius:5px; background:' + this.C.green + ';',
+      milestoneMarks,
+      recStartLabel: formatShortDate(rec.surgery),
+      recEndLabel: 'meta ' + formatShortDate(rec.target),
+      recNextText: nextControlText,
+      recNextShort: nextControlText,
+      recNextStyle: 'font-size:13.5px; margin-top:14px; padding-top:13px; border-top:1px solid #F1ECE2; color:' + (nextControlDate ? this.C.greenDark : '#9A9184') + ';',
+      kineCount: String(kineSessionsToDate.length),
+      kineSubtitle: kineSessionsToDate.length ? (kineSessionsThisWeek === 1 ? '1 sesión esta semana' : kineSessionsThisWeek + ' sesiones esta semana') + ' · última el ' + formatShortDate(lastKineSession.date) : 'sesiones registradas',
+      hasAuth: authTags.length > 0, noAuth: authTags.length === 0, authTags,
+      timelineFilters,
+      ankleStrip, ankleNote,
+      ankleLegend: [
+        { label: 'Mejor', swatch: 'width:10px; height:10px; border-radius:3px; background:' + this.C.green + ';' },
+        { label: 'Igual', swatch: 'width:10px; height:10px; border-radius:3px; background:#C6CFC4;' },
+        { label: 'Peor', swatch: 'width:10px; height:10px; border-radius:3px; background:' + this.C.amber + ';' },
+        { label: 'Sin registro', swatch: 'width:10px; height:10px; border-radius:3px; background:#ECE6DB;' }
+      ],
+      timeline,
+      openEntry: () => this.openEntryForm(null, 'kine'),
+      openKineEntry: () => this.openEntryForm(null, 'kine'),
+      openMilestone: () => this.setState({ overlay: { type: 'milestone', id: null }, msForm: { id: null, name: '', date: this.today(), orig: null, reason: '', done: false, real: this.today(), fixed: false } }),
+      questionDraft: S.questionDraft || '',
+      setQuestionDraft: e => this.setState({ questionDraft: e.target.value }),
+      addQuestion: () => {
+        const t = (S.questionDraft || '').trim();
+        if (!t) return;
+        const d = JSON.parse(JSON.stringify(data));
+        d.recovery.questions = (d.recovery.questions || []).concat([{ id: 'q' + Math.random().toString(36).slice(2, 8), text: t, asked: false }]);
+        this.persist(d);
+        this.setState({ questionDraft: '' });
+      },
+      questions: (rec.questions || []).map(q => ({
+        text: q.text,
+        check: q.asked ? '✓' : '',
+        checkStyle: 'flex:0 0 30px; height:30px; border-radius:9px; border:1px solid ' + (q.asked ? '#CFDCD2' : '#E2DBCF') + '; background:' + (q.asked ? '#F0F5F0' : '#FAF7F2') + '; color:' + this.C.greenDark + '; font-size:15px; padding:0;',
+        textStyle: 'flex:1; min-width:0; font-size:15px; line-height:1.4; text-wrap:pretty; color:' + (q.asked ? '#A59C8E' : '#3C372F') + '; text-decoration:' + (q.asked ? 'line-through' : 'none') + ';',
+        onToggle: () => {
+          const d = JSON.parse(JSON.stringify(data));
+          d.recovery.questions = d.recovery.questions.map(x => (x.id === q.id ? Object.assign({}, x, { asked: !x.asked }) : x));
+          this.persist(d);
+        },
+        onDelete: () => {
+          const d = JSON.parse(JSON.stringify(data));
+          d.recovery.questions = d.recovery.questions.filter(x => x.id !== q.id);
+          this.persist(d);
+        }
+      })),
+      cfgRecFields: [
+        { label: 'Fecha de operación', value: rec.surgery, onChange: e => this.setRecovery('surgery', e.target.value) },
+        { label: 'Fecha objetivo de retorno', value: rec.target, onChange: e => this.setRecovery('target', e.target.value) }
+      ]
+    });
+
+    // ---- overlays compartidas ----
+    if (S.overlay) {
+      const ov = S.overlay;
+      Object.assign(out, {
+        overlayOpen: true,
+        overlayIsClose: ov.type === 'close', overlayIsWeekly: ov.type === 'weekly', overlayIsList: ov.type === 'list',
+        overlayIsEntry: ov.type === 'entry', overlayIsMilestone: ov.type === 'milestone',
+        closeOverlay: () => this.setState({ overlay: null })
+      });
+      if (ov.type === 'close') {
+        const mealRows = this.MEALS.map(m => {
+          const e = td.meals[m.key];
+          const st = e ? e.status : 'pending';
+          const done = st === 'done', outm = st === 'out';
+          return {
+            label: m.label,
+            value: done ? (e.menuName || 'Completa') : outm ? (e.text || 'Estimada') : 'Sin registrar',
+            dotStyle: 'flex:0 0 7px; width:7px; height:7px; border-radius:4px; background:' + (done ? this.C.green : outm ? this.C.blue : '#DDD5C8') + ';',
+            valueStyle: 'flex:0 1 auto; max-width:52%; text-align:right; font-size:13px; color:' + (done ? this.C.greenDark : outm ? '#5B7590' : '#9A9184') + '; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;'
+          };
+        });
+        const neutral = 'flex:0 0 auto; text-align:right; font-size:13px; color:#6B6359;';
+        const dot = 'flex:0 0 7px; width:7px; height:7px; border-radius:4px; background:#DDD5C8;';
+        mealRows.push({ label: 'Agua', value: (water / 1000).toFixed(2).replace('.', ',') + ' L', dotStyle: 'flex:0 0 7px; width:7px; height:7px; border-radius:4px; background:' + this.C.blue + ';', valueStyle: neutral });
+        mealRows.push({ label: 'Entrenamiento', value: trTags.length ? trTags.join(', ') + ((td.training && td.training.minutes) ? ' · ' + td.training.minutes + ' min' : '') : 'Sin registrar', dotStyle: dot, valueStyle: neutral });
+        mealRows.push({ label: 'Tobillo', value: td.ankle ? td.ankle.charAt(0).toUpperCase() + td.ankle.slice(1) : 'Sin registrar', dotStyle: dot, valueStyle: neutral });
+        Object.assign(out, {
+          overlayTitle: 'Cerrar el día',
+          overlaySub: this.longDate(viewKey),
+          daySummary: mealRows,
+          closeSheetNote: 'Así quedó el día. Lo que no alcanzaste a registrar queda como está: el día cuenta igual.',
+          confirmCloseDay: () => { this.setDay({ closed: true }); this.setState({ overlay: null }); }
+        });
+      }
+      if (ov.type === 'weekly') {
+        const w = this.num(S.form.weight), c = this.num(S.form.waist);
+        const any = w !== null || c !== null;
+        Object.assign(out, {
+          overlayTitle: ov.id ? 'Editar registro' : 'Peso y cintura',
+          overlaySub: ov.id ? 'Corrige o elimina el registro' : this.longDate(this.today()),
+          formWeight: S.form.weight, formWaist: S.form.waist,
+          setFormWeight: e => this.setState({ form: Object.assign({}, S.form, { weight: e.target.value }) }),
+          setFormWaist: e => this.setState({ form: Object.assign({}, S.form, { waist: e.target.value }) }),
+          saveWeeklyLabel: w !== null && c !== null ? 'Guardar peso y cintura' : w !== null ? 'Guardar solo el peso' : c !== null ? 'Guardar solo la cintura' : 'Guardar',
+          saveWeeklyStyle: 'width:100%; height:54px; border:1px solid ' + (any ? this.C.green : '#E2DBCF') + '; background:' + (any ? this.C.green : '#FAF7F2') + '; color:' + (any ? '#fff' : '#9A9184') + '; border-radius:12px; font-size:16px; font-weight:500;',
+          weeklyCanDelete: !!ov.id,
+          saveWeekly: () => {
+            if (!any) return;
+            const d = JSON.parse(JSON.stringify(data));
+            d.weekly = d.weekly || [];
+            if (ov.id) {
+              d.weekly = d.weekly.map(x => {
+                if (x.id !== ov.id) return x;
+                const rec = { id: x.id, date: x.date };
+                if (w !== null) rec.weight = w;
+                if (c !== null) rec.waist = c;
+                return rec;
+              });
+            } else {
+              const rec = { id: 'w' + Math.random().toString(36).slice(2, 8), date: this.today() };
+              if (w !== null) rec.weight = w;
+              if (c !== null) rec.waist = c;
+              d.weekly = d.weekly.concat([rec]);
+            }
+            this.persist(d);
+            this.setState({ overlay: null, form: { weight: '', waist: '' } });
+          },
+          deleteWeekly: () => {
+            const d = JSON.parse(JSON.stringify(data));
+            d.weekly = (d.weekly || []).filter(x => x.id !== ov.id);
+            this.persist(d);
+            this.setState({ overlay: null, form: { weight: '', waist: '' } });
+          }
+        });
+      }
+      if (ov.type === 'list') {
+        const desc = weekly.slice().reverse();
+        Object.assign(out, {
+          overlayTitle: 'Registros semanales',
+          overlaySub: 'Toca uno para corregirlo o eliminarlo',
+          weeklyList: desc.map(r => ({
+            date: this.longDate(r.date),
+            values: [r.weight != null ? this.fmt(r.weight) + ' kg' : null, r.waist != null ? this.fmt(r.waist) + ' cm' : null].filter(Boolean).join(' · '),
+            onEdit: () => openWeekly(r)
+          })),
+          weeklyListEmpty: desc.length === 0
+        });
+      }
+    }
+
+    if (S.overlay && S.overlay.type === 'entry' && S.entryForm) {
+      const f = S.entryForm;
+      const setF = patch => this.setState({ entryForm: Object.assign({}, f, patch) });
+      const pill = (on) => 'flex:1; height:44px; border:1px solid ' + (on ? this.C.green : '#E2DBCF') + '; background:' + (on ? '#F0F5F0' : '#fff') + '; color:' + (on ? this.C.greenDark : '#6B6359') + '; border-radius:11px; font-size:13.5px; font-weight:' + (on ? '600' : '400') + ';';
+      const fTags = f.tags || [];
+      Object.assign(out, {
+        overlayTitle: f.id ? 'Editar registro' : 'Agregar registro',
+        overlaySub: f.id ? 'Corrige o elimina el registro' : 'Recuperación del tobillo',
+        entryTypes: [
+          { key: 'doc', label: 'Control médico' }, { key: 'kine', label: 'Kinesiología' }, { key: 'nota', label: 'Nota' }
+        ].map(t => ({ label: t.label, onClick: () => setF({ type: t.key }), style: pill(f.type === t.key) })),
+        entryIsKine: f.type === 'kine', entryIsDoc: f.type === 'doc',
+        entryDate: f.date, setEntryDate: e => setF({ date: e.target.value }),
+        entrySession: f.session, setEntrySession: e => setF({ session: e.target.value }),
+        entrySessionHint: String(kine.length + (f.id ? 0 : 1)),
+        entryAuthChips: this.AUTH_TAGS.map(t => {
+          const on = fTags.indexOf(t) >= 0;
+          return {
+            label: t,
+            onClick: () => setF({ tags: on ? fTags.filter(x => x !== t) : fTags.concat([t]) }),
+            style: 'height:42px; padding:0 14px; border:1px solid ' + (on ? '#CFDCD2' : '#E2DBCF') + '; background:' + (on ? '#F0F5F0' : '#fff') + '; color:' + (on ? this.C.greenDark : '#6B6359') + '; border-radius:21px; font-size:13.5px; font-weight:' + (on ? '600' : '400') + ';'
+          };
+        }),
+        entryOtherOn: fTags.indexOf('Otro') >= 0,
+        entryOther: f.other || '', setEntryOther: e => setF({ other: e.target.value }),
+        entryDoneOptions: milestones.filter(m => !m.real).map(m => ({
+          label: m.name,
+          onClick: () => setF({ doneMsId: f.doneMsId === m.id ? null : m.id }),
+          style: 'height:38px; padding:0 12px; border:1px solid ' + (f.doneMsId === m.id ? this.C.green : '#E2DBCF') + '; background:' + (f.doneMsId === m.id ? '#F0F5F0' : '#FAF7F2') + '; color:' + (f.doneMsId === m.id ? this.C.greenDark : '#6B6359') + '; border-radius:10px; font-size:12.5px;'
+        })),
+        entrySwell: ['menos', 'igual', 'más'].map(s => ({
+          label: s.charAt(0).toUpperCase() + s.slice(1),
+          onClick: () => setF({ swell: f.swell === s ? null : s }),
+          style: 'flex:1; height:48px; border:1px solid ' + (f.swell === s ? '#B6A98D' : '#E2DBCF') + '; background:' + (f.swell === s ? '#F3EEE1' : '#fff') + '; border-radius:11px; font-size:14.5px; color:' + (f.swell === s ? '#5D5442' : '#6B6359') + '; font-weight:' + (f.swell === s ? '600' : '400') + ';'
+        })),
+        entryOrders: f.orders, setEntryOrders: e => setF({ orders: e.target.value }),
+        entryNext: f.next, setEntryNext: e => setF({ next: e.target.value }),
+        entryMsOptions: milestones.filter(m => !m.real).map(m => ({
+          label: m.name, onClick: () => setF({ msId: f.msId === m.id ? null : m.id, msDate: m.date }),
+          style: 'height:38px; padding:0 12px; border:1px solid ' + (f.msId === m.id ? this.C.green : '#E2DBCF') + '; background:' + (f.msId === m.id ? '#F0F5F0' : '#FAF7F2') + '; color:' + (f.msId === m.id ? this.C.greenDark : '#6B6359') + '; border-radius:10px; font-size:12.5px;'
+        })),
+        entryMsPicked: !!f.msId,
+        entryMsDate: f.msDate || '', setEntryMsDate: e => setF({ msDate: e.target.value }),
+        entryMsReason: f.msReason || '', setEntryMsReason: e => setF({ msReason: e.target.value }),
+        entryNotesLabel: f.type === 'nota' ? 'Nota' : 'Notas',
+        entryNotes: f.notes, setEntryNotes: e => setF({ notes: e.target.value }),
+        entryCanDelete: !!f.id,
+        saveEntry: () => {
+          const d = JSON.parse(JSON.stringify(data));
+          const rr = d.recovery;
+          const recd = { id: f.id || 'e' + Math.random().toString(36).slice(2, 8), type: f.type, date: f.date, notes: (f.notes || '').trim() };
+          if (f.type === 'kine') {
+            recd.tags = (f.tags || []).slice();
+            recd.other = (f.other || '').trim();
+            const sv = this.num(f.session);
+            if (sv !== null) recd.session = Math.round(sv);
+            if (f.swell) recd.swell = f.swell;
+          }
+          if (f.type === 'doc') {
+            if ((f.orders || '').trim()) recd.orders = f.orders.trim();
+            if (f.next) { recd.next = f.next; rr.nextControl = f.next; }
+            if (f.doneMsId) {
+              rr.milestones = rr.milestones.map(m => (m.id === f.doneMsId ? Object.assign({}, m, { real: f.date }) : m));
+            }
+            if (f.msId && f.msDate) {
+              rr.milestones = rr.milestones.map(m => {
+                if (m.id !== f.msId || m.date === f.msDate) return m;
+                return Object.assign({}, m, { date: f.msDate, history: (m.history || []).concat([{ from: m.date, to: f.msDate, reason: (f.msReason || '').trim() }]) });
+              });
+            }
+          }
+          rr.entries = f.id ? rr.entries.map(x => (x.id === f.id ? recd : x)) : (rr.entries || []).concat([recd]);
+          this.persist(d);
+          this.setState({ overlay: null, entryForm: null });
+        },
+        deleteEntry: () => {
+          const d = JSON.parse(JSON.stringify(data));
+          d.recovery.entries = d.recovery.entries.filter(x => x.id !== f.id);
+          this.persist(d);
+          this.setState({ overlay: null, entryForm: null });
+        }
+      });
+    }
+
+    if (S.overlay && S.overlay.type === 'milestone' && S.msForm) {
+      const f = S.msForm;
+      const changed = !!f.orig && f.date !== f.orig;
+      const earlier = changed && f.date < f.orig;
+      const ms = milestones.find(m => m.id === f.id);
+      Object.assign(out, {
+        overlayTitle: f.id ? 'Hito' : 'Nuevo hito',
+        overlaySub: f.id ? 'Edita, reprograma o elimina' : 'Recuperación del tobillo',
+        msName: f.name, setMsName: e => this.setState({ msForm: Object.assign({}, f, { name: e.target.value }) }),
+        msDate: f.date, setMsDate: e => this.setState({ msForm: Object.assign({}, f, { date: e.target.value }) }),
+        msDateChanged: changed,
+        msReasonLabel: earlier ? 'Se adelanta. ¿Por qué?' : 'Se mueve. ¿Por qué?',
+        msReason: f.reason, setMsReason: e => this.setState({ msForm: Object.assign({}, f, { reason: e.target.value }) }),
+        msHasHistory: !!(ms && ms.history && ms.history.length),
+        msHistory: ms && ms.history ? ms.history.map(h => formatShortDate(h.from) + ' → ' + formatShortDate(h.to) + (h.reason ? ' · ' + h.reason : '')) : [],
+        msDone: !!f.done,
+        msDoneLabel: f.done ? 'Sí' : 'No',
+        msDoneStyle: 'flex:0 0 84px; height:42px; border:1px solid ' + (f.done ? '#CFDCD2' : '#E2DBCF') + '; background:' + (f.done ? '#F0F5F0' : '#FAF7F2') + '; color:' + (f.done ? this.C.greenDark : '#6B6359') + '; border-radius:11px; font-size:14.5px; font-weight:500;',
+        toggleMsDone: () => this.setState({ msForm: Object.assign({}, f, { done: !f.done, real: f.real || this.today() }) }),
+        msReal: f.real || '',
+        setMsReal: e => this.setState({ msForm: Object.assign({}, f, { real: e.target.value }) }),
+        msDiffText: (() => {
+          if (!f.done || !f.real || !f.date) return 'Sin fecha planificada con la que comparar.';
+          const diff = toDayNumber(f.real) - toDayNumber(f.date);
+          if (diff === 0) return 'Justo en la fecha planificada.';
+          if (diff < 0) return (-diff) + ' días antes de lo previsto.';
+          return diff + ' días después de lo previsto.';
+        })(),
+        msDiffStyle: (() => {
+          let col = '#8A8175';
+          if (f.done && f.real && f.date && toDayNumber(f.real) < toDayNumber(f.date)) col = this.C.green;
+          return 'font-size:13px; margin-top:8px; color:' + col + ';';
+        })(),
+        msCanDelete: !!f.id && !f.fixed,
+        saveMilestone: () => {
+          if (!f.name.trim()) return;
+          const d = JSON.parse(JSON.stringify(data));
+          const rr = d.recovery;
+          if (f.id) {
+            rr.milestones = rr.milestones.map(m => {
+              if (m.id !== f.id) return m;
+              const hist = (m.history || []).slice();
+              if (m.date !== f.date && m.date) hist.push({ from: m.date, to: f.date, reason: (f.reason || '').trim() });
+              return { id: m.id, name: f.name.trim(), date: f.date, real: f.done ? (f.real || this.today()) : null, fixed: !!m.fixed, history: hist };
+            });
+          } else {
+            rr.milestones = (rr.milestones || []).concat([{ id: 'h' + Math.random().toString(36).slice(2, 8), name: f.name.trim(), date: f.date, real: f.done ? (f.real || this.today()) : null, fixed: false, history: [] }]);
+          }
+          this.persist(d);
+          this.setState({ overlay: null, msForm: null });
+        },
+        deleteMilestone: () => {
+          const d = JSON.parse(JSON.stringify(data));
+          d.recovery.milestones = d.recovery.milestones.filter(m => m.id !== f.id);
+          this.persist(d);
+          this.setState({ overlay: null, msForm: null });
+        }
+      });
+    }
+
+    if (S.sheet) {
+      const meal = this.MEALS.find(m => m.key === S.sheet.meal);
+      const sh = S.sheet;
+      const rows = this.GROUPS.map(g => ({
+        label: g.label, goalText: this.fmt(goalOf(g)), valText: this.fmt(sh.portions[g.key] || 0),
+        eqText: g.eq, eqOpen: !!sh.eq[g.key],
+        eqLabel: sh.eq[g.key] ? 'Ocultar equivalencias' : 'Ver equivalencias',
+        onMinus: () => this.bump(g, -1), onPlus: () => this.bump(g, 1),
+        onToggle: () => this.setState({ sheet: Object.assign({}, sh, { eq: Object.assign({}, sh.eq, { [g.key]: !sh.eq[g.key] }) }) })
+      }));
+      const tab = m => 'flex:1; height:40px; border:1px solid ' + (sh.mode === m ? this.C.green : '#E2DBCF') + '; background:' + (sh.mode === m ? this.C.green : '#fff') + '; color:' + (sh.mode === m ? '#fff' : '#6B6359') + '; border-radius:10px; font-size:12.5px; padding:0 4px;';
+      const existing = td.meals[sh.meal];
+      Object.assign(out, {
+        sheetOpen: true,
+        sheetTitle: meal.label,
+        sheetSub: timeOf(meal) + ' · ' + (existing ? (existing.status === 'out' ? 'estimada' : 'completa') : 'pendiente'),
+        tabMenu: () => this.setState({ sheet: Object.assign({}, sh, { mode: 'menu' }) }),
+        tabPor: () => this.setState({ sheet: Object.assign({}, sh, { mode: 'por' }) }),
+        tabOut: () => this.setState({ sheet: Object.assign({}, sh, { mode: 'out' }) }),
+        tabMenuStyle: tab('menu'), tabPorStyle: tab('por'), tabOutStyle: tab('out'),
+        modeIsMenu: sh.mode === 'menu', modeIsPor: sh.mode === 'por', modeIsOut: sh.mode === 'out',
+        sheetMenus: (data.menus || []).filter(x => x.meal === sh.meal).map(x => ({
+          name: x.name, ingredients: x.ingredients || [], note: x.note || '', hasNote: !!x.note,
+          portionText: this.portionText(x.portions) || 'sin porciones asignadas',
+          onChoose: () => { this.setMeal(sh.meal, { status: 'done', menuName: x.name, portions: Object.assign({}, x.portions) }); this.setState({ sheet: null }); }
+        })),
+        sheetRows: rows,
+        savePortions: () => { this.setMeal(sh.meal, { status: 'done', menuName: null, portions: Object.assign({}, sh.portions) }); this.setState({ sheet: null }); },
+        canClear: !!existing,
+        clearMeal: () => { this.setMeal(sh.meal, null); this.setState({ sheet: null }); },
+        outText: sh.text,
+        setOutText: e => this.setState({ sheet: Object.assign({}, sh, { text: e.target.value }) }),
+        outPorOpen: !!sh.outPor,
+        outPorLabel: sh.outPor ? 'Ocultar porciones estimadas' : 'Marcar porciones estimadas (opcional)',
+        toggleOutPor: () => this.setState({ sheet: Object.assign({}, sh, { outPor: !sh.outPor }) }),
+        saveOut: () => { this.setMeal(sh.meal, { status: 'out', text: sh.text || 'Comí fuera', portions: Object.assign({}, sh.portions) }); this.setState({ sheet: null }); },
+        closeSheet: () => this.setState({ sheet: null })
+      });
+    }
+
+    if (S.menuForm) {
+      const f = S.menuForm;
+      Object.assign(out, {
+        menuFormOpen: true,
+        menuFormTitle: f.id ? 'Editar menú' : 'Nuevo menú',
+        menuFormName: f.name, menuFormNote: f.note, menuFormIng: f.ing,
+        setMenuName: e => this.setState({ menuForm: Object.assign({}, f, { name: e.target.value }) }),
+        setMenuNote: e => this.setState({ menuForm: Object.assign({}, f, { note: e.target.value }) }),
+        setMenuIng: e => this.setState({ menuForm: Object.assign({}, f, { ing: e.target.value }) }),
+        menuFormMeals: this.MEALS.map(m => ({
+          label: m.label,
+          onClick: () => this.setState({ menuForm: Object.assign({}, f, { meal: m.key }) }),
+          style: 'height:40px; padding:0 13px; border:1px solid ' + (f.meal === m.key ? this.C.green : '#E2DBCF') + '; background:' + (f.meal === m.key ? '#F0F5F0' : '#fff') + '; color:' + (f.meal === m.key ? this.C.greenDark : '#6B6359') + '; border-radius:10px; font-size:13.5px;'
+        })),
+        menuFormRows: this.GROUPS.map(g => ({
+          label: g.label, valText: this.fmt(f.portions[g.key] || 0),
+          onMinus: () => this.bumpMenu(g, -1), onPlus: () => this.bumpMenu(g, 1)
+        })),
+        menuFormCanDelete: !!f.id,
+        saveMenu: () => {
+          if (!f.name.trim()) return;
+          const d = JSON.parse(JSON.stringify(data));
+          const p = {};
+          Object.keys(f.portions).forEach(k => { if (f.portions[k]) p[k] = f.portions[k]; });
+          const rec = { id: f.id || 'm' + Math.random().toString(36).slice(2, 8), meal: f.meal, name: f.name.trim(), ingredients: f.ing.split('\n').map(s => s.trim()).filter(Boolean), note: f.note.trim(), portions: p };
+          d.menus = f.id ? d.menus.map(x => (x.id === f.id ? rec : x)) : d.menus.concat([rec]);
+          this.persist(d);
+          this.setState({ menuForm: null });
+        },
+        deleteMenu: () => {
+          const d = JSON.parse(JSON.stringify(data));
+          d.menus = d.menus.filter(x => x.id !== f.id);
+          this.persist(d);
+          this.setState({ menuForm: null });
+        },
+        closeMenuForm: () => this.setState({ menuForm: null })
+      });
+    }
+    return out;
+  }
+
+  openMeal(mealKey) {
+    const e = this.day(this.vd()).meals[mealKey];
+    this.setState({
+      sheet: {
+        meal: mealKey,
+        mode: e ? (e.status === 'out' ? 'out' : 'por') : 'menu',
+        portions: Object.assign({}, (e && e.portions) || {}),
+        text: (e && e.text) || '',
+        eq: {}, outPor: !!(e && e.status === 'out' && e.portions && Object.keys(e.portions).length)
+      }
+    });
+  }
+  bump(g, dir) {
+    const sh = this.state.sheet;
+    const v = Math.max(0, (sh.portions[g.key] || 0) + dir * g.step);
+    this.setState({ sheet: Object.assign({}, sh, { portions: Object.assign({}, sh.portions, { [g.key]: v }) }) });
+  }
+  bumpMenu(g, dir) {
+    const f = this.state.menuForm;
+    const v = Math.max(0, (f.portions[g.key] || 0) + dir * g.step);
+    this.setState({ menuForm: Object.assign({}, f, { portions: Object.assign({}, f.portions, { [g.key]: v }) }) });
+  }
+  setRecovery(key, value) {
+    const data = JSON.parse(JSON.stringify(this.state.data));
+    data.recovery = data.recovery || this.defaultRecovery();
+    data.recovery[key] = value;
+    this.persist(data);
+  }
+  openEntryForm(id, defType) {
+    const rec = (this.state.data && this.state.data.recovery) || this.defaultRecovery();
+    const e = id ? (rec.entries || []).find(x => x.id === id) : null;
+    this.setState({
+      overlay: { type: 'entry', id: id || null },
+      entryForm: e
+        ? { id: e.id, type: e.type, date: e.date, session: e.session != null ? String(e.session) : '', tags: (e.tags || []).slice(), other: e.other || '', swell: e.swell || null, orders: e.orders || '', next: e.next || '', notes: e.notes || '', msId: null, msDate: '', msReason: '', doneMsId: null }
+        : { id: null, type: defType || 'kine', date: this.today(), session: '', tags: [], other: '', swell: null, orders: '', next: '', notes: '', msId: null, msDate: '', msReason: '', doneMsId: null }
+    });
+  }
+  openMenuForm(id) {
+    const m = id ? (this.state.data.menus || []).find(x => x.id === id) : null;
+    this.setState({
+      menuForm: m
+        ? { id: m.id, meal: m.meal, name: m.name, ing: (m.ingredients || []).join('\n'), note: m.note || '', portions: Object.assign({}, m.portions) }
+        : { id: null, meal: 'almuerzo', name: '', ing: '', note: '', portions: {} }
+    });
+  }
+}
+
+</script>
+
+</body></html>
