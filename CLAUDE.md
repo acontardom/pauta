@@ -163,7 +163,7 @@ Advertencias:
 | # | Tarea | Estado |
 |---|---|---|
 | 1 | Base del proyecto | Terminada |
-| 2 | Esquema y autenticación | En curso |
+| 2 | Esquema y autenticación | Terminada |
 | 3 | Datos semilla | Pendiente |
 | 4 | Hoy: registro de comidas | Pendiente |
 | 5 | Hoy: resto del día | Pendiente |
@@ -174,10 +174,10 @@ Advertencias:
 | 10 | Configuración | Pendiente |
 | 11 | Pulido PWA | Pendiente |
 
-## Estado actual (tarea 2)
+## Estado actual (tareas 1 y 2 terminadas)
 Esqueleto, sistema de diseño y componentes (tarea 1), más el esquema completo con
-RLS y el login por código. **Todavía no hay datos ni pantallas**: cada pantalla
-muestra solo su encabezado y "En construcción".
+RLS y el login con correo y contraseña (tarea 2). **Todavía no hay datos ni
+pantallas**: cada pantalla muestra solo su encabezado y "En construcción".
 
 - Rutas: `/hoy`, `/semana`, `/progreso`, `/menus`, `/recuperacion`, `/configuracion`,
   todas bajo el grupo `app/(app)/` con el shell común. `/` redirige a `/hoy`.
