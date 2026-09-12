@@ -197,6 +197,10 @@ de `TIEMPOS`, alfabéticos dentro de cada grupo; los grupos vacíos no se
 muestran. El formulario vive en una `HojaInferior` y reutiliza
 `SelectorPorciones` **sin metas ni equivalencias**.
 
+Arriba hay una fila de chips para filtrar por tiempo ("Todos" más los tiempos
+que tengan menús). Es estado local, no va en la URL: es un atajo para llegar a
+un grupo, no una preferencia que valga la pena recordar.
+
 **Eliminar un menú no altera los días ya registrados.** La comida guarda su
 propia copia de `nombre_menu`, `porciones` y `kcal` al registrarse, y la clave
 foránea es `on delete set null`: solo se pierde el vínculo `menu_id`. Un día ya

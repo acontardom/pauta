@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Chip from "@/components/ui/Chip";
 import { TIEMPOS } from "@/lib/dominio";
 import { textoPorciones } from "@/lib/porciones";
 import type { Menu } from "@/lib/supabase/tipos";
@@ -11,15 +12,39 @@ type Props = { menus: Menu[] };
 /** null = hoja cerrada · "nuevo" = crear · un Menu = editar ese. */
 type Hoja = null | "nuevo" | Menu;
 
+const TODOS = "todos";
+
 export default function PantallaMenus({ menus }: Props) {
   const [hoja, setHoja] = useState<Hoja>(null);
+  const [filtro, setFiltro] = useState<string>(TODOS);
+
+  // Solo se ofrecen como filtro los tiempos que tienen menús: un chip que
+  // lleva a una lista vacía no sirve de atajo.
+  const tiemposConMenus = TIEMPOS.filter((t) =>
+    menus.some((m) => m.tiempo === t.clave),
+  );
+
+  /*
+    Si el filtro apunta a un tiempo que se quedó sin menús (se eliminó el
+    último, o se movió de grupo), vuelve a "todos" en el mismo render. Se
+    deriva en vez de corregirse en un efecto, para no mostrar un cuadro vacío
+    por un frame.
+  */
+  const filtroValido =
+    filtro === TODOS || tiemposConMenus.some((t) => t.clave === filtro)
+      ? filtro
+      : TODOS;
 
   // Agrupado en el orden de TIEMPOS; los grupos vacíos no se muestran.
   // Los menús ya vienen alfabéticos desde la consulta.
-  const grupos = TIEMPOS.map((t) => ({
-    etiqueta: t.etiqueta,
-    items: menus.filter((m) => m.tiempo === t.clave),
-  })).filter((g) => g.items.length > 0);
+  const grupos = TIEMPOS.filter(
+    (t) => filtroValido === TODOS || t.clave === filtroValido,
+  )
+    .map((t) => ({
+      etiqueta: t.etiqueta,
+      items: menus.filter((m) => m.tiempo === t.clave),
+    }))
+    .filter((g) => g.items.length > 0);
 
   return (
     <>
@@ -38,12 +63,38 @@ export default function PantallaMenus({ menus }: Props) {
           </button>
         </div>
 
+        {tiemposConMenus.length > 1 ? (
+          /*
+            Los chips se desbordan a lo ancho de un iPhone, así que la fila se
+            desliza. El margen negativo la deja sangrar hasta el borde de la
+            pantalla, para que no parezca cortada a mitad de camino.
+          */
+          <div className="-mx-5 mt-4 flex gap-1.5 overflow-x-auto px-5 pb-0.5">
+            <Chip
+              etiqueta="Todos"
+              encendido={filtroValido === TODOS}
+              onToggle={() => setFiltro(TODOS)}
+              className="shrink-0"
+            />
+            {tiemposConMenus.map((t) => (
+              <Chip
+                key={t.clave}
+                etiqueta={t.etiqueta}
+                encendido={filtroValido === t.clave}
+                // Tocar el chip activo no lo apaga: siempre hay un filtro.
+                onToggle={() => setFiltro(t.clave)}
+                className="shrink-0"
+              />
+            ))}
+          </div>
+        ) : null}
+
         {grupos.length === 0 ? (
           <p className="mt-6 text-[14.5px] leading-relaxed text-tinta-2">
             Todavía no hay menús. Crea el primero con Nuevo.
           </p>
         ) : (
-          <div className="mt-[22px] flex flex-col gap-6">
+          <div className="mt-[18px] flex flex-col gap-6">
             {grupos.map((g) => (
               <section key={g.etiqueta}>
                 <h2 className="border-b border-linea pb-[9px] text-[12.5px] uppercase tracking-[0.06em] text-tinta-3">
