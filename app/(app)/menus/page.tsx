@@ -1,10 +1,13 @@
-import EncabezadoPantalla from "@/components/ui/EncabezadoPantalla";
+import { crearClienteServidor } from "@/lib/supabase/servidor";
+import type { Menu } from "@/lib/supabase/tipos";
+import PantallaMenus from "./PantallaMenus";
 
-export default function Menus() {
-  return (
-    <>
-      <EncabezadoPantalla titulo="Menús" />
-      <p className="px-5 pt-6 text-[14.5px] text-tinta-3">En construcción</p>
-    </>
-  );
+export default async function Menus() {
+  const supabase = await crearClienteServidor();
+
+  // El orden alfabético se pide a Postgres; el agrupado por tiempo se arma
+  // en el cliente, siguiendo el orden de TIEMPOS.
+  const { data } = await supabase.from("menus").select("*").order("nombre");
+
+  return <PantallaMenus menus={(data ?? []) as Menu[]} />;
 }

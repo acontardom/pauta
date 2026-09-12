@@ -191,6 +191,21 @@ comidas pendientes y el día cuenta igual como día registrado; las pendientes
 dicen "Sin registrar" en tono neutro. Reabrir no pide confirmación. Los días
 anteriores se completan y cierran igual que hoy.
 
+## Pantalla Menús
+`/menus` lista, crea, edita y elimina menús. Agrupados por tiempo en el orden
+de `TIEMPOS`, alfabéticos dentro de cada grupo; los grupos vacíos no se
+muestran. El formulario vive en una `HojaInferior` y reutiliza
+`SelectorPorciones` **sin metas ni equivalencias**.
+
+**Eliminar un menú no altera los días ya registrados.** La comida guarda su
+propia copia de `nombre_menu`, `porciones` y `kcal` al registrarse, y la clave
+foránea es `on delete set null`: solo se pierde el vínculo `menu_id`. Un día ya
+cerrado no puede cambiar porque después se editó o se borró un menú. Las
+acciones de menús **nunca** tocan la tabla `comidas`.
+
+Toda mutación de menús revalida `/menus` **y `/hoy`**, porque Hoy lista los
+menús en su hoja de registro.
+
 ## Convenciones
 - **Idioma:** toda la UI en español de Chile. Nombres de componentes, props y
   funciones también en español.
@@ -254,23 +269,24 @@ Advertencias:
 | 3 | Datos semilla | Terminada |
 | 4 | Hoy: registro de comidas | Terminada |
 | 5 | Hoy: resto del día | Terminada |
-| 6 | Menús | Pendiente |
+| 6 | Menús | Terminada |
 | 7 | Semana | Pendiente |
 | 8 | Progreso | Pendiente |
 | 9 | Recuperación | Pendiente |
 | 10 | Configuración | Pendiente |
 | 11 | Pulido PWA | Pendiente |
 
-## Estado actual (tareas 1 a 5 terminadas)
+## Estado actual (tareas 1 a 6 terminadas)
 Esqueleto y componentes (1), esquema con RLS y login (2), datos iniciales cargados
-(3) y **`/hoy` completa** (4 y 5).
+(3), **`/hoy` completa** (4 y 5) y **`/menus` completa** (6).
 
 `/hoy` tiene encabezado con navegación entre días y estado del día, contadores,
 las cinco tarjetas con su hoja de registro, agua, calorías activas,
 entrenamiento, tobillo y el botón de cierre con su hoja de resumen.
 
-`dias.nota` sigue **sin usar**. Las demás pantallas siguen en "En construcción":
-la próxima es Menús (tarea 6).
+`dias.nota` sigue **sin usar**. Siguen en "En construcción" `/semana`,
+`/progreso` y `/recuperacion`; `/configuracion` tiene el bloque provisorio de
+la tarea 2.
 
 Ya hay datos en la base: configuración, 5 hitos, 21 menús, 105 alimentos, 1 medida,
 1 InBody, 4 entradas de recuperación y 7 preguntas. `dias` y `comidas` están vacías:
