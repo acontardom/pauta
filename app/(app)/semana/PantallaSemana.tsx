@@ -40,8 +40,7 @@ export default function PantallaSemana({
 
   return (
     <div className="px-5 pb-8 pt-[calc(env(safe-area-inset-top)+22px)]">
-      {/* El padding derecho deja libre la esquina del engranaje. */}
-      <div className="pr-[52px]">
+      <div>
         <h1 className="text-[13px] uppercase tracking-[0.06em] text-tinta-3">
           Días registrados
         </h1>

@@ -48,9 +48,8 @@ export default function PantallaMenus({ menus }: Props) {
 
   return (
     <>
-      {/* El padding derecho deja libre la esquina del engranaje. */}
       <div className="px-5 pb-8 pt-[calc(env(safe-area-inset-top)+22px)]">
-        <div className="flex items-baseline justify-between pr-[52px]">
+        <div className="flex items-baseline justify-between">
           <h1 className="font-serif text-[27px] font-medium text-tinta">
             Menús
           </h1>

@@ -7,17 +7,14 @@ type Props = {
   children?: ReactNode;
 };
 
-/**
- * Encabezado de cada pantalla.
- * El padding derecho de 48px deja libre la esquina del botón de configuración.
- */
+/** Encabezado de cada pantalla. */
 export default function EncabezadoPantalla({
   titulo,
   subtitulo,
   children,
 }: Props) {
   return (
-    <header className="border-b border-linea px-5 pr-12 pb-[14px] pt-[calc(env(safe-area-inset-top)+22px)]">
+    <header className="border-b border-linea px-5 pb-[14px] pt-[calc(env(safe-area-inset-top)+22px)]">
       <h1 className="font-serif text-[20px] font-medium tracking-[-0.01em] text-tinta">
         {titulo}
       </h1>

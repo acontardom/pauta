@@ -1,5 +1,6 @@
 "use client";
 
+import BotonConfiguracion from "@/components/shell/BotonConfiguracion";
 import { GRUPOS } from "@/lib/dominio";
 import { formatoLargo } from "@/lib/fechas";
 import { formatear } from "@/lib/numeros";
@@ -42,7 +43,7 @@ export default function EncabezadoHoy({
         esHoy ? "border-linea bg-fondo" : "border-borde-pasado bg-fondo-pasado"
       }`}
     >
-      <div className="flex items-center gap-1.5 pr-12">
+      <div className="flex items-center gap-1.5">
         <button
           type="button"
           aria-label="Día anterior"
@@ -83,6 +84,11 @@ export default function EncabezadoHoy({
         >
           ›
         </button>
+
+        {/* ml-1 separa el engranaje del "›" para no confundirlos ni errar el
+            toque: quedan a 10px, y el ancho que le queda a la fecha es el
+            mismo que antes reservaba el botón fijo. */}
+        <BotonConfiguracion className="ml-1" />
       </div>
 
       <div className="mt-3 flex min-h-6 items-center justify-between gap-2.5">

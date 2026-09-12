@@ -1,33 +1,25 @@
-"use client";
-
-import { useRouter } from "next/navigation";
-
-type Props = {
-  /** true cuando se está en /configuracion: el botón entonces vuelve. */
-  enConfiguracion: boolean;
-  /** Pestaña a la que volver desde /configuracion. */
-  destinoVuelta: string;
-};
+import Link from "next/link";
 
 /*
-  Botón fijo de la esquina superior derecha.
-  Desde una pestaña abre /configuracion; desde /configuracion vuelve a la última
-  pestaña visitada, que guarda el layout del shell. No se usa router.back():
-  el historial puede venir de cualquier parte y la vuelta debe ser predecible.
+  Acceso a Configuración. Vive SOLO en el encabezado de Hoy y se desliza con
+  el contenido.
+
+  Antes era fijo y estaba en todas las pantallas: al bajar quedaba flotando
+  sobre las tarjetas y se montaba encima de sus botones (en Menús pisaba el
+  "Editar" de la primera tarjeta). Configuración se entra una vez cada tanto;
+  no justifica ocupar una esquina de forma permanente.
 */
 export default function BotonConfiguracion({
-  enConfiguracion,
-  destinoVuelta,
-}: Props) {
-  const router = useRouter();
-  const destino = enConfiguracion ? destinoVuelta : "/configuracion";
-
+  className = "",
+}: {
+  className?: string;
+}) {
   return (
-    <button
-      type="button"
-      aria-label={enConfiguracion ? "Volver" : "Configuración"}
-      onClick={() => router.push(destino)}
-      className="fixed right-4 top-[calc(env(safe-area-inset-top)+18px)] z-[45] flex h-[38px] w-[38px] items-center justify-center rounded-control border border-linea bg-fondo/92 p-0"
+    <Link
+      href="/configuracion"
+      aria-label="Configuración"
+      // 38×38 de área táctil, el mínimo cómodo para el pulgar.
+      className={`flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-control border border-linea bg-fondo/92 ${className}`}
     >
       <svg
         width="20"
@@ -42,6 +34,6 @@ export default function BotonConfiguracion({
         <circle r="4.2" />
         <circle r="9" strokeDasharray="3 2.4" />
       </svg>
-    </button>
+    </Link>
   );
 }

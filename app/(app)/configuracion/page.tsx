@@ -1,3 +1,4 @@
+import Link from "next/link";
 import EncabezadoPantalla from "@/components/ui/EncabezadoPantalla";
 import Tarjeta from "@/components/ui/Tarjeta";
 import { crearClienteServidor } from "@/lib/supabase/servidor";
@@ -20,7 +21,18 @@ export default async function Configuracion() {
 
   return (
     <>
-      <EncabezadoPantalla titulo="Configuración" />
+      <EncabezadoPantalla titulo="Configuración">
+        {/*
+          El engranaje vive solo en Hoy, así que acá hace falta una vuelta
+          explícita. Siempre va a /hoy: no se recuerda la pestaña de origen.
+        */}
+        <Link
+          href="/hoy"
+          className="mt-2 inline-block text-[13px] text-verde"
+        >
+          ‹ Volver a Hoy
+        </Link>
+      </EncabezadoPantalla>
 
       <div className="flex flex-col gap-3 px-5 pt-5">
         <Tarjeta>

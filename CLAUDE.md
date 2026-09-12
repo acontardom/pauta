@@ -318,6 +318,13 @@ las llena la app.
 - Rutas: `/hoy`, `/semana`, `/progreso`, `/menus`, `/recuperacion`, `/configuracion`,
   todas bajo el grupo `app/(app)/` con el shell común. `/` redirige a `/hoy`.
 - `/entrar` vive fuera del shell.
+- **El acceso a Configuración está solo en Hoy**, dentro de su encabezado y a la
+  derecha de la fila de la fecha. **No es fijo**: se desliza con el contenido.
+  Antes era un botón fijo presente en todas las pantallas y, al bajar, quedaba
+  flotando sobre las tarjetas y pisaba sus botones. Por eso ningún encabezado
+  reserva ya espacio a la derecha: los títulos usan todo el ancho.
+- Desde `/configuracion` se vuelve **siempre a `/hoy`**, con un enlace en su
+  encabezado. No se recuerda la pestaña de origen.
 - `/configuracion` tiene un bloque **provisorio** (correo, estado de la base y
   cerrar sesión) que la tarea 10 reemplaza.
 - `app/componentes/` es una página temporal de revisión visual: **se elimina en la tarea 11**.
