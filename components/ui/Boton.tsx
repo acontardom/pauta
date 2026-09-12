@@ -4,7 +4,7 @@ import type { ButtonHTMLAttributes, ReactNode } from "react";
 
 type Props = {
   children: ReactNode;
-  variante?: "primaria" | "secundaria";
+  variante?: "primaria" | "secundaria" | "estimada";
   className?: string;
 } & ButtonHTMLAttributes<HTMLButtonElement>;
 
@@ -18,10 +18,13 @@ export default function Boton({
 }: Props) {
   const base =
     "w-full h-[54px] rounded-tarjeta border text-[16px] font-medium transition-transform active:scale-[0.99] disabled:active:scale-100";
+  // "estimada" es el azul de comí fuera: distinto del verde, nunca rojo.
   const estilo =
     variante === "primaria"
       ? "border-verde bg-verde text-white"
-      : "border-borde bg-fondo text-tinta-2";
+      : variante === "estimada"
+        ? "border-azul bg-azul text-white"
+        : "border-borde bg-fondo text-tinta-2";
   const apagado = "disabled:border-borde disabled:bg-fondo disabled:text-tinta-6";
 
   return (

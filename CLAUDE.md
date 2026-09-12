@@ -15,6 +15,8 @@ y de la recuperación de una operación de tobillo.
 - Tailwind CSS v4 (tokens con `@theme` en `app/globals.css`).
 - Vitest para pruebas unitarias (`npm test`).
 - PWA en iOS sin service worker: la app requiere conexión.
+- **Región `gru1` (São Paulo)** en `vercel.json`: es donde está la base de
+  Supabase. Sin eso, cada consulta cruza el continente dos veces.
 
 ## Reglas de producto
 1. Cada comida queda **completa**, **estimada** (comí fuera) o **pendiente**.
@@ -138,6 +140,33 @@ El script usa la clave secreta de Supabase, que **salta RLS**. Reglas:
 - Solo la usa `scripts/`. Nada de `app/`, `components/` ni `lib/` puede importar
   desde `scripts/`.
 
+## Pantalla Hoy
+`/hoy` acepta **`?fecha=YYYY-MM-DD`**. Sin el parámetro usa `hoyChile()`; si la
+fecha es inválida o futura, redirige a `/hoy`. Los botones ‹ y › navegan con
+`router.replace`, para no llenar el historial con un día por toque.
+
+Es un Server Component que carga configuración, comidas del día, menús y
+alimentos **en paralelo**; la interacción vive en un componente cliente con
+`useOptimistic`, así la tarjeta y los contadores cambian antes de que responda
+el servidor.
+
+### Reglas de guardado por modo
+Una comida es una fila por `(fecha, tiempo)`, con upsert sobre esa clave.
+
+| Modo | Qué se guarda |
+|---|---|
+| `menu` | El contenido se lee **del menú en la base**, no del cliente: copia `nombre_menu`, `porciones` y `kcal`. Editar o borrar el menú después no cambia las comidas ya registradas. |
+| `manual` | Porciones limpias y **no vacías**; `kcal` opcional; `menu_id`, `nombre_menu` y `texto_libre` en null. |
+| `fuera` | `texto_libre` (por defecto "Comí fuera"); porciones limpias, que **pueden ir vacías**; `kcal` opcional; `menu_id` y `nombre_menu` en null. |
+
+El `user_id` sale siempre de la sesión en el servidor, nunca de lo que manda el
+cliente. Borrar la fila devuelve la comida a pendiente.
+
+### Contador de kcal
+Junto a los 7 grupos hay una tarjeta "Kcal" con la suma de las comidas que
+tengan kcal, en formato `≈1.650`. Muestra `—` si ninguna comida aporta kcal, y
+no lleva barra ni meta: es informativa, no una meta que cumplir.
+
 ## Convenciones
 - **Idioma:** toda la UI en español de Chile. Nombres de componentes, props y
   funciones también en español.
@@ -148,7 +177,15 @@ El script usa la clave secreta de Supabase, que **salta RLS**. Reglas:
 - **Colores:** solo desde tokens de `app/globals.css`. Ningún hex suelto en
   `app/` ni `components/`. Las únicas excepciones son `lib/tokens.ts`, que alimenta
   el manifest y los íconos generados.
-- **Componentes:** antes de crear uno nuevo, revisar `components/ui`.
+- **Componentes:** antes de crear uno nuevo, revisar `components/ui` y
+  `components/porciones`. Ya existen y se reutilizan:
+  - `SelectorPorciones` — filas de +/− por grupo, con el paso de cada uno.
+    Props `metas` y `extra` son opcionales (Menús lo usa sin ninguna de las dos).
+  - `CampoTexto` — texto de una línea o área. Para números va `CampoNumerico`.
+  - `Boton` — variantes `primaria`, `secundaria` y `estimada` (el azul de comí fuera).
+- **Cálculos:** `lib/porciones.ts` (`textoPorciones`, `ajustarPorcion`,
+  `limpiarPorciones`, `porcionesVacias`, `pasoDe`) y `lib/dia.ts` (`totalesDia`,
+  `estadoComida`). No rehacer estas sumas a mano en una pantalla.
 - **Inputs numéricos:** siempre `CampoNumerico`. Nunca `type="number"`: en iOS
   descarta la coma decimal del teclado chileno. Mínimo 16px de fuente para que
   iOS no haga zoom al enfocar.
@@ -191,8 +228,8 @@ Advertencias:
 | 1 | Base del proyecto | Terminada |
 | 2 | Esquema y autenticación | Terminada |
 | 3 | Datos semilla | Terminada |
-| 4 | Hoy: registro de comidas | Pendiente |
-| 5 | Hoy: resto del día | Pendiente |
+| 4 | Hoy: registro de comidas | Terminada |
+| 5 | Hoy: resto del día | Pendiente (la navegación entre días se hizo en la 4) |
 | 6 | Menús | Pendiente |
 | 7 | Semana | Pendiente |
 | 8 | Progreso | Pendiente |
@@ -200,10 +237,14 @@ Advertencias:
 | 10 | Configuración | Pendiente |
 | 11 | Pulido PWA | Pendiente |
 
-## Estado actual (tareas 1, 2 y 3 terminadas)
+## Estado actual (tareas 1 a 4 terminadas)
 Esqueleto y componentes (1), esquema con RLS y login (2), datos iniciales cargados
-(3). **Todavía no hay pantallas**: cada una muestra solo su encabezado y
-"En construcción".
+(3) y el registro de comidas de `/hoy` (4).
+
+`/hoy` ya tiene encabezado con navegación entre días, contadores y las cinco
+tarjetas con su hoja de registro. **Le falta** agua, calorías activas,
+entrenamiento, tobillo, estado del día y cierre del día: eso es la tarea 5.
+Las demás pantallas siguen en "En construcción".
 
 Ya hay datos en la base: configuración, 5 hitos, 21 menús, 105 alimentos, 1 medida,
 1 InBody, 4 entradas de recuperación y 7 preguntas. `dias` y `comidas` están vacías:

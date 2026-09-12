@@ -2,13 +2,17 @@
 
 import { useState } from "react";
 import Boton from "@/components/ui/Boton";
+import SelectorPorciones from "@/components/porciones/SelectorPorciones";
 import CampoNumerico from "@/components/ui/CampoNumerico";
+import CampoTexto from "@/components/ui/CampoTexto";
 import Chip from "@/components/ui/Chip";
 import EncabezadoPantalla from "@/components/ui/EncabezadoPantalla";
 import HojaInferior from "@/components/ui/HojaInferior";
 import Segmentos from "@/components/ui/Segmentos";
 import Tarjeta from "@/components/ui/Tarjeta";
 import { formatear, parsear } from "@/lib/numeros";
+import { textoPorciones } from "@/lib/porciones";
+import type { Porciones } from "@/lib/supabase/tipos";
 
 /*
   Página temporal para revisar los componentes compartidos en sus estados.
@@ -24,6 +28,13 @@ export default function Componentes() {
   const [entero, setEntero] = useState("3");
   const [decimal, setDecimal] = useState("1,5");
   const [peso, setPeso] = useState("");
+  const [linea, setLinea] = useState("Almuerzo en el trabajo");
+  const [area, setArea] = useState("");
+  const [porciones, setPorciones] = useState<Porciones>({
+    cereales: 1,
+    proteicos: 4,
+    aceite: 0.5,
+  });
   const [hojaUno, setHojaUno] = useState(false);
   const [hojaDos, setHojaDos] = useState(false);
 
@@ -115,6 +126,36 @@ export default function Componentes() {
               formatear = {formatear(parsear(decimal))}
             </p>
           </div>
+        </Seccion>
+
+        <Seccion titulo="CampoTexto">
+          <div className="flex flex-col gap-3">
+            <CampoTexto
+              etiqueta="¿Qué comiste?"
+              valor={linea}
+              onChange={setLinea}
+              placeholder="Almuerzo en el trabajo"
+              maxLength={120}
+            />
+            <CampoTexto
+              etiqueta="Nota (área)"
+              valor={area}
+              onChange={setArea}
+              placeholder="Varias líneas"
+              variante="area"
+            />
+          </div>
+        </Seccion>
+
+        <Seccion titulo="SelectorPorciones">
+          <SelectorPorciones
+            valor={porciones}
+            onChange={setPorciones}
+            metas={{ cereales: 3, verduras: 4, fruta: 1, proteicos: 11, lacteos: 2, aceite: 1, grasas: 1.5 }}
+          />
+          <p className="mt-2 font-mono text-[11.5px] text-tinta-3">
+            {textoPorciones(porciones) || "sin porciones"}
+          </p>
         </Seccion>
 
         <Seccion titulo="HojaInferior">
