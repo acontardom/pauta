@@ -107,20 +107,40 @@ export default function PantallaSemana({
           ))}
         </div>
 
-        <div className="mt-3.5 flex flex-wrap gap-3.5 pl-[46px]">
-          {[
-            { etiqueta: "Cumplido", fondo: "bg-verde" },
-            { etiqueta: "Estimado", fondo: "bg-azul" },
-            { etiqueta: "Faltante", fondo: "bg-vacio" },
-          ].map((l) => (
-            <span
-              key={l.etiqueta}
-              className="flex items-center gap-1.5 text-[11.5px] text-tinta-3"
-            >
-              <span className={`h-2.5 w-2.5 rounded-[3px] ${l.fondo}`} />
-              {l.etiqueta}
-            </span>
-          ))}
+        {/*
+          La leyenda explica la escala real de las celdas: los verdes son tres
+          pasos según qué parte de la meta se cubrió, no un único "cumplido".
+          El azul y el vacío van aparte porque no son parte de esa escala.
+        */}
+        <div className="mt-3.5 flex flex-wrap items-end gap-x-4 gap-y-2.5">
+          <div>
+            <div className="text-[11.5px] text-tinta-3">
+              Menos ← porción de la meta → más
+            </div>
+            <div className="mt-1.5 flex gap-[3px]">
+              {["bg-verde-claro", "bg-verde-medio", "bg-verde"].map((fondo) => (
+                <span
+                  key={fondo}
+                  className={`h-2.5 w-6 rounded-[3px] ${fondo}`}
+                />
+              ))}
+            </div>
+          </div>
+
+          <div className="flex flex-wrap gap-3.5">
+            {[
+              { etiqueta: "Estimado", fondo: "bg-azul" },
+              { etiqueta: "Sin registro", fondo: "bg-vacio" },
+            ].map((l) => (
+              <span
+                key={l.etiqueta}
+                className="flex items-center gap-1.5 text-[11.5px] text-tinta-3"
+              >
+                <span className={`h-2.5 w-2.5 rounded-[3px] ${l.fondo}`} />
+                {l.etiqueta}
+              </span>
+            ))}
+          </div>
         </div>
       </div>
 
