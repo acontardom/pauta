@@ -2,8 +2,11 @@ import { describe, expect, it } from "vitest";
 import {
   ANCHO,
   delta,
+  deltaInbody,
   progresoGrasa,
   serieGrafico,
+  serieMultiple,
+  tarjetasInbody,
   textoPctGrasa,
   ultimoYAnterior,
 } from "./progreso";
@@ -298,3 +301,172 @@ describe("textoPctGrasa", () => {
     expect(textoPctGrasa(undefined)).toBe("—");
   });
 });
+
+describe("deltaInbody", () => {
+  it("bajar es bueno en un campo que baja", () => {
+    expect(deltaInbody(15.8, 16.7, "baja")).toEqual({ texto: "−0,9", tono: "bueno" });
+  });
+
+  it("subir es malo en un campo que baja", () => {
+    expect(deltaInbody(17.1, 16.7, "baja")).toEqual({ texto: "+0,4", tono: "malo" });
+  });
+
+  it("subir es bueno en un campo que sube", () => {
+    expect(deltaInbody(38.8, 38.6, "sube")).toEqual({ texto: "+0,2", tono: "bueno" });
+  });
+
+  it("una baja de masa musculoesquelética es mala, no neutra", () => {
+    expect(deltaInbody(38.1, 38.6, "sube")).toEqual({ texto: "−0,5", tono: "malo" });
+  });
+
+  it("sin cambio es ±0 y neutro, sin residuo de punto flotante", () => {
+    expect(deltaInbody(66.7, 66.7, "sube")).toEqual({ texto: "±0", tono: "neutro" });
+    // 0,1 + 0,2 no es exactamente 0,3 en punto flotante.
+    expect(deltaInbody(0.1 + 0.2, 0.3, "baja")).toEqual({ texto: "±0", tono: "neutro" });
+  });
+
+  it("sin alguno de los dos valores no hay delta", () => {
+    expect(deltaInbody(null, 16.7, "baja")).toEqual({ texto: "", tono: "neutro" });
+    expect(deltaInbody(15.8, null, "baja")).toEqual({ texto: "", tono: "neutro" });
+    expect(deltaInbody(undefined, undefined, "sube")).toEqual({ texto: "", tono: "neutro" });
+  });
+});
+
+describe("serieMultiple", () => {
+  const serie = (id: string, datos: [string, number | null][]) => ({
+    id,
+    datos: datos.map(([fecha, valor]) => ({ fecha, valor })),
+  });
+
+  it("sin datos devuelve series vacías y sin etiquetas", () => {
+    const g = serieMultiple([serie("grasa", []), serie("musculo", [])]);
+    expect(g.series.map((s) => s.puntos)).toEqual([[], []]);
+    expect(g.etiquetas).toEqual([]);
+  });
+
+  it("las dos series comparten la escala vertical", () => {
+    const g = serieMultiple([
+      serie("grasa", [["2026-09-01", 16.7], ["2026-09-12", 15.8]]),
+      serie("musculo", [["2026-09-01", 38.6], ["2026-09-12", 38.8]]),
+    ]);
+    const [grasa, musculo] = g.series;
+    // La masa grasa es menor, así que va más abajo que el músculo.
+    expect(grasa.puntos[0].y).toBeGreaterThan(musculo.puntos[0].y);
+    const ys = [...grasa.puntos, ...musculo.puntos].map((p) => p.y);
+    expect(Math.min(...ys)).toBeGreaterThanOrEqual(14);
+    expect(Math.max(...ys)).toBeLessThanOrEqual(100);
+    expect(grasa.path).not.toBe("");
+    expect(musculo.path).not.toBe("");
+  });
+
+  it("ignora los nulls y alinea por fecha, no por posición", () => {
+    const g = serieMultiple([
+      serie("grasa", [["2026-09-01", 16.7], ["2026-09-06", 16.2], ["2026-09-12", 15.8]]),
+      // Al músculo le falta el dato del día 6.
+      serie("musculo", [["2026-09-01", 38.6], ["2026-09-06", null], ["2026-09-12", 38.8]]),
+    ]);
+    const [grasa, musculo] = g.series;
+    expect(musculo.puntos).toHaveLength(2);
+    // El último punto de las dos series cae en la misma x: la del día 12.
+    expect(musculo.puntos[1].x).toBe(grasa.puntos[2].x);
+    expect(g.etiquetas.map((e) => e.texto)).toEqual(["1 sep", "6 sep", "12 sep"]);
+  });
+
+  it("con una sola fecha centra los puntos y no dibuja línea", () => {
+    const g = serieMultiple([
+      serie("grasa", [["2026-09-01", 16.7]]),
+      serie("musculo", [["2026-09-01", 38.6]]),
+    ]);
+    expect(g.series[0].path).toBe("");
+    expect(g.series[0].puntos[0].x).toBe(ANCHO / 2);
+  });
+});
+
+describe("tarjetasInbody", () => {
+  const primera = {
+    fecha: "2026-09-01",
+    peso: 83.4,
+    masa_grasa: 16.7,
+    pct_grasa: 20,
+    masa_musculoesqueletica: 38.6,
+    masa_libre_grasa: 66.7,
+    agua_total: 48.7,
+  };
+  const segunda = {
+    fecha: "2026-09-12",
+    peso: 82.5,
+    masa_grasa: 15.8,
+    pct_grasa: 19.2,
+    masa_musculoesqueletica: 38.8,
+    masa_libre_grasa: 66.7,
+    agua_total: 48.9,
+  };
+
+  it("con una sola medición no hay deltas", () => {
+    const [t] = tarjetasInbody([primera]);
+    expect(t.titulo).toBe("1 de septiembre");
+    expect(t.referencia).toBe("primera medición");
+    expect(t.filas).toHaveLength(6);
+    expect(t.filas.map((f) => f.valor)).toEqual([
+      "83,4 kg",
+      "16,7 kg",
+      "20,0%",
+      "38,6 kg",
+      "66,7 kg",
+      "48,7 L",
+    ]);
+    for (const f of t.filas) expect(f.delta).toEqual({ texto: "", tono: "neutro" });
+  });
+
+  it("con dos, la más reciente va primero y se compara con la anterior", () => {
+    const tarjetas = tarjetasInbody([primera, segunda]);
+    expect(tarjetas.map((t) => t.titulo)).toEqual(["12 de septiembre", "1 de septiembre"]);
+    expect(tarjetas[0].referencia).toBe("vs. 1/9");
+
+    const fila = (clave: string) => tarjetas[0].filas.find((f) => f.clave === clave)!;
+    expect(fila("masa_grasa").delta).toEqual({ texto: "−0,9", tono: "bueno" });
+    expect(fila("masa_musculoesqueletica").delta).toEqual({ texto: "+0,2", tono: "bueno" });
+    expect(fila("pct_grasa").delta).toEqual({ texto: "−0,8", tono: "bueno" });
+    expect(fila("masa_libre_grasa").delta).toEqual({ texto: "±0", tono: "neutro" });
+  });
+
+  it("marca como destacados el % de grasa y la masa musculoesquelética", () => {
+    const [t] = tarjetasInbody([primera]);
+    expect(t.filas.filter((f) => f.destacada).map((f) => f.clave)).toEqual([
+      "pct_grasa",
+      "masa_musculoesqueletica",
+    ]);
+  });
+
+  it("un campo en null muestra raya y no genera delta en ninguna de las dos", () => {
+    const sinAgua = { ...segunda, agua_total: null };
+    const tarjetas = tarjetasInbody([primera, sinAgua]);
+    const agua = tarjetas[0].filas.find((f) => f.clave === "agua_total")!;
+    expect(agua.valor).toBe("—");
+    expect(agua.delta).toEqual({ texto: "", tono: "neutro" });
+
+    // Y si la anterior tenía el null, la siguiente tampoco tiene delta.
+    const siguiente = { ...segunda, fecha: "2026-09-20", agua_total: 49 };
+    const agua2 = tarjetasInbody([primera, sinAgua, siguiente])[0].filas.find(
+      (f) => f.clave === "agua_total",
+    )!;
+    expect(agua2.valor).toBe("49 L");
+    expect(agua2.delta.texto).toBe("");
+  });
+
+  it("una baja de masa musculoesquelética queda en tono malo", () => {
+    const menosMusculo = { ...segunda, masa_musculoesqueletica: 38.1 };
+    const [t] = tarjetasInbody([primera, menosMusculo]);
+    const musculo = t.filas.find((f) => f.clave === "masa_musculoesqueletica")!;
+    expect(musculo.delta).toEqual({ texto: "−0,5", tono: "malo" });
+  });
+
+  it("dos mediciones el mismo día respetan el orden de llegada", () => {
+    const manana = { ...primera, peso: 83.0 };
+    const tarde = { ...primera, peso: 83.6 };
+    const [reciente] = tarjetasInbody([manana, tarde]);
+    expect(reciente.medicion.peso).toBe(83.6);
+    expect(reciente.referencia).toBe("vs. 1/9");
+  });
+});
+

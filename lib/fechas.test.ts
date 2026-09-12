@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   diaDelMes,
+  formatoBarra,
   diferenciaDias,
   formatoCorto,
   formatoLargo,
@@ -85,3 +86,11 @@ describe("inicialDia y diaDelMes", () => {
     expect(diaDelMes("2026-09-01")).toBe(1);
   });
 });
+
+describe("formatoBarra", () => {
+  it("da día y mes sin ceros de relleno", () => {
+    expect(formatoBarra("2026-09-01")).toBe("1/9");
+    expect(formatoBarra("2026-12-25")).toBe("25/12");
+  });
+});
+

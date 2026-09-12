@@ -12,8 +12,12 @@ export default async function Progreso() {
       .select("meta_peso, meta_cintura, meta_pct_grasa")
       .maybeSingle(),
     supabase.from("medidas").select("*").order("fecha"),
-    // De inbody, esta pantalla solo usa el % de grasa. El resto es la tarea 8b.
-    supabase.from("inbody").select("fecha, pct_grasa").order("fecha"),
+    // Por fecha y, dentro del mismo día, por orden de llegada.
+    supabase
+      .from("inbody")
+      .select("*")
+      .order("fecha")
+      .order("created_at"),
   ]);
 
   return (
@@ -29,7 +33,7 @@ export default async function Progreso() {
         >
       }
       medidas={(medidas.data ?? []) as Medida[]}
-      inbody={(inbody.data ?? []) as Pick<Inbody, "fecha" | "pct_grasa">[]}
+      inbody={(inbody.data ?? []) as Inbody[]}
       hoy={hoyChile()}
     />
   );

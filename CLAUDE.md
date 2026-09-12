@@ -251,9 +251,26 @@ son datos, no faltas.
   ahí el decimal comunica precisión de medición. La meta va con `formatear`,
   porque es un objetivo redondo.
 
-**Pendiente (tarea 8b):** el formulario de InBody, el gráfico de grasa y
-músculo, y las tarjetas comparativas. El botón "Agregar medición InBody" de la
-tarjeta de % de grasa ya está, con el manejador vacío esperando.
+### InBody
+**`CAMPOS_INBODY` en `lib/dominio.ts` es la fuente** de las etiquetas, unidades,
+direcciones y campos destacados: el formulario, las tarjetas comparativas y los
+deltas salen de ahí. No repetir esas etiquetas a mano en una pantalla.
+
+- **Los deltas de InBody sí tienen "malo"**, a diferencia de peso y cintura:
+  bajar es bueno en peso, masa grasa y % de grasa; bajar es malo en masa
+  musculoesquelética, masa libre de grasa y agua. Bueno en verde, malo en
+  **ámbar**, sin cambio en tinta-3. Nunca rojo.
+- El delta se redondea a un decimal **antes** de decidir el signo, para que un
+  residuo de punto flotante no convierta un "±0" en "−0".
+- `serieMultiple` pone varias series en la misma escala y **alinea el eje x
+  por fecha, no por posición**: un null en una serie no corre sus puntos.
+- Igual que `medidas`, `inbody` permite varias mediciones por fecha (insert,
+  no upsert). Un campo vacío se guarda como null, muestra "—" y no genera
+  delta. El % de grasa se valida entre 0 y 100.
+- El formulario de InBody es **en línea**, no en hoja. Los botones "Agregar
+  medición InBody" de las tarjetas de arriba lo abren y bajan la vista hasta él.
+- `CampoNumerico` tiene `tamano`: `normal`, `grande` (peso y cintura) y
+  `compacto` (el formulario de dos columnas de InBody).
 
 ## Convenciones
 - **Idioma:** toda la UI en español de Chile. Nombres de componentes, props y
@@ -320,15 +337,15 @@ Advertencias:
 | 5 | Hoy: resto del día | Terminada |
 | 6 | Menús | Terminada |
 | 7 | Semana | Terminada |
-| 8 | Progreso | 8a terminada · 8b pendiente |
+| 8 | Progreso | Terminada (8a y 8b) |
 | 9 | Recuperación | Pendiente |
 | 10 | Configuración | Pendiente |
 | 11 | Pulido PWA | Pendiente |
 
-## Estado actual (tareas 1 a 7 y 8a terminadas)
+## Estado actual (tareas 1 a 8 terminadas)
 Esqueleto y componentes (1), esquema con RLS y login (2), datos iniciales cargados
-(3), **`/hoy` completa** (4 y 5), **`/menus`** (6), **`/semana`** (7) y la
-primera mitad de **`/progreso`** (8a: peso, cintura y % de grasa).
+(3), **`/hoy` completa** (4 y 5), **`/menus`** (6), **`/semana`** (7) y
+**`/progreso` completa** (8a: peso, cintura y % de grasa; 8b: InBody).
 
 `/hoy` tiene encabezado con navegación entre días y estado del día, contadores,
 las cinco tarjetas con su hoja de registro, agua, calorías activas,

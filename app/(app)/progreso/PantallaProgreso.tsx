@@ -13,9 +13,11 @@ import {
   type TonoDelta,
 } from "@/lib/progreso";
 import type { Configuracion, Inbody, Medida } from "@/lib/supabase/tipos";
+import GraficoInbody from "./GraficoInbody";
 import GraficoSerie from "./GraficoSerie";
 import HojaLista from "./HojaLista";
 import HojaMedida from "./HojaMedida";
+import SeccionInbody from "./SeccionInbody";
 
 type Props = {
   configuracion: Pick<
@@ -24,12 +26,16 @@ type Props = {
   >;
   /** Ordenadas por fecha, de la más antigua a la más reciente. */
   medidas: Medida[];
-  inbody: Pick<Inbody, "fecha" | "pct_grasa">[];
+  /** Ordenadas por fecha y orden de llegada. */
+  inbody: Inbody[];
   hoy: string;
 };
 
 /** null = nada abierto · "nuevo"/"lista" · un Medida = editar ese. */
 type Hoja = null | "nuevo" | "lista" | Medida;
+
+/** Formulario de InBody: cerrado, nuevo o editando esa medición. */
+type FormInbody = null | "nuevo" | Inbody;
 
 /* Bajar es bueno y va en verde; subir es neutro, nunca rojo. */
 const TONO: Record<TonoDelta, string> = {
@@ -66,6 +72,7 @@ export default function PantallaProgreso({
   hoy,
 }: Props) {
   const [hoja, setHoja] = useState<Hoja>(null);
+  const [formInbody, setFormInbody] = useState<FormInbody>(null);
 
   const metaPeso = configuracion.meta_peso;
   const metaCintura = configuracion.meta_cintura;
@@ -105,6 +112,13 @@ export default function PantallaProgreso({
     grasaInicial?.pct_grasa,
     metaGrasa,
   );
+
+  // La tendencia necesita al menos dos mediciones con alguno de los dos datos.
+  const hayTendencia =
+    Math.max(
+      inbody.filter((m) => m.masa_grasa != null).length,
+      inbody.filter((m) => m.masa_musculoesqueletica != null).length,
+    ) >= 2;
 
   // De la más reciente a la más antigua, para la hoja de lista.
   const recientesPrimero = medidas.slice().reverse();
@@ -177,8 +191,28 @@ export default function PantallaProgreso({
               <Boton
                 variante="secundaria"
                 className="mt-3 h-12"
-                // La tarea 8b engancha acá el formulario de InBody.
-                onClick={() => {}}
+                onClick={() => setFormInbody("nuevo")}
+              >
+                Agregar medición InBody
+              </Boton>
+            </>
+          )}
+        </Tarjeta>
+
+        {/* Grasa y músculo */}
+        <Tarjeta titulo="Grasa y músculo">
+          {hayTendencia ? (
+            <GraficoInbody mediciones={inbody} />
+          ) : (
+            <>
+              <p className="mt-2 text-[14.5px] leading-relaxed text-tinta-2">
+                Con dos mediciones InBody aparece la tendencia de grasa y
+                músculo.
+              </p>
+              <Boton
+                variante="secundaria"
+                className="mt-3 h-12"
+                onClick={() => setFormInbody("nuevo")}
               >
                 Agregar medición InBody
               </Boton>
@@ -263,6 +297,15 @@ export default function PantallaProgreso({
             </>
           )}
         </Tarjeta>
+
+        <SeccionInbody
+          mediciones={inbody}
+          hoy={hoy}
+          form={formInbody}
+          onAbrirNuevo={() => setFormInbody("nuevo")}
+          onEditar={(m) => setFormInbody(m)}
+          onCerrar={() => setFormInbody(null)}
+        />
       </div>
 
       {hoja === "lista" ? (

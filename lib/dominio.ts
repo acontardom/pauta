@@ -55,3 +55,28 @@ export const ESTADOS_TOBILLO = [
   { clave: "igual", etiqueta: "Igual" },
   { clave: "peor", etiqueta: "Peor" },
 ] as const;
+
+/*
+  Campos de InBody, en el orden en que se muestran.
+
+  Es la fuente de las etiquetas, unidades y direcciones de toda la pantalla:
+  el formulario, las tarjetas comparativas y los deltas salen de acá.
+
+  `direccion` dice qué es bueno: "baja" en peso y grasa, "sube" en masa
+  musculoesquelética, masa libre de grasa y agua. La meta es bajar grasa
+  PRESERVANDO masa magra, así que perder músculo no es neutro.
+
+  grasa_visceral no está a propósito: la columna no existe.
+*/
+export const CAMPOS_INBODY = [
+  { clave: "peso", etiqueta: "Peso", unidad: "kg", direccion: "baja", destacada: false },
+  { clave: "masa_grasa", etiqueta: "Masa grasa", unidad: "kg", direccion: "baja", destacada: false },
+  { clave: "pct_grasa", etiqueta: "% de grasa", unidad: "%", direccion: "baja", destacada: true },
+  { clave: "masa_musculoesqueletica", etiqueta: "Masa musculoesquelética", unidad: "kg", direccion: "sube", destacada: true },
+  { clave: "masa_libre_grasa", etiqueta: "Masa libre de grasa", unidad: "kg", direccion: "sube", destacada: false },
+  { clave: "agua_total", etiqueta: "Agua corporal total", unidad: "L", direccion: "sube", destacada: false },
+] as const;
+
+export type ClaveInbody = (typeof CAMPOS_INBODY)[number]["clave"];
+export type DireccionInbody = "baja" | "sube";
+

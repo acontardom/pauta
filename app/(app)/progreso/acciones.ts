@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { crearClienteServidor } from "@/lib/supabase/servidor";
+import { validarInbody, type EntradaInbody } from "@/lib/validarInbody";
 import { validarMedida, type EntradaMedida } from "@/lib/validarMedida";
 
 export type Respuesta = { ok: true } | { ok: false; error: string };
@@ -77,3 +78,70 @@ export async function eliminarMedida(id: string): Promise<Respuesta> {
   revalidatePath("/progreso");
   return { ok: true };
 }
+
+/* ------------------------------------------------------------------------- */
+/* InBody                                                                    */
+/* ------------------------------------------------------------------------- */
+
+/*
+  Igual que medidas: se permiten varias mediciones en la misma fecha, así que
+  es un insert y no un upsert.
+
+  La tarjeta de % de grasa lee de esta misma tabla, así que revalidar
+  /progreso basta para que refleje una medición nueva.
+*/
+export async function guardarInbody(entrada: EntradaInbody): Promise<Respuesta> {
+  const { supabase, user } = await sesion();
+  if (!user) return { ok: false, error: "Sesión expirada" };
+
+  const validacion = validarInbody(entrada);
+  if (!validacion.ok) return validacion;
+
+  const { error } = await supabase
+    .from("inbody")
+    .insert({ user_id: user.id, ...validacion.medicion });
+
+  if (error) return { ok: false, error: "No se pudo guardar la medición" };
+
+  revalidatePath("/progreso");
+  return { ok: true };
+}
+
+export async function actualizarInbody(
+  id: string,
+  entrada: EntradaInbody,
+): Promise<Respuesta> {
+  const { supabase, user } = await sesion();
+  if (!user) return { ok: false, error: "Sesión expirada" };
+
+  const validacion = validarInbody(entrada);
+  if (!validacion.ok) return validacion;
+
+  const { error } = await supabase
+    .from("inbody")
+    .update(validacion.medicion)
+    .eq("id", id)
+    .eq("user_id", user.id);
+
+  if (error) return { ok: false, error: "No se pudo guardar la medición" };
+
+  revalidatePath("/progreso");
+  return { ok: true };
+}
+
+export async function eliminarInbody(id: string): Promise<Respuesta> {
+  const { supabase, user } = await sesion();
+  if (!user) return { ok: false, error: "Sesión expirada" };
+
+  const { error } = await supabase
+    .from("inbody")
+    .delete()
+    .eq("id", id)
+    .eq("user_id", user.id);
+
+  if (error) return { ok: false, error: "No se pudo eliminar la medición" };
+
+  revalidatePath("/progreso");
+  return { ok: true };
+}
+

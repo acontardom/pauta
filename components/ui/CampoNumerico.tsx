@@ -11,10 +11,19 @@ type Props = {
   sufijo?: string;
   /** Para casos como el código de un solo uso ("one-time-code"). */
   autoComplete?: string;
-  /** "grande" para los campos protagonistas de una hoja (peso, cintura). */
-  tamano?: "normal" | "grande";
+  /**
+   * "grande" para los campos protagonistas de una hoja (peso, cintura).
+   * "compacto" para formularios de varias columnas (InBody).
+   */
+  tamano?: "normal" | "grande" | "compacto";
   className?: string;
 };
+
+const ESTILO_TAMANO = {
+  normal: "h-[54px] bg-superficie px-[14px] text-[19px]",
+  grande: "h-[60px] bg-superficie px-[14px] text-[26px]",
+  compacto: "h-[50px] bg-fondo px-[11px] text-[19px]",
+} as const;
 
 /*
   Campo numérico único de la app.
@@ -68,7 +77,9 @@ export default function CampoNumerico({
     <div className={className}>
       <label
         htmlFor={id}
-        className="block text-[12.5px] text-tinta-3"
+        className={`block text-tinta-3 ${
+          tamano === "compacto" ? "text-[11.5px] leading-snug" : "text-[12.5px]"
+        }`}
       >
         {etiqueta}
       </label>
@@ -84,8 +95,8 @@ export default function CampoNumerico({
           placeholder={placeholder}
           onFocus={alEnfocar}
           onChange={(e) => manejarCambio(e.target.value)}
-          className={`w-full rounded-control border border-borde bg-superficie px-[14px] font-serif text-tinta placeholder:text-tinta-5 focus:border-verde-borde focus:outline-none ${
-            tamano === "grande" ? "h-[60px] text-[26px]" : "h-[54px] text-[19px]"
+          className={`w-full rounded-control border border-borde font-serif text-tinta placeholder:text-tinta-5 focus:border-verde-borde focus:outline-none ${
+            ESTILO_TAMANO[tamano]
           } ${sufijo ? "pr-12" : ""}`}
         />
         {sufijo ? (
