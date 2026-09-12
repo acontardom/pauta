@@ -12,6 +12,7 @@ type Props = {
   metas: Porciones;
   totales: TotalesDia;
   comidasRegistradas: number;
+  diaCerrado: boolean;
   onDiaAnterior: () => void;
   onDiaSiguiente: () => void;
   onVolverAHoy: () => void;
@@ -25,6 +26,7 @@ export default function EncabezadoHoy({
   metas,
   totales,
   comidasRegistradas,
+  diaCerrado,
   onDiaAnterior,
   onDiaSiguiente,
   onVolverAHoy,
@@ -83,9 +85,24 @@ export default function EncabezadoHoy({
         </button>
       </div>
 
-      {/* La izquierda de esta fila queda libre: ahí va el estado del día (tarea 5). */}
       <div className="mt-3 flex min-h-6 items-center justify-between gap-2.5">
-        <div />
+        {/*
+          El estado es descriptivo, nunca un reproche: un día sin cerrar se ve
+          igual de neutro que uno en curso.
+        */}
+        <span
+          className={`rounded-[20px] border px-2.5 py-1 text-[12px] uppercase tracking-[0.05em] ${
+            diaCerrado
+              ? "border-verde-borde bg-verde-fondo text-verde-oscuro"
+              : "border-borde bg-transparent text-tinta-4"
+          }`}
+        >
+          {diaCerrado
+            ? "Día registrado"
+            : esHoy
+              ? "Día en curso"
+              : "Día sin cerrar"}
+        </span>
         {!esHoy ? (
           <button
             type="button"

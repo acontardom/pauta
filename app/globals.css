@@ -20,6 +20,7 @@
   /* Tinta */
   --color-tinta: #2E2A24;
   --color-tinta-cuerpo: #4A443B;
+  --color-tinta-fila: #3C372F;
   --color-tinta-2: #6B6359;
   --color-tinta-3: #8A8175;
   --color-tinta-4: #9A9184;
@@ -65,6 +66,8 @@
 
   /* Sombra de la columna sobre el marco */
   --shadow-columna: 0 0 40px rgb(46 42 36 / 0.08);
+  /* Botón fijo de Hoy, flotando sobre el contenido. */
+  --shadow-boton: 0 6px 20px rgb(46 42 36 / 0.14);
 
   /* Velo de las hojas inferiores */
   --color-velo: rgb(38 34 28 / 0.34);

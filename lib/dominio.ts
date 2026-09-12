@@ -31,3 +31,27 @@ export const TIEMPOS = [
 
 export type ClaveGrupo = (typeof GRUPOS)[number]["clave"];
 export type ClaveTiempo = (typeof TIEMPOS)[number]["clave"];
+
+/*
+  Opciones de entrenamiento. Se guardan en dias.entrenamiento (text[]) con
+  este mismo texto, así que cambiar una etiqueta rompe los registros viejos.
+
+  "Descanso" NO es excluyente: se puede descansar y hacer kinesiología el
+  mismo día.
+*/
+export const ENTRENAMIENTOS = [
+  "Tren superior",
+  "Core",
+  "Bicicleta",
+  "Kinesiología",
+  "Descanso",
+] as const;
+
+export type Entrenamiento = (typeof ENTRENAMIENTOS)[number];
+
+/** Estados del tobillo. "Peor" se ve igual que los otros: no es una alerta. */
+export const ESTADOS_TOBILLO = [
+  { clave: "mejor", etiqueta: "Mejor" },
+  { clave: "igual", etiqueta: "Igual" },
+  { clave: "peor", etiqueta: "Peor" },
+] as const;

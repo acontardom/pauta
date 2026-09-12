@@ -1,4 +1,4 @@
-import { GRUPOS, TIEMPOS } from "@/lib/dominio";
+import { ENTRENAMIENTOS, ESTADOS_TOBILLO, GRUPOS, TIEMPOS } from "@/lib/dominio";
 import { hoyChile } from "@/lib/fechas";
 import type { Porciones } from "@/lib/supabase/tipos";
 
@@ -97,6 +97,92 @@ export function validarComida(
         ok: false,
         error: `El texto no puede pasar de ${MAXIMO_TEXTO} caracteres`,
       };
+    }
+  }
+
+  return { ok: true };
+}
+
+/* ------------------------------------------------------------------------- */
+/* Validación del resto del día (tabla dias)                                 */
+/* ------------------------------------------------------------------------- */
+
+const OPCIONES_ENTRENAMIENTO = new Set<string>(ENTRENAMIENTOS);
+const CLAVES_TOBILLO = new Set<string>(ESTADOS_TOBILLO.map((e) => e.clave));
+
+export type EntradaDia = {
+  agua_ml?: number | null;
+  kcal_activas?: number | null;
+  entrenamiento?: string[] | null;
+  entrenamiento_minutos?: number | null;
+  estado_tobillo?: string | null;
+};
+
+/** Entero >= 0, aceptando null cuando el campo es opcional. */
+function enteroNoNegativo(
+  valor: unknown,
+  nombre: string,
+  { nuloOk }: { nuloOk: boolean },
+): Resultado {
+  if (valor == null) {
+    return nuloOk ? { ok: true } : { ok: false, error: `Falta ${nombre}` };
+  }
+  if (typeof valor !== "number" || !Number.isInteger(valor) || valor < 0) {
+    return { ok: false, error: `${nombre} debe ser un número entero` };
+  }
+  return { ok: true };
+}
+
+export function validarDia(
+  fecha: string,
+  campos: EntradaDia,
+  ahora?: Date,
+): Resultado {
+  if (typeof fecha !== "string" || !esFechaValida(fecha)) {
+    return { ok: false, error: "La fecha no es válida" };
+  }
+  if (fecha > hoyChile(ahora)) {
+    return { ok: false, error: "No se puede registrar una fecha futura" };
+  }
+
+  // agua_ml es not null en el esquema, con default 0: no acepta null.
+  if ("agua_ml" in campos) {
+    const r = enteroNoNegativo(campos.agua_ml, "El agua", { nuloOk: false });
+    if (!r.ok) return r;
+  }
+  if ("kcal_activas" in campos) {
+    const r = enteroNoNegativo(campos.kcal_activas, "Las calorías activas", {
+      nuloOk: true,
+    });
+    if (!r.ok) return r;
+  }
+  if ("entrenamiento_minutos" in campos) {
+    const r = enteroNoNegativo(campos.entrenamiento_minutos, "Los minutos", {
+      nuloOk: true,
+    });
+    if (!r.ok) return r;
+  }
+
+  if ("estado_tobillo" in campos && campos.estado_tobillo != null) {
+    if (!CLAVES_TOBILLO.has(campos.estado_tobillo)) {
+      return { ok: false, error: "El estado del tobillo no es válido" };
+    }
+  }
+
+  if ("entrenamiento" in campos && campos.entrenamiento != null) {
+    const lista = campos.entrenamiento;
+    if (!Array.isArray(lista)) {
+      return { ok: false, error: "El entrenamiento no es válido" };
+    }
+    const vistos = new Set<string>();
+    for (const v of lista) {
+      if (typeof v !== "string" || !OPCIONES_ENTRENAMIENTO.has(v)) {
+        return { ok: false, error: `"${String(v)}" no es una opción de entrenamiento` };
+      }
+      if (vistos.has(v)) {
+        return { ok: false, error: `"${v}" está repetido` };
+      }
+      vistos.add(v);
     }
   }
 

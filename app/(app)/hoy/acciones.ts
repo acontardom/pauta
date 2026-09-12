@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { limpiarPorciones, porcionesVacias } from "@/lib/porciones";
 import { crearClienteServidor } from "@/lib/supabase/servidor";
 import type { ModoComida, Porciones } from "@/lib/supabase/tipos";
-import { validarComida } from "@/lib/validarComida";
+import { validarComida, validarDia, type EntradaDia } from "@/lib/validarComida";
 
 export type Respuesta = { ok: true } | { ok: false; error: string };
 
@@ -138,4 +138,58 @@ export async function borrarComida(
 
   revalidatePath("/hoy");
   return { ok: true };
+}
+
+/* ------------------------------------------------------------------------- */
+/* El resto del día: tabla dias                                              */
+/* ------------------------------------------------------------------------- */
+
+/*
+  La fila de dias se crea recién con el primer dato del día (agua, kcal,
+  entrenamiento, tobillo) o al cerrarlo. Registrar solo comidas NO la crea:
+  un día con comidas y nada más no tiene por qué existir en dias.
+
+  Por eso todo pasa por upsert: no hace falta saber si la fila ya estaba.
+*/
+async function upsertDia(
+  fecha: string,
+  campos: Record<string, unknown>,
+): Promise<Respuesta> {
+  const { supabase, user } = await sesion();
+  if (!user) return { ok: false, error: "Sesión expirada" };
+
+  const validacion = validarDia(fecha, campos as EntradaDia);
+  if (!validacion.ok) return validacion;
+
+  const { error } = await supabase
+    .from("dias")
+    .upsert(
+      { user_id: user.id, fecha, ...campos },
+      { onConflict: "user_id,fecha" },
+    );
+
+  if (error) return { ok: false, error: "No se pudo guardar el día" };
+
+  revalidatePath("/hoy");
+  return { ok: true };
+}
+
+/** Guarda solo los campos enviados; el resto de la fila queda como estaba. */
+export async function guardarDia(
+  fecha: string,
+  campos: EntradaDia,
+): Promise<Respuesta> {
+  return upsertDia(fecha, campos as Record<string, unknown>);
+}
+
+/*
+  Cerrar el día es un REGISTRO, no una evaluación: se puede cerrar con comidas
+  pendientes y el día cuenta igual como día registrado.
+*/
+export async function cerrarDia(fecha: string): Promise<Respuesta> {
+  return upsertDia(fecha, { cerrado: true });
+}
+
+export async function reabrirDia(fecha: string): Promise<Respuesta> {
+  return upsertDia(fecha, { cerrado: false });
 }

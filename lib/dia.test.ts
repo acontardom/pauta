@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { estadoComida, totalesDia } from "./dia";
+import {
+  estadoComida,
+  resumenDia,
+  textoAgua,
+  textoLitros,
+  totalesDia,
+} from "./dia";
 import type { Comida, ModoComida, Porciones } from "./supabase/tipos";
 
 /** Comida mínima: solo lo que leen totalesDia y estadoComida. */
@@ -74,5 +80,113 @@ describe("estadoComida", () => {
   it("modo menu y manual son completas", () => {
     expect(estadoComida(comida("menu", { cereales: 1 }))).toBe("completa");
     expect(estadoComida(comida("manual", { cereales: 1 }))).toBe("completa");
+  });
+});
+
+describe("textoAgua", () => {
+  it("muestra litros con dos decimales y coma", () => {
+    expect(textoAgua(1250)).toBe("1,25 L");
+    expect(textoAgua(0)).toBe("0,00 L");
+    expect(textoAgua(2000)).toBe("2,00 L");
+    expect(textoAgua(2250)).toBe("2,25 L");
+  });
+});
+
+describe("resumenDia", () => {
+  const dia = {
+    agua_ml: 1250,
+    entrenamiento: ["Bicicleta", "Kinesiología"],
+    entrenamiento_minutos: 45,
+    estado_tobillo: "mejor" as const,
+  };
+
+  it("devuelve ocho filas, en orden", () => {
+    const filas = resumenDia([], dia);
+    expect(filas).toHaveLength(8);
+    expect(filas.map((f) => f.etiqueta)).toEqual([
+      "Desayuno",
+      "Colación AM",
+      "Almuerzo",
+      "Colación PM",
+      "Cena",
+      "Agua",
+      "Entrenamiento",
+      "Tobillo",
+    ]);
+  });
+
+  it("sin fila de dias, todo queda en sus valores por defecto", () => {
+    const filas = resumenDia([], null);
+    expect(filas[5]).toEqual({ etiqueta: "Agua", valor: "0,00 L", tono: "azul" });
+    expect(filas[6].valor).toBe("Sin registrar");
+    expect(filas[7].valor).toBe("Sin registrar");
+  });
+
+  it("con las cinco comidas pendientes, ninguna reprocha nada", () => {
+    const filas = resumenDia([], dia).slice(0, 5);
+    for (const f of filas) {
+      expect(f.valor).toBe("Sin registrar");
+      expect(f.tono).toBe("neutro");
+    }
+  });
+
+  it("una comida de menú muestra su nombre en verde", () => {
+    const c = { ...comida("menu", { cereales: 1 }), nombre_menu: "Pollo con arroz" };
+    const filas = resumenDia([c], dia);
+    expect(filas[2]).toEqual({
+      etiqueta: "Almuerzo",
+      valor: "Pollo con arroz",
+      tono: "verde",
+    });
+  });
+
+  it("una comida manual, sin nombre, dice Completa", () => {
+    const filas = resumenDia([comida("manual", { cereales: 1 })], dia);
+    expect(filas[2].valor).toBe("Completa");
+    expect(filas[2].tono).toBe("verde");
+  });
+
+  it("una estimada muestra su texto en azul, y Estimada si no hay texto", () => {
+    const conTexto = { ...comida("fuera", {}), texto_libre: "Almuerzo en el trabajo" };
+    expect(resumenDia([conTexto], dia)[2]).toEqual({
+      etiqueta: "Almuerzo",
+      valor: "Almuerzo en el trabajo",
+      tono: "azul",
+    });
+    expect(resumenDia([comida("fuera", {})], dia)[2].valor).toBe("Estimada");
+  });
+
+  it("el entrenamiento junta las opciones y agrega los minutos", () => {
+    expect(resumenDia([], dia)[6].valor).toBe("Bicicleta, Kinesiología · 45 min");
+  });
+
+  it("sin minutos, no agrega el sufijo", () => {
+    const filas = resumenDia([], { ...dia, entrenamiento_minutos: null });
+    expect(filas[6].valor).toBe("Bicicleta, Kinesiología");
+  });
+
+  it("traduce el estado del tobillo", () => {
+    expect(resumenDia([], { ...dia, estado_tobillo: "peor" })[7].valor).toBe("Peor");
+    expect(resumenDia([], { ...dia, estado_tobillo: null })[7].valor).toBe(
+      "Sin registrar",
+    );
+  });
+
+  it("ninguna fila usa un tono de falla", () => {
+    for (const f of resumenDia([], null)) {
+      expect(["verde", "azul", "neutro"]).toContain(f.tono);
+    }
+  });
+});
+
+describe("textoLitros", () => {
+  it("muestra hasta dos decimales, sin ceros de relleno", () => {
+    // Los valores exactos del criterio de aceptación de la tarjeta de agua.
+    expect(textoLitros(0)).toBe("0");
+    expect(textoLitros(250)).toBe("0,25");
+    expect(textoLitros(1250)).toBe("1,25");
+    expect(textoLitros(2000)).toBe("2");
+    expect(textoLitros(2250)).toBe("2,25");
+    expect(textoLitros(500)).toBe("0,5");
   });
 });

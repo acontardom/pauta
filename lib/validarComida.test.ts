@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { MAXIMO_TEXTO, validarComida } from "./validarComida";
+import { MAXIMO_TEXTO, validarComida, validarDia } from "./validarComida";
 
 // Se fija el "ahora" para que las pruebas no dependan del día en que corren.
 // 2026-09-11 22:30 en Chile.
@@ -117,6 +117,92 @@ describe("validarComida", () => {
     it("acepta vacío y null", () => {
       expect(validar({ texto: "" }).ok).toBe(true);
       expect(validar({ texto: null }).ok).toBe(true);
+    });
+  });
+});
+
+describe("validarDia", () => {
+  const d = (campos: Record<string, unknown> = {}, fecha = HOY) =>
+    validarDia(fecha, campos, AHORA);
+
+  it("acepta un día sin campos", () => {
+    expect(d()).toEqual({ ok: true });
+  });
+
+  describe("fecha", () => {
+    it("rechaza inválidas y futuras", () => {
+      expect(d({}, "abc").ok).toBe(false);
+      expect(d({}, "2026-02-30").ok).toBe(false);
+      expect(d({}, "2026-09-12").ok).toBe(false);
+    });
+
+    it("acepta hoy y días anteriores", () => {
+      expect(d({}, HOY).ok).toBe(true);
+      expect(d({}, "2026-09-04").ok).toBe(true);
+    });
+  });
+
+  describe("agua_ml", () => {
+    it("acepta enteros >= 0", () => {
+      expect(d({ agua_ml: 0 }).ok).toBe(true);
+      expect(d({ agua_ml: 2250 }).ok).toBe(true);
+    });
+
+    it("rechaza negativos, decimales y null", () => {
+      expect(d({ agua_ml: -250 }).ok).toBe(false);
+      expect(d({ agua_ml: 250.5 }).ok).toBe(false);
+      expect(d({ agua_ml: null }).ok).toBe(false);
+    });
+  });
+
+  describe("kcal_activas y entrenamiento_minutos", () => {
+    it("aceptan entero >= 0 y null", () => {
+      expect(d({ kcal_activas: 420 }).ok).toBe(true);
+      expect(d({ kcal_activas: null }).ok).toBe(true);
+      expect(d({ entrenamiento_minutos: 45 }).ok).toBe(true);
+      expect(d({ entrenamiento_minutos: null }).ok).toBe(true);
+    });
+
+    it("rechazan negativos y decimales", () => {
+      expect(d({ kcal_activas: -1 }).ok).toBe(false);
+      expect(d({ kcal_activas: 12.5 }).ok).toBe(false);
+      expect(d({ entrenamiento_minutos: -5 }).ok).toBe(false);
+    });
+  });
+
+  describe("estado_tobillo", () => {
+    it("acepta los tres estados y null", () => {
+      for (const v of ["mejor", "igual", "peor", null]) {
+        expect(d({ estado_tobillo: v }).ok).toBe(true);
+      }
+    });
+
+    it("rechaza cualquier otro", () => {
+      expect(d({ estado_tobillo: "regular" }).ok).toBe(false);
+    });
+  });
+
+  describe("entrenamiento", () => {
+    it("acepta un arreglo de opciones conocidas", () => {
+      expect(d({ entrenamiento: [] }).ok).toBe(true);
+      expect(d({ entrenamiento: ["Bicicleta", "Kinesiología"] }).ok).toBe(true);
+      expect(d({ entrenamiento: null }).ok).toBe(true);
+    });
+
+    it("rechaza una opción inventada", () => {
+      const r = d({ entrenamiento: ["Natación"] });
+      expect(r.ok).toBe(false);
+      if (!r.ok) expect(r.error).toContain("Natación");
+    });
+
+    it("rechaza repetidos", () => {
+      const r = d({ entrenamiento: ["Core", "Core"] });
+      expect(r.ok).toBe(false);
+      if (!r.ok) expect(r.error).toContain("repetido");
+    });
+
+    it("acepta Descanso junto a otra opción: no es excluyente", () => {
+      expect(d({ entrenamiento: ["Descanso", "Kinesiología"] }).ok).toBe(true);
     });
   });
 });

@@ -167,6 +167,30 @@ Junto a los 7 grupos hay una tarjeta "Kcal" con la suma de las comidas que
 tengan kcal, en formato `≈1.650`. Muestra `—` si ninguna comida aporta kcal, y
 no lleva barra ni meta: es informativa, no una meta que cumplir.
 
+**No confundir con `dias.kcal_activas`**, que es lo que se **gastó** en
+actividad (las kcal del reloj). Son dos números distintos y no se suman ni se
+restan entre sí en ninguna pantalla.
+
+### El resto del día (tabla `dias`)
+Agua, calorías activas, entrenamiento, tobillo y cierre viven en `dias`.
+
+- **La fila se crea recién con el primer dato del día** (agua, kcal,
+  entrenamiento, tobillo) o al cerrarlo. Registrar solo comidas **no la crea**.
+- Sin fila, los valores por defecto son `agua_ml` 0, `cerrado` false y el resto
+  null o `[]`.
+- Agua, entrenamiento y tobillo guardan al toque. Los dos campos numéricos
+  guardan 600 ms después de la última tecla, y también al perder el foco.
+- Las opciones de entrenamiento son `ENTRENAMIENTOS` en `lib/dominio.ts`, y se
+  guardan como texto en `entrenamiento` (`text[]`): **cambiar una etiqueta
+  rompe los registros viejos**. "Descanso" no es excluyente.
+- `lib/dia.ts` tiene `resumenDia` (las 8 filas de la hoja de cierre),
+  `textoAgua` (dos decimales fijas) y `textoLitros` (hasta dos, sin relleno).
+
+**Cerrar el día es un registro, no una evaluación.** Se puede cerrar con
+comidas pendientes y el día cuenta igual como día registrado; las pendientes
+dicen "Sin registrar" en tono neutro. Reabrir no pide confirmación. Los días
+anteriores se completan y cierran igual que hoy.
+
 ## Convenciones
 - **Idioma:** toda la UI en español de Chile. Nombres de componentes, props y
   funciones también en español.
@@ -229,7 +253,7 @@ Advertencias:
 | 2 | Esquema y autenticación | Terminada |
 | 3 | Datos semilla | Terminada |
 | 4 | Hoy: registro de comidas | Terminada |
-| 5 | Hoy: resto del día | Pendiente (la navegación entre días se hizo en la 4) |
+| 5 | Hoy: resto del día | Terminada |
 | 6 | Menús | Pendiente |
 | 7 | Semana | Pendiente |
 | 8 | Progreso | Pendiente |
@@ -237,14 +261,16 @@ Advertencias:
 | 10 | Configuración | Pendiente |
 | 11 | Pulido PWA | Pendiente |
 
-## Estado actual (tareas 1 a 4 terminadas)
+## Estado actual (tareas 1 a 5 terminadas)
 Esqueleto y componentes (1), esquema con RLS y login (2), datos iniciales cargados
-(3) y el registro de comidas de `/hoy` (4).
+(3) y **`/hoy` completa** (4 y 5).
 
-`/hoy` ya tiene encabezado con navegación entre días, contadores y las cinco
-tarjetas con su hoja de registro. **Le falta** agua, calorías activas,
-entrenamiento, tobillo, estado del día y cierre del día: eso es la tarea 5.
-Las demás pantallas siguen en "En construcción".
+`/hoy` tiene encabezado con navegación entre días y estado del día, contadores,
+las cinco tarjetas con su hoja de registro, agua, calorías activas,
+entrenamiento, tobillo y el botón de cierre con su hoja de resumen.
+
+`dias.nota` sigue **sin usar**. Las demás pantallas siguen en "En construcción":
+la próxima es Menús (tarea 6).
 
 Ya hay datos en la base: configuración, 5 hitos, 21 menús, 105 alimentos, 1 medida,
 1 InBody, 4 entradas de recuperación y 7 preguntas. `dias` y `comidas` están vacías:

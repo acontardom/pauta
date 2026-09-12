@@ -8,7 +8,7 @@ import type {
   Configuracion,
   Menu,
 } from "@/lib/supabase/tipos";
-import PantallaHoy from "./PantallaHoy";
+import PantallaHoy, { type DiaVista } from "./PantallaHoy";
 
 /** "YYYY-MM-DD" que además existe en el calendario. */
 function fechaValida(v: string): boolean {
@@ -36,12 +36,20 @@ export default async function Hoy({ searchParams }: PageProps<"/hoy">) {
   const supabase = await crearClienteServidor();
 
   // En paralelo: la latencia a São Paulo se paga una vez, no cuatro.
-  const [configuracion, comidas, menus, alimentos] = await Promise.all([
+  const [configuracion, comidas, dia, menus, alimentos] = await Promise.all([
     supabase
       .from("configuracion")
-      .select("metas_porciones, horarios")
+      .select("metas_porciones, horarios, meta_agua_ml")
       .maybeSingle(),
     supabase.from("comidas").select("*").eq("fecha", fecha),
+    // Puede no existir: la fila se crea con el primer dato del día.
+    supabase
+      .from("dias")
+      .select(
+        "agua_ml, kcal_activas, entrenamiento, entrenamiento_minutos, estado_tobillo, cerrado",
+      )
+      .eq("fecha", fecha)
+      .maybeSingle(),
     supabase.from("menus").select("*").order("nombre"),
     supabase.from("alimentos").select("*").order("grupo").order("orden"),
   ]);
@@ -63,9 +71,10 @@ export default async function Hoy({ searchParams }: PageProps<"/hoy">) {
       hoy={hoy}
       configuracion={configuracion.data as Pick<
         Configuracion,
-        "metas_porciones" | "horarios"
+        "metas_porciones" | "horarios" | "meta_agua_ml"
       >}
       comidas={(comidas.data ?? []) as Comida[]}
+      dia={(dia.data ?? null) as DiaVista | null}
       menus={(menus.data ?? []) as Menu[]}
       alimentos={(alimentos.data ?? []) as Alimento[]}
     />

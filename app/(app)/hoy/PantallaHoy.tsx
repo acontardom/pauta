@@ -2,7 +2,8 @@
 
 import { useOptimistic, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { estadoComida, totalesDia } from "@/lib/dia";
+import Boton from "@/components/ui/Boton";
+import { estadoComida, resumenDia, totalesDia } from "@/lib/dia";
 import { TIEMPOS, type ClaveTiempo } from "@/lib/dominio";
 import { sumarDias } from "@/lib/fechas";
 import { limpiarPorciones } from "@/lib/porciones";
@@ -10,19 +11,33 @@ import type {
   Alimento,
   Comida,
   Configuracion,
+  Dia,
   Menu,
   Porciones,
 } from "@/lib/supabase/tipos";
-import { borrarComida, guardarComida } from "./acciones";
+import {
+  borrarComida,
+  cerrarDia,
+  guardarComida,
+  guardarDia,
+  reabrirDia,
+} from "./acciones";
 import EncabezadoHoy from "./EncabezadoHoy";
+import HojaCierre from "./HojaCierre";
 import HojaComida from "./HojaComida";
 import TarjetaComida from "./TarjetaComida";
+import TarjetasDia from "./TarjetasDia";
 
 type Props = {
   fecha: string;
   hoy: string;
-  configuracion: Pick<Configuracion, "metas_porciones" | "horarios">;
+  configuracion: Pick<
+    Configuracion,
+    "metas_porciones" | "horarios" | "meta_agua_ml"
+  >;
   comidas: Comida[];
+  /** Puede no existir: la fila se crea con el primer dato del día. */
+  dia: DiaVista | null;
   menus: Menu[];
   alimentos: Alimento[];
 };
@@ -31,6 +46,29 @@ type Accion =
   | { tipo: "guardar"; comida: Comida }
   | { tipo: "borrar"; tiempo: string };
 
+/** Los campos de dias que usa esta pantalla. */
+export type DiaVista = Pick<
+  Dia,
+  | "agua_ml"
+  | "kcal_activas"
+  | "entrenamiento"
+  | "entrenamiento_minutos"
+  | "estado_tobillo"
+  | "cerrado"
+>;
+
+/* Valores por defecto cuando todavía no hay fila de dias. */
+const DIA_VACIO: DiaVista = {
+  agua_ml: 0,
+  kcal_activas: null,
+  entrenamiento: [],
+  entrenamiento_minutos: null,
+  estado_tobillo: null,
+  cerrado: false,
+};
+
+const META_AGUA_POR_DEFECTO = 2000;
+
 const AVISO_FALLO = "No se pudo guardar. Intenta de nuevo.";
 
 export default function PantallaHoy({
@@ -38,12 +76,14 @@ export default function PantallaHoy({
   hoy,
   configuracion,
   comidas,
+  dia,
   menus,
   alimentos,
 }: Props) {
   const router = useRouter();
   const [, iniciar] = useTransition();
   const [abierta, setAbierta] = useState<ClaveTiempo | null>(null);
+  const [cierreAbierto, setCierreAbierto] = useState(false);
   const [aviso, setAviso] = useState("");
 
   /*
@@ -63,6 +103,15 @@ export default function PantallaHoy({
     },
   );
 
+  /*
+    El día se pinta optimista igual que las comidas: tocar "+250 ml" varias
+    veces seguidas tiene que responder en cada toque, sin esperar al servidor.
+  */
+  const [diaVista, aplicarDia] = useOptimistic(
+    dia ?? DIA_VACIO,
+    (estado: DiaVista, campos: Partial<DiaVista>) => ({ ...estado, ...campos }),
+  );
+
   const porTiempo = new Map(comidasVista.map((c) => [c.tiempo, c]));
   const metas = (configuracion.metas_porciones ?? {}) as Porciones;
   const horarios = configuracion.horarios ?? {};
@@ -72,6 +121,7 @@ export default function PantallaHoy({
   ).length;
 
   const esHoy = fecha === hoy;
+  const metaAgua = configuracion.meta_agua_ml ?? META_AGUA_POR_DEFECTO;
 
   function irA(nuevaFecha: string) {
     // replace y no push: navegar entre días no debe llenar el historial.
@@ -104,6 +154,19 @@ export default function PantallaHoy({
     setAviso("");
     iniciar(async () => {
       aplicar(optimista);
+      const r = await accion();
+      if (!r.ok) setAviso(AVISO_FALLO);
+    });
+  }
+
+  /** Pinta el cambio del día y llama al servidor. */
+  function mutarDia(
+    campos: Partial<DiaVista>,
+    accion: () => Promise<{ ok: boolean }>,
+  ) {
+    setAviso("");
+    iniciar(async () => {
+      aplicarDia(campos);
       const r = await accion();
       if (!r.ok) setAviso(AVISO_FALLO);
     });
@@ -198,12 +261,13 @@ export default function PantallaHoy({
         metas={metas}
         totales={totales}
         comidasRegistradas={registradas}
+        diaCerrado={diaVista.cerrado}
         onDiaAnterior={() => irA(sumarDias(fecha, -1))}
         onDiaSiguiente={() => irA(sumarDias(fecha, 1))}
         onVolverAHoy={() => irA(hoy)}
       />
 
-      <div className="flex flex-col gap-2.5 px-5 pt-4">
+      <div className="flex flex-col gap-2.5 px-5 pb-[92px] pt-4">
         {TIEMPOS.map((t) => (
           <TarjetaComida
             key={t.clave}
@@ -214,12 +278,78 @@ export default function PantallaHoy({
           />
         ))}
 
+        <TarjetasDia
+          aguaMl={diaVista.agua_ml}
+          metaAguaMl={metaAgua}
+          kcalActivas={diaVista.kcal_activas}
+          entrenamiento={diaVista.entrenamiento}
+          minutos={diaVista.entrenamiento_minutos}
+          tobillo={diaVista.estado_tobillo}
+          onAgua={(agua_ml) =>
+            mutarDia({ agua_ml }, () => guardarDia(fecha, { agua_ml }))
+          }
+          onKcal={(kcal_activas) =>
+            mutarDia({ kcal_activas }, () =>
+              guardarDia(fecha, { kcal_activas }),
+            )
+          }
+          onEntrenamiento={(entrenamiento) =>
+            mutarDia({ entrenamiento }, () =>
+              guardarDia(fecha, { entrenamiento }),
+            )
+          }
+          onMinutos={(entrenamiento_minutos) =>
+            mutarDia({ entrenamiento_minutos }, () =>
+              guardarDia(fecha, { entrenamiento_minutos }),
+            )
+          }
+          onTobillo={(estado_tobillo) =>
+            mutarDia({ estado_tobillo }, () =>
+              guardarDia(fecha, { estado_tobillo }),
+            )
+          }
+        />
+
         {aviso ? (
           <p role="status" className="pt-1 text-[13.5px] text-tinta-2">
             {aviso}
           </p>
         ) : null}
       </div>
+
+      {/* Botón fijo, por encima de la barra inferior. */}
+      <div className="fixed bottom-[calc(env(safe-area-inset-bottom)+74px)] left-1/2 z-[41] w-full max-w-[430px] -translate-x-1/2 px-5">
+        {diaVista.cerrado ? (
+          // Reabrir no pide confirmación: es reversible y no pierde nada.
+          <Boton
+            variante="secundaria"
+            className="shadow-boton"
+            onClick={() =>
+              mutarDia({ cerrado: false }, () => reabrirDia(fecha))
+            }
+          >
+            Reabrir día
+          </Boton>
+        ) : (
+          <Boton
+            className="shadow-boton"
+            onClick={() => setCierreAbierto(true)}
+          >
+            Cerrar día
+          </Boton>
+        )}
+      </div>
+
+      <HojaCierre
+        abierta={cierreAbierto}
+        onCerrar={() => setCierreAbierto(false)}
+        fecha={fecha}
+        filas={resumenDia(comidasVista, diaVista)}
+        onConfirmar={() => {
+          setCierreAbierto(false);
+          mutarDia({ cerrado: true }, () => cerrarDia(fecha));
+        }}
+      />
 
       {tiempoAbierto ? (
         <HojaComida

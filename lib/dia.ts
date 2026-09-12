@@ -1,5 +1,5 @@
-import { GRUPOS } from "@/lib/dominio";
-import type { Comida, Porciones } from "@/lib/supabase/tipos";
+import { ESTADOS_TOBILLO, GRUPOS, TIEMPOS } from "@/lib/dominio";
+import type { Comida, Dia, Porciones } from "@/lib/supabase/tipos";
 
 /*
   Cálculos del día a partir de sus comidas.
@@ -44,4 +44,95 @@ export function totalesDia(comidas: Comida[]): TotalesDia {
 export function estadoComida(comida: Comida | undefined | null): EstadoComida {
   if (!comida) return "pendiente";
   return comida.modo === "fuera" ? "estimada" : "completa";
+}
+
+/** Litros con dos decimales fijas y coma: 1250 → "1,25 L". Hoja de cierre. */
+export function textoAgua(ml: number): string {
+  return `${(ml / 1000).toFixed(2).replace(".", ",")} L`;
+}
+
+/*
+  Litros para la tarjeta de agua: hasta dos decimales, sin ceros de relleno.
+  250 → "0,25", 2000 → "2", 2250 → "2,25".
+
+  No usa lib/numeros.formatear porque ese redondea a UN decimal por contrato, y
+  2250 ml saldría "2,3 L": el medio vaso de más desaparecería del texto.
+*/
+export function textoLitros(ml: number): string {
+  const litros = Math.round((ml / 1000) * 100) / 100;
+  return String(litros).replace(".", ",");
+}
+
+/** Tono de una fila del resumen. Nunca hay rojo: no existe tono de falla. */
+export type TonoFila = "verde" | "azul" | "neutro";
+
+export type FilaResumen = {
+  etiqueta: string;
+  valor: string;
+  tono: TonoFila;
+};
+
+/*
+  Las ocho filas de la hoja de cierre: las cinco comidas, agua, entrenamiento
+  y tobillo. Pura y sin JSX, para poder probarla y para que el componente solo
+  decida colores.
+
+  Lo que falta se dice "Sin registrar", en tono neutro. No hay texto que
+  reproche: cerrar el día es registrar, no evaluar.
+*/
+export function resumenDia(
+  comidas: Comida[],
+  dia: Pick<
+    Dia,
+    "agua_ml" | "entrenamiento" | "entrenamiento_minutos" | "estado_tobillo"
+  > | null,
+): FilaResumen[] {
+  const porTiempo = new Map(comidas.map((c) => [c.tiempo, c]));
+
+  const filas: FilaResumen[] = TIEMPOS.map((t) => {
+    const comida = porTiempo.get(t.clave);
+    const estado = estadoComida(comida);
+
+    if (estado === "completa") {
+      return {
+        etiqueta: t.etiqueta,
+        valor: comida!.nombre_menu || "Completa",
+        tono: "verde",
+      };
+    }
+    if (estado === "estimada") {
+      return {
+        etiqueta: t.etiqueta,
+        valor: comida!.texto_libre || "Estimada",
+        tono: "azul",
+      };
+    }
+    return { etiqueta: t.etiqueta, valor: "Sin registrar", tono: "neutro" };
+  });
+
+  filas.push({
+    etiqueta: "Agua",
+    valor: textoAgua(dia?.agua_ml ?? 0),
+    tono: "azul",
+  });
+
+  const entrenamiento = dia?.entrenamiento ?? [];
+  const minutos = dia?.entrenamiento_minutos;
+  filas.push({
+    etiqueta: "Entrenamiento",
+    valor:
+      entrenamiento.length > 0
+        ? entrenamiento.join(", ") + (minutos ? ` · ${minutos} min` : "")
+        : "Sin registrar",
+    tono: "neutro",
+  });
+
+  const tobillo = ESTADOS_TOBILLO.find((e) => e.clave === dia?.estado_tobillo);
+  filas.push({
+    etiqueta: "Tobillo",
+    valor: tobillo?.etiqueta ?? "Sin registrar",
+    tono: "neutro",
+  });
+
+  return filas;
 }
