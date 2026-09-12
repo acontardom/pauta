@@ -117,7 +117,7 @@ export default function PantallaSemana({
           filas: 11,5px a 430px de ancho, hasta 8,5px como piso, que es lo que
           hace falta para que entre incluso en una pantalla de 320px.
         */}
-        <div className="mt-3.5 flex flex-nowrap items-center gap-1.5 text-[clamp(8.5px,2.674vw,11.5px)] text-tinta-3">
+        <div className="mt-3.5 flex flex-nowrap items-center gap-[0.5em] text-[clamp(8.5px,2.674vw,11.5px)] text-tinta-3">
           <span className="whitespace-nowrap">Porción de la meta:</span>
 
           <span className="flex shrink-0 gap-[3px]">
@@ -128,6 +128,17 @@ export default function PantallaSemana({
               />
             ))}
           </span>
+
+          {/*
+            Divisor entre los dos formatos de la leyenda: a la izquierda una
+            escala (texto y tres cuadrados), a la derecha dos estados sueltos.
+            A 11,5px quedan unos 9px por lado (gap de 0,5em más margen de
+            0,28em), 18px en total; en em, para achicarse con el texto.
+          */}
+          <span
+            aria-hidden
+            className="mx-[0.28em] h-[1em] w-px shrink-0 bg-linea"
+          />
 
           {[
             { etiqueta: "Estimado", fondo: "bg-azul" },
