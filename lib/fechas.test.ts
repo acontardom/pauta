@@ -1,10 +1,12 @@
 import { describe, expect, it } from "vitest";
 import {
+  diaDelMes,
   diferenciaDias,
   formatoCorto,
   formatoLargo,
   formatoLargoConAnio,
   hoyChile,
+  inicialDia,
   sumarDias,
 } from "./fechas";
 
@@ -56,5 +58,30 @@ describe("formatos", () => {
 
   it("formatoCorto", () => {
     expect(formatoCorto("2026-09-11")).toBe("11 sep");
+  });
+});
+
+describe("inicialDia y diaDelMes", () => {
+  it("da la inicial del día en hora de Chile", () => {
+    // 2026-09-11 es viernes.
+    expect(inicialDia("2026-09-11")).toBe("V");
+    expect(inicialDia("2026-09-12")).toBe("S");
+    expect(inicialDia("2026-09-13")).toBe("D");
+    expect(inicialDia("2026-09-14")).toBe("L");
+    expect(inicialDia("2026-09-15")).toBe("M");
+    expect(inicialDia("2026-09-16")).toBe("M");
+    expect(inicialDia("2026-09-17")).toBe("J");
+  });
+
+  it("no se corre por el cambio de horario", () => {
+    // El cambio de horario chileno de 2026 cae el 6 de septiembre.
+    expect(inicialDia("2026-09-05")).toBe("S");
+    expect(inicialDia("2026-09-06")).toBe("D");
+    expect(inicialDia("2026-09-07")).toBe("L");
+  });
+
+  it("da el número del día sin el cero de relleno", () => {
+    expect(diaDelMes("2026-09-11")).toBe(11);
+    expect(diaDelMes("2026-09-01")).toBe(1);
   });
 });

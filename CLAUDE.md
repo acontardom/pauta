@@ -210,6 +210,26 @@ acciones de menús **nunca** tocan la tabla `comidas`.
 Toda mutación de menús revalida `/menus` **y `/hoy`**, porque Hoy lista los
 menús en su hoja de registro.
 
+## Pantalla Semana
+`/semana` mira los **últimos 7 días móviles, terminando hoy**. No es de lunes a
+domingo, y **no hay navegación a semanas anteriores**: lo que importa es qué tan
+cubierto está el registro reciente.
+
+- La métrica principal es **días registrados** (días con `cerrado = true` sobre
+  7). **Nunca un porcentaje de cumplimiento**, en ninguna pantalla.
+- Los días con comidas estimadas se pintan en azul y **no bajan ninguna
+  métrica**: sus porciones suman igual.
+- Se carga con **una consulta por tabla para todo el rango**, nunca una por día.
+
+`lib/semana.ts` es el lugar de la lógica de agregación, toda pura y sin JSX:
+`construirSemana`, `promedios`, `observaciones` y los formateadores de texto.
+Si otra pantalla necesita agregar por rango de fechas, va acá.
+
+Las **observaciones** (máximo 4, en orden de prioridad) describen lo que pasó y
+proponen algo concreto. Van con borde ámbar, el único color de atención.
+Ninguna dice que algo se incumplió: un día estimado o un tiempo sin registrar
+son datos, no faltas.
+
 ## Convenciones
 - **Idioma:** toda la UI en español de Chile. Nombres de componentes, props y
   funciones también en español.
@@ -274,23 +294,22 @@ Advertencias:
 | 4 | Hoy: registro de comidas | Terminada |
 | 5 | Hoy: resto del día | Terminada |
 | 6 | Menús | Terminada |
-| 7 | Semana | Pendiente |
+| 7 | Semana | Terminada |
 | 8 | Progreso | Pendiente |
 | 9 | Recuperación | Pendiente |
 | 10 | Configuración | Pendiente |
 | 11 | Pulido PWA | Pendiente |
 
-## Estado actual (tareas 1 a 6 terminadas)
+## Estado actual (tareas 1 a 7 terminadas)
 Esqueleto y componentes (1), esquema con RLS y login (2), datos iniciales cargados
-(3), **`/hoy` completa** (4 y 5) y **`/menus` completa** (6).
+(3), **`/hoy` completa** (4 y 5), **`/menus`** (6) y **`/semana`** (7).
 
 `/hoy` tiene encabezado con navegación entre días y estado del día, contadores,
 las cinco tarjetas con su hoja de registro, agua, calorías activas,
 entrenamiento, tobillo y el botón de cierre con su hoja de resumen.
 
-`dias.nota` sigue **sin usar**. Siguen en "En construcción" `/semana`,
-`/progreso` y `/recuperacion`; `/configuracion` tiene el bloque provisorio de
-la tarea 2.
+`dias.nota` sigue **sin usar**. Siguen en "En construcción" `/progreso` y
+`/recuperacion`; `/configuracion` tiene el bloque provisorio de la tarea 2.
 
 Ya hay datos en la base: configuración, 5 hitos, 21 menús, 105 alimentos, 1 medida,
 1 InBody, 4 entradas de recuperación y 7 preguntas. `dias` y `comidas` están vacías:

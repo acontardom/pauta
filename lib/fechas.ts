@@ -124,3 +124,17 @@ export function formatoCorto(fecha: string): string {
   const { mes, dia } = partes(fecha);
   return `${dia} ${MESES_CORTOS[mes - 1]}`;
 }
+
+/**
+ * Inicial del día de la semana: "V" para un viernes.
+ * D, L, M, M, J, V, S — martes y miércoles comparten la M, como en el diseño.
+ */
+export function inicialDia(fecha: string): string {
+  const d = aMediodiaUTC(fecha);
+  return ["D", "L", "M", "M", "J", "V", "S"][d.getUTCDay()];
+}
+
+/** El número del día dentro del mes: 11 para "2026-09-11". */
+export function diaDelMes(fecha: string): number {
+  return partes(fecha).dia;
+}
