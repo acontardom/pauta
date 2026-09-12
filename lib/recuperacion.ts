@@ -1,14 +1,21 @@
-import { diferenciaDias, sumarDias } from "@/lib/fechas";
+import {
+  diferenciaDias,
+  formatoCorto,
+  formatoLargo,
+  sumarDias,
+} from "@/lib/fechas";
 import type {
+  CambioHito,
   Dia,
   EntradaRecuperacion,
   EstadoTobillo,
   Hinchazon,
+  Hito,
 } from "@/lib/supabase/tipos";
 
 /*
-  Lógica de Recuperación: avance del período, kinesiología, tobillo y
-  próximo control. Todo puro y sin JSX.
+  Lógica de Recuperación: avance del período, kinesiología, tobillo, próximo
+  control, línea de tiempo e hitos. Todo puro y sin JSX.
 
   Esta pantalla registra una recuperación, no la evalúa: ninguna función
   produce un juicio. "Peor" en el tobillo es un dato más.
@@ -18,6 +25,16 @@ const DIAS_FRANJA = 30;
 
 function acotar(n: number): number {
   return Math.min(1, Math.max(0, n));
+}
+
+/** "1 día", "3 días". */
+function dias(n: number): string {
+  return `${n} ${n === 1 ? "día" : "días"}`;
+}
+
+/** "Miércoles 23 de septiembre" → "miércoles 23 de septiembre", para ir a mitad de frase. */
+function minuscula(texto: string): string {
+  return texto.charAt(0).toLowerCase() + texto.slice(1);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -125,6 +142,15 @@ export function resumenKine(entradas: EntradaKine[], hoy: string): ResumenKine {
       numeroSesion,
     })),
   };
+}
+
+/** El número que le correspondería a la próxima sesión, para sugerirlo. */
+export function siguienteSesion(
+  entradas: Pick<EntradaRecuperacion, "tipo" | "numero_sesion">[],
+): number {
+  const sesiones = entradas.filter((e) => e.tipo === "kine");
+  const mayor = Math.max(0, ...sesiones.map((e) => e.numero_sesion ?? 0));
+  return Math.max(mayor, sesiones.length) + 1;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -274,4 +300,227 @@ export function ordenarPreguntas<
       b.created_at.localeCompare(a.created_at) ||
       a.texto.localeCompare(b.texto, "es"),
   );
+}
+
+/* ------------------------------------------------------------------------- */
+/* Hitos                                                                     */
+/* ------------------------------------------------------------------------- */
+
+/*
+  Tono de una nota de hito. Adelantar va en verde ("bueno"), atrasar en ámbar.
+  No existe un tono de falla: un hito que se mueve es información.
+*/
+export type TonoNota = "bueno" | "ambar" | "neutro";
+export type NotaHito = { texto: string; tono: TonoNota };
+
+const SIN_NOTA: NotaHito = { texto: "", tono: "neutro" };
+
+export function notaHito(
+  hito: Pick<Hito, "fecha_planificada" | "fecha_real" | "cumplido" | "historial">,
+): NotaHito {
+  const planificada = hito.fecha_planificada;
+
+  if (hito.cumplido && hito.fecha_real) {
+    // Sin fecha planificada no hay con qué comparar.
+    if (!planificada) return SIN_NOTA;
+    const diferencia = diferenciaDias(planificada, hito.fecha_real);
+    if (diferencia === 0) {
+      return { texto: "Cumplido en la fecha planificada.", tono: "neutro" };
+    }
+    if (diferencia < 0) {
+      return {
+        texto: `Cumplido ${dias(-diferencia)} antes de lo previsto (${formatoCorto(planificada)}).`,
+        tono: "bueno",
+      };
+    }
+    return {
+      texto: `Cumplido ${dias(diferencia)} después de lo previsto (${formatoCorto(planificada)}).`,
+      tono: "neutro",
+    };
+  }
+
+  // Sin cumplir: si la fecha se movió, se cuenta el último cambio.
+  const historial = hito.historial ?? [];
+  const ultimo = historial[historial.length - 1];
+  if (ultimo?.desde) {
+    // Si se quitó la fecha (hasta en null) no se puede decir si se adelantó.
+    const adelanto = ultimo.hasta != null && ultimo.hasta < ultimo.desde;
+    const atraso = ultimo.hasta != null && ultimo.hasta > ultimo.desde;
+    return {
+      texto:
+        `${adelanto ? "Adelantado desde" : "Movido desde"} ${formatoCorto(ultimo.desde)}` +
+        (ultimo.motivo ? ` · ${ultimo.motivo}` : ""),
+      tono: adelanto ? "bueno" : atraso ? "ambar" : "neutro",
+    };
+  }
+
+  return SIN_NOTA;
+}
+
+/**
+ * Para la hoja de hitos, al marcar uno como cumplido: cuánto se adelantó o se
+ * atrasó respecto de lo planificado.
+ */
+export function diferenciaCumplimiento(
+  planificada: string | null,
+  real: string | null,
+): NotaHito {
+  if (!real) return SIN_NOTA;
+  if (!planificada) {
+    return { texto: "Sin fecha planificada con la que comparar.", tono: "neutro" };
+  }
+  const diferencia = diferenciaDias(planificada, real);
+  if (diferencia === 0) return { texto: "En la fecha planificada.", tono: "neutro" };
+  if (diferencia < 0) {
+    return { texto: `${dias(-diferencia)} antes de lo previsto`, tono: "bueno" };
+  }
+  return { texto: `${dias(diferencia)} después`, tono: "neutro" };
+}
+
+/** Una línea por cambio: "16 oct → 23 oct · motivo · registrado el 12 sep". */
+export function textoHistorial(historial: CambioHito[] | null | undefined): string[] {
+  const corto = (fecha: string | null) => (fecha ? formatoCorto(fecha) : "sin fecha");
+  return (historial ?? []).map(
+    (c) =>
+      `${corto(c.desde)} → ${corto(c.hasta)}` +
+      (c.motivo ? ` · ${c.motivo}` : "") +
+      (c.fecha_cambio ? ` · registrado el ${formatoCorto(c.fecha_cambio)}` : ""),
+  );
+}
+
+/* ------------------------------------------------------------------------- */
+/* Línea de tiempo                                                           */
+/* ------------------------------------------------------------------------- */
+
+/** Sirve para filtrar: "Controles" muestra control e hito; "Kinesiología", kine. */
+export type GrupoLinea = "hito" | "control" | "kine" | "nota";
+
+export type ItemLinea = {
+  clave: string;
+  grupo: GrupoLinea;
+  /** La fecha por la que se ordena y que se muestra. null: hito sin fecha. */
+  fecha: string | null;
+  /** "Hito cumplido", "Hito planificado", "Kinesiología", "Control médico" o "Nota". */
+  tipo: string;
+  titulo: string;
+  lineas: string[];
+  /** Hito cumplido, o sesión de kine con autorizaciones nuevas. */
+  destacado: boolean;
+  /** Solo en hitos. */
+  notaHito: NotaHito | null;
+  /** Lo que abre la tarjeta al tocarla. */
+  origen:
+    | { tipo: "hito"; hito: Hito }
+    | { tipo: "entrada"; entrada: EntradaRecuperacion };
+};
+
+/* Los hitos sin ninguna fecha van al final. */
+const SIN_FECHA = "9999-12-31";
+
+/*
+  Hitos y entradas en una sola lista, de la fecha más antigua a la más nueva.
+
+  - Un hito ordena por su fecha real si ya se cumplió; si no, por la planificada.
+  - Con la misma fecha, van primero los hitos y después las entradas, cada grupo
+    en el orden en que llegó: así el orden no salta entre recargas.
+  - Una sesión de kine muestra solo lo que autorizó POR PRIMERA VEZ, igual que
+    la tarjeta de kinesiología. Si repite algo ya autorizado, es "sin cambios".
+*/
+export function lineaTiempo(
+  hitos: Hito[],
+  entradas: EntradaRecuperacion[],
+): ItemLinea[] {
+  const numeroDe = new Map<EntradaRecuperacion, number>();
+  const nuevasDe = new Map<EntradaRecuperacion, string[]>();
+  const yaAutorizadas = new Set<string>();
+
+  cronologico(entradas.filter((e) => e.tipo === "kine")).forEach((sesion, i) => {
+    numeroDe.set(sesion, sesion.numero_sesion ?? i + 1);
+    const nuevas: string[] = [];
+    for (const bruto of sesion.autorizado ?? []) {
+      const etiqueta = bruto.trim();
+      if (etiqueta && !yaAutorizadas.has(etiqueta)) {
+        yaAutorizadas.add(etiqueta);
+        nuevas.push(etiqueta);
+      }
+    }
+    nuevasDe.set(sesion, nuevas);
+  });
+
+  type ConOrden = { item: ItemLinea; grupoOrden: number; indice: number };
+
+  const deHitos: ConOrden[] = hitos.map((hito, indice) => ({
+    grupoOrden: 0,
+    indice,
+    item: {
+      clave: `hito-${hito.id}`,
+      grupo: "hito",
+      fecha: hito.fecha_real ?? hito.fecha_planificada ?? null,
+      tipo: hito.cumplido ? "Hito cumplido" : "Hito planificado",
+      titulo: hito.nombre,
+      lineas: [],
+      destacado: hito.cumplido,
+      notaHito: notaHito(hito),
+      origen: { tipo: "hito", hito },
+    },
+  }));
+
+  const deEntradas: ConOrden[] = entradas.map((entrada, indice) => {
+    const base = {
+      clave: `entrada-${entrada.id}`,
+      fecha: entrada.fecha,
+      notaHito: null,
+      origen: { tipo: "entrada" as const, entrada },
+    };
+
+    if (entrada.tipo === "kine") {
+      const nuevas = nuevasDe.get(entrada) ?? [];
+      return {
+        grupoOrden: 1,
+        indice,
+        item: {
+          ...base,
+          grupo: "kine",
+          tipo: "Kinesiología",
+          titulo: `Sesión ${numeroDe.get(entrada)} · ${nuevas.length ? nuevas.join(", ") : "sin cambios"}`,
+          lineas: [],
+          destacado: nuevas.length > 0,
+        },
+      };
+    }
+
+    const lineas: string[] = [];
+    if (entrada.tipo === "control") {
+      if (entrada.indicaciones?.trim()) {
+        lineas.push(`Indicaciones: ${entrada.indicaciones.trim()}`);
+      }
+      if (entrada.proximo_control) {
+        lineas.push(`Próximo control: ${minuscula(formatoLargo(entrada.proximo_control))}`);
+      }
+    }
+    if (entrada.nota?.trim()) lineas.push(entrada.nota.trim());
+
+    const esControl = entrada.tipo === "control";
+    return {
+      grupoOrden: 1,
+      indice,
+      item: {
+        ...base,
+        grupo: esControl ? "control" : "nota",
+        tipo: esControl ? "Control médico" : "Nota",
+        titulo: esControl ? "Control médico" : "Nota",
+        lineas,
+        destacado: false,
+      },
+    };
+  });
+
+  return [...deHitos, ...deEntradas]
+    .sort(
+      (a, b) =>
+        (a.item.fecha ?? SIN_FECHA).localeCompare(b.item.fecha ?? SIN_FECHA) ||
+        a.grupoOrden - b.grupoOrden ||
+        a.indice - b.indice,
+    )
+    .map((x) => x.item);
 }

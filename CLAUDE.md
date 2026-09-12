@@ -274,8 +274,10 @@ deltas salen de ahí. No repetir esas etiquetas a mano en una pantalla.
 
 ## Pantalla Recuperación
 `lib/recuperacion.ts` tiene la lógica de esta pantalla, toda pura: `avance`,
-`posicionEnPeriodo`, `resumenKine`, `diasTobillo`, `franjaTobillo`,
-`notaTobillo`, `proximoControl` y `ordenarPreguntas`.
+`posicionEnPeriodo`, `resumenKine`, `siguienteSesion`, `diasTobillo`,
+`franjaTobillo`, `notaTobillo`, `proximoControl`, `ordenarPreguntas`,
+`lineaTiempo`, `notaHito`, `diferenciaCumplimiento` y `textoHistorial`.
+Las validaciones están en `lib/validarEntrada.ts` y `lib/validarHito.ts`.
 
 - Esta pantalla **registra una recuperación, no la evalúa**: ningún texto
   reprocha. "Peor" en el tobillo es un dato y va en **ámbar**, nunca rojo.
@@ -294,9 +296,33 @@ deltas salen de ahí. No repetir esas etiquetas a mano en una pantalla.
   texto**, porque la semilla insertó todas en el mismo instante y sin eso su
   orden cambiaría entre recargas. Con UI optimista, como en Hoy.
 
-**Pendiente (tarea 9b):** la línea de tiempo con hitos y entradas, el botón
-"Agregar registro" y los formularios de entradas e hitos. La tarjeta de
-kinesiología sin autorizaciones deja marcado el lugar del botón "Agregar sesión".
+### Línea de tiempo, entradas e hitos
+- **`AUTORIZACIONES` en `lib/dominio.ts`** es la lista de lo que se puede
+  autorizar en kine. **"Otro" nunca se guarda como la palabra "Otro"**: abre un
+  campo libre y en `autorizado` queda lo escrito.
+- Una sesión de kine en la línea de tiempo muestra solo lo que autorizó **por
+  primera vez**, igual que la tarjeta de kinesiología. Si no hay nada nuevo es
+  "sin cambios" y va en tono apagado: una sesión más, no una falla.
+- La línea de tiempo ordena por fecha. Un hito ordena por su fecha real si
+  ya se cumplió y, si no, por la planificada. Los que no tienen ninguna van al
+  final. Con la misma fecha van primero los hitos.
+- **El historial de hitos es acumulativo.** Cada cambio de fecha planificada
+  agrega `{ desde, hasta, motivo, fecha_cambio }` y nunca reemplaza los
+  anteriores. El motivo puede ir vacío y el cambio se registra igual. El
+  servidor arma el historial **a partir del hito guardado en la base**, no del
+  que tiene abierto el formulario, así un guardado no puede borrar cambios.
+- Adelantar un hito va en verde y atrasarlo en ámbar. Nunca en rojo.
+- `validarEntrada` devuelve **todas** las columnas, con null en las que no
+  corresponden al tipo, para no chocar con los check constraints. Al editar
+  una entrada el tipo no cambia, y el servidor lo compara con lo guardado.
+- Los hitos **fijos** (los de la semilla) no se pueden eliminar, y el servidor
+  también lo revisa. Un hito creado desde la app va con `clave` null y
+  `fijo` false.
+
+**Diferencia deliberada con el diseño:** el formulario de control médico del
+diseño tiene atajos para marcar un hito como cumplido y para reprogramarlo.
+**No se construyeron.** Los hitos se editan solo en su propia hoja, para que
+haya un único lugar donde cambian y su historial no quede repartido.
 
 ## Convenciones
 - **Idioma:** toda la UI en español de Chile. Nombres de componentes, props y
@@ -364,15 +390,15 @@ Advertencias:
 | 6 | Menús | Terminada |
 | 7 | Semana | Terminada |
 | 8 | Progreso | Terminada (8a y 8b) |
-| 9 | Recuperación | 9a terminada · 9b pendiente |
+| 9 | Recuperación | Terminada (9a y 9b) |
 | 10 | Configuración | Pendiente |
 | 11 | Pulido PWA | Pendiente |
 
-## Estado actual (tareas 1 a 8 y 9a terminadas)
+## Estado actual (tareas 1 a 9 terminadas)
 Esqueleto y componentes (1), esquema con RLS y login (2), datos iniciales cargados
 (3), **`/hoy` completa** (4 y 5), **`/menus`** (6), **`/semana`** (7),
-**`/progreso` completa** (8) y la primera mitad de **`/recuperacion`** (9a:
-avance, kinesiología, tobillo y preguntas).
+**`/progreso` completa** (8) y **`/recuperacion` completa** (9a: avance,
+kinesiología, tobillo y preguntas; 9b: línea de tiempo, entradas e hitos).
 
 `/hoy` tiene encabezado con navegación entre días y estado del día, contadores,
 las cinco tarjetas con su hoja de registro, agua, calorías activas,

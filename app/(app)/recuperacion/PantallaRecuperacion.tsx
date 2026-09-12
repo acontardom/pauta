@@ -1,3 +1,7 @@
+"use client";
+
+import { useState } from "react";
+import Boton from "@/components/ui/Boton";
 import { formatoCorto, formatoDiaMes, formatoLargo } from "@/lib/fechas";
 import {
   avance,
@@ -15,6 +19,9 @@ import type {
   Hito,
   PreguntaControl,
 } from "@/lib/supabase/tipos";
+import HojaEntrada from "./HojaEntrada";
+import HojaHito from "./HojaHito";
+import LineaTiempo from "./LineaTiempo";
 import ListaPreguntas from "./ListaPreguntas";
 
 type Props = {
@@ -24,8 +31,14 @@ type Props = {
   entradas: EntradaRecuperacion[];
   dias: Pick<Dia, "fecha" | "estado_tobillo" | "entrenamiento">[];
   preguntas: PreguntaControl[];
-  hitos: Pick<Hito, "fecha_planificada" | "cumplido">[];
+  hitos: Hito[];
 };
+
+/** Qué hoja está abierta. Con null en entrada o hito, es para crear uno nuevo. */
+type Hoja =
+  | null
+  | { tipo: "entrada"; entrada: EntradaRecuperacion | null }
+  | { tipo: "hito"; hito: Hito | null };
 
 /*
   "Peor" va en ámbar, el color de atención de la app, igual de presente que los
@@ -83,6 +96,8 @@ export default function PantallaRecuperacion({
   preguntas,
   hitos,
 }: Props) {
+  const [hoja, setHoja] = useState<Hoja>(null);
+
   const a = avance(fechaOperacion, fechaRetorno, hoy);
   const kine = resumenKine(entradas, hoy);
   const tobillo = diasTobillo(dias, entradas, hoy);
@@ -90,10 +105,11 @@ export default function PantallaRecuperacion({
   const proximo = proximoControl(entradas);
 
   const marcas = hitos
-    .filter((h): h is { fecha_planificada: string; cumplido: boolean } =>
+    .filter((h): h is Hito & { fecha_planificada: string } =>
       Boolean(h.fecha_planificada),
     )
     .map((h) => ({
+      clave: h.id,
       posicion: posicionEnPeriodo(fechaOperacion, fechaRetorno, h.fecha_planificada),
       cumplido: h.cumplido,
     }));
@@ -130,9 +146,9 @@ export default function PantallaRecuperacion({
             style={{ width: `${a.razon * 100}%` }}
           />
           {/* Una marca por hito con fecha planificada, en su lugar del período. */}
-          {marcas.map((m, i) => (
+          {marcas.map((m) => (
             <span
-              key={i}
+              key={m.clave}
               aria-hidden
               className={`absolute -top-[3px] h-4 w-0.5 -translate-x-1/2 rounded-[1px] ${
                 m.cumplido ? "bg-verde-oscuro" : "bg-tinta-6"
@@ -159,6 +175,13 @@ export default function PantallaRecuperacion({
           )}
         </div>
       </Tarjeta>
+
+      <Boton
+        className="mt-3"
+        onClick={() => setHoja({ tipo: "entrada", entrada: null })}
+      >
+        Agregar registro
+      </Boton>
 
       {/* Kinesiología */}
       <Tarjeta className="py-[18px]">
@@ -200,7 +223,13 @@ export default function PantallaRecuperacion({
               Registra una sesión de kinesiología para ir armando la lista de lo
               autorizado.
             </p>
-            {/* La tarea 9b agrega acá el botón "Agregar sesión". */}
+            <Boton
+              variante="secundaria"
+              className="mt-3 h-12"
+              onClick={() => setHoja({ tipo: "entrada", entrada: null })}
+            >
+              Agregar sesión
+            </Boton>
           </>
         )}
       </Tarjeta>
@@ -240,7 +269,35 @@ export default function PantallaRecuperacion({
         </p>
       </Tarjeta>
 
+      <LineaTiempo
+        hitos={hitos}
+        entradas={entradas}
+        onAbrirHito={(hito) => setHoja({ tipo: "hito", hito })}
+        onAbrirEntrada={(entrada) => setHoja({ tipo: "entrada", entrada })}
+        onNuevoHito={() => setHoja({ tipo: "hito", hito: null })}
+      />
+
       <ListaPreguntas preguntas={preguntas} proximoControl={proximo} />
+
+      {/* La key remonta cada hoja: abrir otro registro no arrastra lo escrito. */}
+      {hoja?.tipo === "entrada" ? (
+        <HojaEntrada
+          key={hoja.entrada ? `${hoja.entrada.id}-${hoja.entrada.updated_at}` : "nueva"}
+          entrada={hoja.entrada}
+          entradas={entradas}
+          hoy={hoy}
+          onCerrar={() => setHoja(null)}
+        />
+      ) : null}
+
+      {hoja?.tipo === "hito" ? (
+        <HojaHito
+          key={hoja.hito ? `${hoja.hito.id}-${hoja.hito.updated_at}` : "nuevo"}
+          hito={hoja.hito}
+          hoy={hoy}
+          onCerrar={() => setHoja(null)}
+        />
+      ) : null}
     </div>
   );
 }

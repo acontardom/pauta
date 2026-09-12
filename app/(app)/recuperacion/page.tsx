@@ -31,11 +31,9 @@ export default async function Recuperacion() {
       .gte("fecha", desde)
       .lte("fecha", hoy),
     supabase.from("preguntas_control").select("*"),
-    // Las marcas de la barra de avance salen de los hitos con fecha planificada.
-    supabase
-      .from("hitos")
-      .select("fecha_planificada, cumplido")
-      .not("fecha_planificada", "is", null),
+    // Todos los hitos, también los sin fecha: la línea de tiempo los muestra
+    // al final. Las marcas de la barra usan solo los que tienen fecha.
+    supabase.from("hitos").select("*").order("created_at"),
   ]);
 
   const fechaOperacion = configuracion.data?.fecha_operacion;
@@ -68,7 +66,7 @@ export default async function Recuperacion() {
       entradas={(entradas.data ?? []) as EntradaRecuperacion[]}
       dias={(dias.data ?? []) as Pick<Dia, "fecha" | "estado_tobillo" | "entrenamiento">[]}
       preguntas={(preguntas.data ?? []) as PreguntaControl[]}
-      hitos={(hitos.data ?? []) as Pick<Hito, "fecha_planificada" | "cumplido">[]}
+      hitos={(hitos.data ?? []) as Hito[]}
     />
   );
 }

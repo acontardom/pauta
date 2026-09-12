@@ -80,3 +80,20 @@ export const CAMPOS_INBODY = [
 export type ClaveInbody = (typeof CAMPOS_INBODY)[number]["clave"];
 export type DireccionInbody = "baja" | "sube";
 
+
+/*
+  Lo que se puede autorizar en una sesión de kinesiología.
+
+  "Otro" no se guarda como la palabra "Otro": abre un campo de texto libre y en
+  entradas_recuperacion.autorizado queda lo que se escribió.
+*/
+export const AUTORIZACIONES = [
+  "Apoyo parcial",
+  "Bicicleta",
+  "Movilidad activa",
+  "Fortalecimiento",
+  "Propiocepción",
+  "Caminar sin muletas",
+  "Trote",
+  "Otro",
+] as const;

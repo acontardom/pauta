@@ -2,15 +2,20 @@ import { describe, expect, it } from "vitest";
 import {
   avance,
   diasTobillo,
+  diferenciaCumplimiento,
   franjaTobillo,
+  lineaTiempo,
+  notaHito,
   notaTobillo,
   ordenarPreguntas,
   posicionEnPeriodo,
   proximoControl,
   resumenKine,
+  siguienteSesion,
+  textoHistorial,
   type DiaTobillo,
 } from "./recuperacion";
-import type { EntradaRecuperacion } from "./supabase/tipos";
+import type { EntradaRecuperacion, Hito } from "./supabase/tipos";
 
 const OPERACION = "2026-09-04";
 const RETORNO = "2027-01-01";
@@ -160,6 +165,20 @@ describe("resumenKine", () => {
 
   it("ignora los controles y las notas", () => {
     expect(resumenKine([entrada({ fecha: "2026-09-09", tipo: "control" })], "2026-09-12").total).toBe(0);
+  });
+});
+
+describe("siguienteSesion", () => {
+  it("con la semilla sugiere la 4", () => {
+    expect(siguienteSesion(SEMILLA)).toBe(4);
+  });
+
+  it("sin sesiones sugiere la 1", () => {
+    expect(siguienteSesion([])).toBe(1);
+  });
+
+  it("usa el mayor número aunque haya menos sesiones registradas", () => {
+    expect(siguienteSesion([entrada({ fecha: "2026-09-10", tipo: "kine", numero_sesion: 7 })])).toBe(8);
   });
 });
 
@@ -313,5 +332,239 @@ describe("ordenarPreguntas", () => {
     const misma = "2026-09-11T19:00:00Z";
     const orden = ordenarPreguntas([p("¿Cuándo trotar?", false, misma), p("¿Aceite?", false, misma)]);
     expect(orden.map((x) => x.texto)).toEqual(["¿Aceite?", "¿Cuándo trotar?"]);
+  });
+});
+
+/* ------------------------------------------------------------------------- */
+/* Hitos y línea de tiempo                                                   */
+/* ------------------------------------------------------------------------- */
+
+function hito(extra: Partial<Hito> & Pick<Hito, "nombre">): Hito {
+  return {
+    id: extra.nombre,
+    user_id: "u",
+    created_at: "",
+    updated_at: "",
+    clave: null,
+    fecha_planificada: null,
+    fecha_real: null,
+    cumplido: false,
+    fijo: false,
+    historial: [],
+    ...extra,
+  };
+}
+
+function entradaCompleta(
+  extra: Partial<EntradaRecuperacion> & Pick<EntradaRecuperacion, "fecha" | "tipo">,
+): EntradaRecuperacion {
+  return {
+    id: `${extra.fecha}-${extra.tipo}-${extra.numero_sesion ?? ""}`,
+    user_id: "u",
+    created_at: "",
+    updated_at: "",
+    numero_sesion: null,
+    autorizado: [],
+    hinchazon: null,
+    indicaciones: null,
+    nota: null,
+    proximo_control: null,
+    ...extra,
+  };
+}
+
+const HITOS_SEMILLA: Hito[] = [
+  hito({ nombre: "Operación de tobillo", fecha_planificada: "2026-09-04", fecha_real: "2026-09-04", cumplido: true, fijo: true }),
+  hito({ nombre: "Fin del período sin apoyo", fecha_planificada: "2026-10-02", fijo: true }),
+  hito({ nombre: "Inicio de carga completa", fecha_planificada: "2026-10-16", fijo: true }),
+  hito({ nombre: "Retorno a la actividad normal", fecha_planificada: "2027-01-01", fijo: true }),
+  hito({ nombre: "Vuelta a la marcha sin muletas", fijo: true }),
+];
+
+const ENTRADAS_SEMILLA: EntradaRecuperacion[] = [
+  entradaCompleta({ fecha: "2026-09-08", tipo: "kine", numero_sesion: 1, autorizado: ["Movilidad activa"], hinchazon: "menos" }),
+  entradaCompleta({ fecha: "2026-09-09", tipo: "control", proximo_control: "2026-09-23", nota: "Control con la doctora, todo se ve bien" }),
+  entradaCompleta({ fecha: "2026-09-10", tipo: "kine", numero_sesion: 2, autorizado: ["Bicicleta"] }),
+  entradaCompleta({ fecha: "2026-09-11", tipo: "kine", numero_sesion: 3 }),
+];
+
+describe("lineaTiempo", () => {
+  it("con la semilla: 5 hitos y 4 entradas en orden, el hito sin fecha al final", () => {
+    const items = lineaTiempo(HITOS_SEMILLA, ENTRADAS_SEMILLA);
+    expect(items.map((i) => i.titulo)).toEqual([
+      "Operación de tobillo",
+      "Sesión 1 · Movilidad activa",
+      "Control médico",
+      "Sesión 2 · Bicicleta",
+      "Sesión 3 · sin cambios",
+      "Fin del período sin apoyo",
+      "Inicio de carga completa",
+      "Retorno a la actividad normal",
+      "Vuelta a la marcha sin muletas",
+    ]);
+    const ultimo = items[items.length - 1];
+    expect(ultimo.fecha).toBe(null);
+    expect(ultimo.tipo).toBe("Hito planificado");
+  });
+
+  it("marca el hito cumplido como destacado", () => {
+    const [operacion] = lineaTiempo(HITOS_SEMILLA, []);
+    expect(operacion.grupo).toBe("hito");
+    expect(operacion.tipo).toBe("Hito cumplido");
+    expect(operacion.destacado).toBe(true);
+    expect(operacion.notaHito).toEqual({ texto: "Cumplido en la fecha planificada.", tono: "neutro" });
+  });
+
+  it("una sesión sin autorizaciones nuevas va sin destacar, con 'sin cambios'", () => {
+    const sesion3 = lineaTiempo([], ENTRADAS_SEMILLA).find((i) => i.titulo.startsWith("Sesión 3"))!;
+    expect(sesion3.grupo).toBe("kine");
+    expect(sesion3.titulo).toBe("Sesión 3 · sin cambios");
+    expect(sesion3.destacado).toBe(false);
+  });
+
+  it("repetir algo ya autorizado también es 'sin cambios'", () => {
+    const items = lineaTiempo(
+      [],
+      [
+        entradaCompleta({ fecha: "2026-09-08", tipo: "kine", numero_sesion: 1, autorizado: ["Bicicleta"] }),
+        entradaCompleta({ fecha: "2026-09-10", tipo: "kine", numero_sesion: 2, autorizado: ["Bicicleta", "Propiocepción"] }),
+        entradaCompleta({ fecha: "2026-09-12", tipo: "kine", numero_sesion: 3, autorizado: ["Bicicleta"] }),
+      ],
+    );
+    expect(items.map((i) => i.titulo)).toEqual([
+      "Sesión 1 · Bicicleta",
+      "Sesión 2 · Propiocepción",
+      "Sesión 3 · sin cambios",
+    ]);
+  });
+
+  it("los controles llevan indicaciones, próximo control y nota como líneas", () => {
+    const control = lineaTiempo(
+      [],
+      [entradaCompleta({ fecha: "2026-09-09", tipo: "control", indicaciones: " Carga parcial ", proximo_control: "2026-10-21", nota: "Todo bien" })],
+    )[0];
+    expect(control.grupo).toBe("control");
+    expect(control.tipo).toBe("Control médico");
+    expect(control.lineas).toEqual([
+      "Indicaciones: Carga parcial",
+      "Próximo control: miércoles 21 de octubre",
+      "Todo bien",
+    ]);
+  });
+
+  it("con fechas repetidas: primero los hitos y después las entradas, en el orden de llegada", () => {
+    const items = lineaTiempo(
+      [hito({ nombre: "Hito del 10", fecha_planificada: "2026-09-10" })],
+      [
+        entradaCompleta({ id: "a", fecha: "2026-09-10", tipo: "nota", nota: "primera nota" }),
+        entradaCompleta({ id: "b", fecha: "2026-09-10", tipo: "nota", nota: "segunda nota" }),
+      ],
+    );
+    expect(items.map((i) => i.clave)).toEqual(["hito-Hito del 10", "entrada-a", "entrada-b"]);
+  });
+
+  it("un hito ordena por su fecha real, no por la planificada", () => {
+    const items = lineaTiempo(
+      [hito({ nombre: "Adelantado", fecha_planificada: "2026-10-16", fecha_real: "2026-09-01", cumplido: true })],
+      ENTRADAS_SEMILLA,
+    );
+    expect(items[0].titulo).toBe("Adelantado");
+  });
+});
+
+describe("notaHito", () => {
+  it("un hito sin fecha planificada y sin cambios no dice nada", () => {
+    expect(notaHito(hito({ nombre: "x" }))).toEqual({ texto: "", tono: "neutro" });
+    // Cumplido pero sin planificada: no hay con qué comparar.
+    expect(notaHito(hito({ nombre: "x", fecha_real: "2026-09-10", cumplido: true }))).toEqual({ texto: "", tono: "neutro" });
+  });
+
+  it("cumplido antes es bueno; en la fecha y después, neutro", () => {
+    const base = { nombre: "x", fecha_planificada: "2026-10-16", cumplido: true };
+    expect(notaHito(hito({ ...base, fecha_real: "2026-10-13" }))).toEqual({
+      texto: "Cumplido 3 días antes de lo previsto (16 oct).",
+      tono: "bueno",
+    });
+    expect(notaHito(hito({ ...base, fecha_real: "2026-10-21" }))).toEqual({
+      texto: "Cumplido 5 días después de lo previsto (16 oct).",
+      tono: "neutro",
+    });
+    expect(notaHito(hito({ ...base, fecha_real: "2026-10-16" }))).toEqual({
+      texto: "Cumplido en la fecha planificada.",
+      tono: "neutro",
+    });
+    expect(notaHito(hito({ ...base, fecha_real: "2026-10-15" })).texto).toBe(
+      "Cumplido 1 día antes de lo previsto (16 oct).",
+    );
+  });
+
+  it("atrasado va en ámbar con el motivo", () => {
+    const h = hito({
+      nombre: "Inicio de carga completa",
+      fecha_planificada: "2026-10-23",
+      historial: [{ desde: "2026-10-16", hasta: "2026-10-23", motivo: "Control lo movió", fecha_cambio: "2026-09-12" }],
+    });
+    expect(notaHito(h)).toEqual({ texto: "Movido desde 16 oct · Control lo movió", tono: "ambar" });
+  });
+
+  it("con dos cambios cuenta el último; adelantar va en verde", () => {
+    const h = hito({
+      nombre: "Inicio de carga completa",
+      fecha_planificada: "2026-10-20",
+      historial: [
+        { desde: "2026-10-16", hasta: "2026-10-23", motivo: "Control lo movió", fecha_cambio: "2026-09-12" },
+        { desde: "2026-10-23", hasta: "2026-10-20", motivo: null, fecha_cambio: "2026-09-20" },
+      ],
+    });
+    expect(notaHito(h)).toEqual({ texto: "Adelantado desde 23 oct", tono: "bueno" });
+  });
+
+  it("cumplido con historial cuenta el cumplimiento, no el último cambio", () => {
+    const h = hito({
+      nombre: "x",
+      fecha_planificada: "2026-10-23",
+      fecha_real: "2026-10-23",
+      cumplido: true,
+      historial: [{ desde: "2026-10-16", hasta: "2026-10-23", motivo: "Control lo movió", fecha_cambio: "2026-09-12" }],
+    });
+    expect(notaHito(h).texto).toBe("Cumplido en la fecha planificada.");
+  });
+});
+
+describe("textoHistorial", () => {
+  it("una línea por cambio, sin borrar los anteriores", () => {
+    expect(
+      textoHistorial([
+        { desde: "2026-10-16", hasta: "2026-10-23", motivo: "Control lo movió", fecha_cambio: "2026-09-12" },
+        { desde: "2026-10-23", hasta: "2026-10-20", motivo: null, fecha_cambio: "2026-09-20" },
+      ]),
+    ).toEqual([
+      "16 oct → 23 oct · Control lo movió · registrado el 12 sep",
+      "23 oct → 20 oct · registrado el 20 sep",
+    ]);
+  });
+
+  it("una fecha quitada se lee como 'sin fecha'", () => {
+    expect(textoHistorial([{ desde: "2026-10-16", hasta: null, motivo: null, fecha_cambio: "2026-09-12" }])).toEqual([
+      "16 oct → sin fecha · registrado el 12 sep",
+    ]);
+  });
+
+  it("sin historial no hay líneas", () => {
+    expect(textoHistorial([])).toEqual([]);
+    expect(textoHistorial(null)).toEqual([]);
+  });
+});
+
+describe("diferenciaCumplimiento", () => {
+  it("antes en verde, después y en la fecha en neutro", () => {
+    expect(diferenciaCumplimiento("2026-10-16", "2026-10-13")).toEqual({ texto: "3 días antes de lo previsto", tono: "bueno" });
+    expect(diferenciaCumplimiento("2026-10-16", "2026-10-21")).toEqual({ texto: "5 días después", tono: "neutro" });
+    expect(diferenciaCumplimiento("2026-10-16", "2026-10-16")).toEqual({ texto: "En la fecha planificada.", tono: "neutro" });
+  });
+
+  it("sin fecha planificada lo dice; sin fecha real no dice nada", () => {
+    expect(diferenciaCumplimiento(null, "2026-10-16").texto).toBe("Sin fecha planificada con la que comparar.");
+    expect(diferenciaCumplimiento("2026-10-16", null)).toEqual({ texto: "", tono: "neutro" });
   });
 });
