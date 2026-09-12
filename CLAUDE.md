@@ -324,6 +324,30 @@ diseño tiene atajos para marcar un hito como cumplido y para reprogramarlo.
 **No se construyeron.** Los hitos se editan solo en su propia hoja, para que
 haya un único lugar donde cambian y su historial no quede repartido.
 
+## Pantalla Configuración
+**La configuración es la fuente de metas, horarios y fechas para todas las
+pantallas.** Las metas mueven los contadores de Hoy y la grilla de Semana, los
+horarios las tarjetas de comida, las metas objetivo las líneas de meta de
+Progreso y las fechas la barra de avance de Recuperación.
+
+- **Nunca se guarda un valor inválido ni incompleto.** `validarConfiguracion`
+  (en `lib/validarConfiguracion.ts`) corre en el cliente antes de enviar y otra
+  vez en el servidor, y devuelve **todos** los errores a la vez, cada uno con su
+  campo. Los campos inválidos van con borde ámbar (`CampoNumerico` tiene la
+  prop `invalido`) y el resumen va al pie. Nada en rojo.
+- Sin fila guardada se muestran `CONFIGURACION_POR_DEFECTO` con un aviso, y la
+  fila se crea al guardar (upsert sobre `user_id`).
+- **Si la lectura falla, no se muestra el formulario.** Un error se vería igual
+  que "no hay fila" y guardar pisaría la configuración real con los valores por
+  defecto.
+- Guardar revalida `/configuracion`, `/hoy`, `/semana`, `/progreso` y
+  `/recuperacion`.
+- Salir con cambios sin guardar (la flecha ‹ o una pestaña) pide confirmación
+  en una hoja. Las pestañas se interceptan con un listener de clic **en fase de
+  captura sobre `window`**, dentro de la propia pantalla: la barra inferior del
+  shell no sabe nada de esto.
+- La sección Cuenta muestra el correo de la sesión y el botón de cerrar sesión.
+
 ## Convenciones
 - **Idioma:** toda la UI en español de Chile. Nombres de componentes, props y
   funciones también en español.
@@ -391,21 +415,20 @@ Advertencias:
 | 7 | Semana | Terminada |
 | 8 | Progreso | Terminada (8a y 8b) |
 | 9 | Recuperación | Terminada (9a y 9b) |
-| 10 | Configuración | Pendiente |
+| 10 | Configuración | Terminada |
 | 11 | Pulido PWA | Pendiente |
 
-## Estado actual (tareas 1 a 9 terminadas)
-Esqueleto y componentes (1), esquema con RLS y login (2), datos iniciales cargados
-(3), **`/hoy` completa** (4 y 5), **`/menus`** (6), **`/semana`** (7),
-**`/progreso` completa** (8) y **`/recuperacion` completa** (9a: avance,
-kinesiología, tobillo y preguntas; 9b: línea de tiempo, entradas e hitos).
+## Estado actual (tareas 1 a 10 terminadas)
+Todas las pantallas están completas: `/hoy` (4 y 5), `/menus` (6), `/semana` (7),
+`/progreso` (8), `/recuperacion` (9) y `/configuracion` (10), sobre el esqueleto
+(1), el esquema con RLS y el login (2) y los datos iniciales (3). **Solo queda la
+tarea 11, pulido PWA.**
 
 `/hoy` tiene encabezado con navegación entre días y estado del día, contadores,
 las cinco tarjetas con su hoja de registro, agua, calorías activas,
 entrenamiento, tobillo y el botón de cierre con su hoja de resumen.
 
-`dias.nota` sigue **sin usar**. `/configuracion` tiene el bloque provisorio de
-la tarea 2.
+`dias.nota` sigue **sin usar**.
 
 Ya hay datos en la base: configuración, 5 hitos, 21 menús, 105 alimentos, 1 medida,
 1 InBody, 4 entradas de recuperación y 7 preguntas. `dias` y `comidas` están vacías:
@@ -419,8 +442,7 @@ las llena la app.
   Antes era un botón fijo presente en todas las pantallas y, al bajar, quedaba
   flotando sobre las tarjetas y pisaba sus botones. Por eso ningún encabezado
   reserva ya espacio a la derecha: los títulos usan todo el ancho.
-- Desde `/configuracion` se vuelve **siempre a `/hoy`**, con un enlace en su
+- Desde `/configuracion` se vuelve **siempre a `/hoy`**, con la flecha ‹ de su
   encabezado. No se recuerda la pestaña de origen.
-- `/configuracion` tiene un bloque **provisorio** (correo, estado de la base y
-  cerrar sesión) que la tarea 10 reemplaza.
-- `app/componentes/` es una página temporal de revisión visual: **se elimina en la tarea 11**.
+- La página temporal `/componentes` **se eliminó en la tarea 10**. Para revisar
+  un componente, se revisa en la pantalla que lo usa.

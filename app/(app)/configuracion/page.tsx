@@ -1,54 +1,55 @@
 import Link from "next/link";
-import EncabezadoPantalla from "@/components/ui/EncabezadoPantalla";
-import Tarjeta from "@/components/ui/Tarjeta";
 import { crearClienteServidor } from "@/lib/supabase/servidor";
-import { cerrarSesion } from "@/app/entrar/acciones";
-import BotonCerrarSesion from "./BotonCerrarSesion";
+import {
+  formularioDesdeConfiguracion,
+  type FilaConfiguracion,
+} from "@/lib/validarConfiguracion";
+import FormularioConfiguracion from "./FormularioConfiguracion";
 
-/*
-  Bloque provisorio: confirma que la sesión y la base responden.
-  La tarea 10 reemplaza esta pantalla completa.
-*/
-export default async function Configuracion() {
+export default async function PaginaConfiguracion() {
   const supabase = await crearClienteServidor();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const [sesion, fila] = await Promise.all([
+    supabase.auth.getUser(),
+    supabase
+      .from("configuracion")
+      .select(
+        "metas_porciones, meta_agua_ml, meta_pct_grasa, meta_peso, meta_cintura, horarios, fecha_operacion, fecha_retorno",
+      )
+      .maybeSingle(),
+  ]);
 
-  // Select real contra la base: con RLS y sin filas debe volver sin error.
-  const { error } = await supabase.from("configuracion").select("id").limit(1);
-
-  return (
-    <>
-      <EncabezadoPantalla titulo="Configuración">
-        {/*
-          El engranaje vive solo en Hoy, así que acá hace falta una vuelta
-          explícita. Siempre va a /hoy: no se recuerda la pestaña de origen.
-        */}
-        <Link
-          href="/hoy"
-          className="mt-2 inline-block text-[13px] text-verde"
-        >
+  /*
+    Si la lectura FALLA no se muestra el formulario. Sin esto, un error se vería
+    igual que "todavía no hay configuración": aparecerían los valores por
+    defecto, y guardar pisaría la configuración real con ellos.
+  */
+  if (fila.error) {
+    return (
+      <div className="px-5 pb-8 pt-[calc(env(safe-area-inset-top)+22px)]">
+        <h1 className="font-serif text-[27px] font-medium text-tinta">
+          Configuración
+        </h1>
+        <p className="mt-4 text-[14.5px] leading-relaxed text-tinta-2">
+          No se pudo cargar la configuración. Recarga la pantalla para intentar
+          de nuevo.
+        </p>
+        <Link href="/hoy" className="mt-2 inline-block text-[14px] text-verde">
           ‹ Volver a Hoy
         </Link>
-      </EncabezadoPantalla>
-
-      <div className="flex flex-col gap-3 px-5 pt-5">
-        <Tarjeta>
-          <p className="text-[12.5px] text-tinta-3">Sesión iniciada como</p>
-          <p className="mt-1 text-[15.5px] text-tinta">{user?.email}</p>
-          <p className="mt-3 border-t border-linea pt-3 text-[13.5px] text-tinta-2">
-            {error ? `Error de base de datos: ${error.message}` : "Base de datos conectada"}
-          </p>
-        </Tarjeta>
-
-        <form action={cerrarSesion}>
-          <BotonCerrarSesion />
-        </form>
-
-        <p className="pt-2 text-[13px] text-tinta-4">En construcción</p>
       </div>
-    </>
+    );
+  }
+
+  const existe = fila.data !== null;
+
+  return (
+    <FormularioConfiguracion
+      inicial={formularioDesdeConfiguracion(
+        (fila.data ?? null) as FilaConfiguracion | null,
+      )}
+      existe={existe}
+      correo={sesion.data.user?.email ?? ""}
+    />
   );
 }

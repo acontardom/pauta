@@ -14,8 +14,11 @@ type Props = {
   /**
    * "grande" para los campos protagonistas de una hoja (peso, cintura).
    * "compacto" para formularios de varias columnas (InBody).
+   * "mediano" para las metas de Configuración.
    */
-  tamano?: "normal" | "grande" | "compacto";
+  tamano?: "normal" | "grande" | "compacto" | "mediano";
+  /** Borde ámbar: el valor no pasó la validación. Nunca rojo. */
+  invalido?: boolean;
   className?: string;
 };
 
@@ -23,6 +26,14 @@ const ESTILO_TAMANO = {
   normal: "h-[54px] bg-superficie px-[14px] text-[19px]",
   grande: "h-[60px] bg-superficie px-[14px] text-[26px]",
   compacto: "h-[50px] bg-fondo px-[11px] text-[19px]",
+  mediano: "h-[52px] bg-superficie px-[12px] text-[21px]",
+} as const;
+
+const ESTILO_ETIQUETA = {
+  normal: "text-[12.5px]",
+  grande: "text-[12.5px]",
+  compacto: "text-[11.5px] leading-snug",
+  mediano: "text-[12px]",
 } as const;
 
 /*
@@ -42,6 +53,7 @@ export default function CampoNumerico({
   sufijo,
   autoComplete = "off",
   tamano = "normal",
+  invalido = false,
   className = "",
 }: Props) {
   const id = useId();
@@ -77,9 +89,7 @@ export default function CampoNumerico({
     <div className={className}>
       <label
         htmlFor={id}
-        className={`block text-tinta-3 ${
-          tamano === "compacto" ? "text-[11.5px] leading-snug" : "text-[12.5px]"
-        }`}
+        className={`block text-tinta-3 ${ESTILO_ETIQUETA[tamano]}`}
       >
         {etiqueta}
       </label>
@@ -93,11 +103,14 @@ export default function CampoNumerico({
           autoComplete={autoComplete}
           value={valor}
           placeholder={placeholder}
+          aria-invalid={invalido || undefined}
           onFocus={alEnfocar}
           onChange={(e) => manejarCambio(e.target.value)}
-          className={`w-full rounded-control border border-borde font-serif text-tinta placeholder:text-tinta-5 focus:border-verde-borde focus:outline-none ${
-            ESTILO_TAMANO[tamano]
-          } ${sufijo ? "pr-12" : ""}`}
+          className={`w-full rounded-control border font-serif text-tinta placeholder:text-tinta-5 focus:outline-none ${
+            invalido
+              ? "border-ambar focus:border-ambar"
+              : "border-borde focus:border-verde-borde"
+          } ${ESTILO_TAMANO[tamano]} ${sufijo ? "pr-12" : ""}`}
         />
         {sufijo ? (
           <span className="pointer-events-none absolute right-[14px] top-1/2 -translate-y-1/2 text-[14px] text-tinta-4">
