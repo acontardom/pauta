@@ -108,39 +108,39 @@ export default function PantallaSemana({
         </div>
 
         {/*
-          La leyenda explica la escala real de las celdas: los verdes son tres
-          pasos según qué parte de la meta se cubrió, no un único "cumplido".
-          El azul y el vacío van aparte porque no son parte de esa escala.
-        */}
-        <div className="mt-3.5 flex flex-wrap items-end gap-x-4 gap-y-2.5">
-          <div>
-            <div className="text-[11.5px] text-tinta-3">
-              Menos ← porción de la meta → más
-            </div>
-            <div className="mt-1.5 flex gap-[3px]">
-              {["bg-verde-claro", "bg-verde-medio", "bg-verde"].map((fondo) => (
-                <span
-                  key={fondo}
-                  className={`h-2.5 w-6 rounded-[3px] ${fondo}`}
-                />
-              ))}
-            </div>
-          </div>
+          Una sola fila. Los verdes van de menor a mayor: son pasos de una
+          escala, no categorías. El azul y el vacío quedan aparte porque no
+          son parte de ella.
 
-          <div className="flex flex-wrap gap-3.5">
-            {[
-              { etiqueta: "Estimado", fondo: "bg-azul" },
-              { etiqueta: "Sin registro", fondo: "bg-vacio" },
-            ].map((l) => (
+          flex-nowrap y whitespace-nowrap la obligan a no partirse, y el
+          clamp achica el texto en pantallas angostas antes que pasar a dos
+          filas: 11,5px a 430px de ancho, hasta 8,5px como piso, que es lo que
+          hace falta para que entre incluso en una pantalla de 320px.
+        */}
+        <div className="mt-3.5 flex flex-nowrap items-center gap-1.5 text-[clamp(8.5px,2.674vw,11.5px)] text-tinta-3">
+          <span className="whitespace-nowrap">Porción de la meta:</span>
+
+          <span className="flex shrink-0 gap-[3px]">
+            {["bg-verde-claro", "bg-verde-medio", "bg-verde"].map((fondo) => (
               <span
-                key={l.etiqueta}
-                className="flex items-center gap-1.5 text-[11.5px] text-tinta-3"
-              >
-                <span className={`h-2.5 w-2.5 rounded-[3px] ${l.fondo}`} />
-                {l.etiqueta}
-              </span>
+                key={fondo}
+                className={`h-2.5 w-2.5 rounded-[3px] ${fondo}`}
+              />
             ))}
-          </div>
+          </span>
+
+          {[
+            { etiqueta: "Estimado", fondo: "bg-azul" },
+            { etiqueta: "Sin registro", fondo: "bg-vacio" },
+          ].map((l) => (
+            <span
+              key={l.etiqueta}
+              className="flex shrink-0 items-center gap-1.5 whitespace-nowrap"
+            >
+              <span className={`h-2.5 w-2.5 shrink-0 rounded-[3px] ${l.fondo}`} />
+              {l.etiqueta}
+            </span>
+          ))}
         </div>
       </div>
 
