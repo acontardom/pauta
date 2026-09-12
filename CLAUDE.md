@@ -230,6 +230,31 @@ proponen algo concreto. Van con borde ámbar, el único color de atención.
 Ninguna dice que algo se incumplió: un día estimado o un tiempo sin registrar
 son datos, no faltas.
 
+## Pantalla Progreso
+`lib/progreso.ts` tiene la lógica de **series y deltas**, toda pura:
+`ultimoYAnterior`, `delta`, `serieGrafico`, `progresoGrasa` y
+`textoPctGrasa`. Si otra pantalla necesita un gráfico de línea, va acá.
+
+- Los **gráficos se construyen a mano** (SVG de viewBox `0 0 320 120`), sin
+  librería: son series de pocos puntos y una línea de meta.
+- Los colores del SVG se toman de las variables CSS de los tokens
+  (`var(--color-verde)`), porque `stroke` no acepta clases de Tailwind. Siguen
+  siendo tokens, no hex sueltos.
+- **Los deltas tienen dirección semántica:** en peso, cintura y % de grasa
+  bajar es bueno y va en verde; subir es **neutro**, nunca rojo. El signo menos
+  es U+2212, no un guion.
+- **`medidas` permite varias filas por fecha**: se inserta, no se hace upsert.
+  Pesarse dos veces el mismo día son dos datos.
+- Se puede guardar **solo peso, solo cintura o ambos**. Un registro de solo
+  peso no cuenta como dato de cintura en la serie ni en el delta.
+- El `%` de grasa se muestra con **un decimal fijo** (`textoPctGrasa`), porque
+  ahí el decimal comunica precisión de medición. La meta va con `formatear`,
+  porque es un objetivo redondo.
+
+**Pendiente (tarea 8b):** el formulario de InBody, el gráfico de grasa y
+músculo, y las tarjetas comparativas. El botón "Agregar medición InBody" de la
+tarjeta de % de grasa ya está, con el manejador vacío esperando.
+
 ## Convenciones
 - **Idioma:** toda la UI en español de Chile. Nombres de componentes, props y
   funciones también en español.
@@ -295,21 +320,22 @@ Advertencias:
 | 5 | Hoy: resto del día | Terminada |
 | 6 | Menús | Terminada |
 | 7 | Semana | Terminada |
-| 8 | Progreso | Pendiente |
+| 8 | Progreso | 8a terminada · 8b pendiente |
 | 9 | Recuperación | Pendiente |
 | 10 | Configuración | Pendiente |
 | 11 | Pulido PWA | Pendiente |
 
-## Estado actual (tareas 1 a 7 terminadas)
+## Estado actual (tareas 1 a 7 y 8a terminadas)
 Esqueleto y componentes (1), esquema con RLS y login (2), datos iniciales cargados
-(3), **`/hoy` completa** (4 y 5), **`/menus`** (6) y **`/semana`** (7).
+(3), **`/hoy` completa** (4 y 5), **`/menus`** (6), **`/semana`** (7) y la
+primera mitad de **`/progreso`** (8a: peso, cintura y % de grasa).
 
 `/hoy` tiene encabezado con navegación entre días y estado del día, contadores,
 las cinco tarjetas con su hoja de registro, agua, calorías activas,
 entrenamiento, tobillo y el botón de cierre con su hoja de resumen.
 
-`dias.nota` sigue **sin usar**. Siguen en "En construcción" `/progreso` y
-`/recuperacion`; `/configuracion` tiene el bloque provisorio de la tarea 2.
+`dias.nota` sigue **sin usar**. `/recuperacion` sigue en "En construcción" y
+`/configuracion` tiene el bloque provisorio de la tarea 2.
 
 Ya hay datos en la base: configuración, 5 hitos, 21 menús, 105 alimentos, 1 medida,
 1 InBody, 4 entradas de recuperación y 7 preguntas. `dias` y `comidas` están vacías:

@@ -119,6 +119,12 @@ export function formatoLargoConAnio(fecha: string): string {
   return `${dia} de ${MESES[mes - 1]} de ${anio}`;
 }
 
+/** "2026-09-01" → "1 de septiembre". Sin año: para textos de delta. */
+export function formatoDiaMes(fecha: string): string {
+  const { mes, dia } = partes(fecha);
+  return `${dia} de ${MESES[mes - 1]}`;
+}
+
 /** "2026-09-11" → "11 sep" */
 export function formatoCorto(fecha: string): string {
   const { mes, dia } = partes(fecha);

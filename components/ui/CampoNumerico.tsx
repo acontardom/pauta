@@ -11,6 +11,8 @@ type Props = {
   sufijo?: string;
   /** Para casos como el código de un solo uso ("one-time-code"). */
   autoComplete?: string;
+  /** "grande" para los campos protagonistas de una hoja (peso, cintura). */
+  tamano?: "normal" | "grande";
   className?: string;
 };
 
@@ -30,6 +32,7 @@ export default function CampoNumerico({
   placeholder = "—",
   sufijo,
   autoComplete = "off",
+  tamano = "normal",
   className = "",
 }: Props) {
   const id = useId();
@@ -81,9 +84,9 @@ export default function CampoNumerico({
           placeholder={placeholder}
           onFocus={alEnfocar}
           onChange={(e) => manejarCambio(e.target.value)}
-          className={`h-[54px] w-full rounded-control border border-borde bg-superficie px-[14px] font-serif text-[19px] text-tinta placeholder:text-tinta-5 focus:border-verde-borde focus:outline-none ${
-            sufijo ? "pr-12" : ""
-          }`}
+          className={`w-full rounded-control border border-borde bg-superficie px-[14px] font-serif text-tinta placeholder:text-tinta-5 focus:border-verde-borde focus:outline-none ${
+            tamano === "grande" ? "h-[60px] text-[26px]" : "h-[54px] text-[19px]"
+          } ${sufijo ? "pr-12" : ""}`}
         />
         {sufijo ? (
           <span className="pointer-events-none absolute right-[14px] top-1/2 -translate-y-1/2 text-[14px] text-tinta-4">
