@@ -272,6 +272,32 @@ deltas salen de ahí. No repetir esas etiquetas a mano en una pantalla.
 - `CampoNumerico` tiene `tamano`: `normal`, `grande` (peso y cintura) y
   `compacto` (el formulario de dos columnas de InBody).
 
+## Pantalla Recuperación
+`lib/recuperacion.ts` tiene la lógica de esta pantalla, toda pura: `avance`,
+`posicionEnPeriodo`, `resumenKine`, `diasTobillo`, `franjaTobillo`,
+`notaTobillo`, `proximoControl` y `ordenarPreguntas`.
+
+- Esta pantalla **registra una recuperación, no la evalúa**: ningún texto
+  reprocha. "Peor" en el tobillo es un dato y va en **ámbar**, nunca rojo.
+- La semana actual parte en 1 el día de la operación y tiene tope en las
+  semanas totales: pasado el retorno no se lee "Semana 19 de 17".
+- **Lo autorizado en kine es acumulativo**: cada cosa aparece una vez, con la
+  sesión en que se autorizó por primera vez. Se usa `numero_sesion` y, si no
+  está, la posición cronológica.
+- **La franja del tobillo junta dos fuentes.** Manda `dias.estado_tobillo`; si
+  el día no lo tiene, se toma la hinchazón de la sesión de kine de ese día
+  (menos → mejor, igual → igual, más → peor). Sin eso, un día con kine pero
+  sin registro en Hoy quedaría vacío.
+- El próximo control es el `proximo_control` del control más reciente que lo
+  tenga: si el último control no dejó fecha, vale la de uno anterior.
+- Preguntas: pendientes primero, las más nuevas arriba, y **desempate por
+  texto**, porque la semilla insertó todas en el mismo instante y sin eso su
+  orden cambiaría entre recargas. Con UI optimista, como en Hoy.
+
+**Pendiente (tarea 9b):** la línea de tiempo con hitos y entradas, el botón
+"Agregar registro" y los formularios de entradas e hitos. La tarjeta de
+kinesiología sin autorizaciones deja marcado el lugar del botón "Agregar sesión".
+
 ## Convenciones
 - **Idioma:** toda la UI en español de Chile. Nombres de componentes, props y
   funciones también en español.
@@ -338,21 +364,22 @@ Advertencias:
 | 6 | Menús | Terminada |
 | 7 | Semana | Terminada |
 | 8 | Progreso | Terminada (8a y 8b) |
-| 9 | Recuperación | Pendiente |
+| 9 | Recuperación | 9a terminada · 9b pendiente |
 | 10 | Configuración | Pendiente |
 | 11 | Pulido PWA | Pendiente |
 
-## Estado actual (tareas 1 a 8 terminadas)
+## Estado actual (tareas 1 a 8 y 9a terminadas)
 Esqueleto y componentes (1), esquema con RLS y login (2), datos iniciales cargados
-(3), **`/hoy` completa** (4 y 5), **`/menus`** (6), **`/semana`** (7) y
-**`/progreso` completa** (8a: peso, cintura y % de grasa; 8b: InBody).
+(3), **`/hoy` completa** (4 y 5), **`/menus`** (6), **`/semana`** (7),
+**`/progreso` completa** (8) y la primera mitad de **`/recuperacion`** (9a:
+avance, kinesiología, tobillo y preguntas).
 
 `/hoy` tiene encabezado con navegación entre días y estado del día, contadores,
 las cinco tarjetas con su hoja de registro, agua, calorías activas,
 entrenamiento, tobillo y el botón de cierre con su hoja de resumen.
 
-`dias.nota` sigue **sin usar**. `/recuperacion` sigue en "En construcción" y
-`/configuracion` tiene el bloque provisorio de la tarea 2.
+`dias.nota` sigue **sin usar**. `/configuracion` tiene el bloque provisorio de
+la tarea 2.
 
 Ya hay datos en la base: configuración, 5 hitos, 21 menús, 105 alimentos, 1 medida,
 1 InBody, 4 entradas de recuperación y 7 preguntas. `dias` y `comidas` están vacías:

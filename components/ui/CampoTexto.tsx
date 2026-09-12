@@ -9,6 +9,12 @@ type Props = {
   placeholder?: string;
   variante?: "linea" | "area";
   maxLength?: number;
+  /**
+   * La etiqueta sigue existiendo para los lectores de pantalla, pero no se ve.
+   * Para filas donde el placeholder y el contexto ya dicen qué va (la de
+   * preguntas en Recuperación).
+   */
+  etiquetaOculta?: boolean;
   className?: string;
 };
 
@@ -25,6 +31,7 @@ export default function CampoTexto({
   placeholder,
   variante = "linea",
   maxLength,
+  etiquetaOculta = false,
   className = "",
 }: Props) {
   const id = useId();
@@ -38,12 +45,18 @@ export default function CampoTexto({
     }, 300);
   }
 
-  const comun =
-    "mt-1.5 w-full rounded-control border border-borde bg-superficie px-[14px] text-[16px] text-tinta placeholder:text-tinta-5 focus:border-verde-borde focus:outline-none";
+  const comun = `${
+    etiquetaOculta ? "" : "mt-1.5"
+  } w-full rounded-control border border-borde bg-superficie px-[14px] text-[16px] text-tinta placeholder:text-tinta-5 focus:border-verde-borde focus:outline-none`;
 
   return (
     <div className={className}>
-      <label htmlFor={id} className="block text-[12.5px] text-tinta-3">
+      <label
+        htmlFor={id}
+        className={
+          etiquetaOculta ? "sr-only" : "block text-[12.5px] text-tinta-3"
+        }
+      >
         {etiqueta}
       </label>
       {variante === "area" ? (
