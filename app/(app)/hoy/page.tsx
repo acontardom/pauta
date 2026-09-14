@@ -47,7 +47,7 @@ export default async function Hoy({ searchParams }: PageProps<"/hoy">) {
     supabase
       .from("dias")
       .select(
-        "agua_ml, kcal_activas, entrenamiento, entrenamiento_minutos, estado_tobillo, cerrado",
+        "agua_ml, kcal_activas, entrenamiento, estado_tobillo, cerrado",
       )
       .eq("fecha", fecha)
       .maybeSingle(),

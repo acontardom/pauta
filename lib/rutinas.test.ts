@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
+  celdasEjercicio,
   ejerciciosEnOrden,
   etiquetaPestana,
   opcionesEntrenamiento,
   rutinaInicial,
-  textoEjercicio,
 } from "./rutinas";
 
 const RUTINAS = [
@@ -13,27 +13,24 @@ const RUTINAS = [
 ];
 
 describe("opcionesEntrenamiento", () => {
-  it("una sesión por rutina, en su orden, y después las fijas", () => {
+  it("solo las sesiones de las rutinas, en su orden y con su nombre", () => {
     expect(opcionesEntrenamiento(RUTINAS)).toEqual([
-      "Sesión A",
-      "Sesión B",
-      "Bicicleta",
-      "Kinesiología",
-      "Descanso",
+      { etiqueta: "Sesión A", nombre: "Empuje + core" },
+      { etiqueta: "Sesión B", nombre: "Tirón + core" },
     ]);
   });
 
-  it("sin rutinas quedan solo las fijas", () => {
-    expect(opcionesEntrenamiento([])).toEqual(["Bicicleta", "Kinesiología", "Descanso"]);
+  it("sin rutinas no hay opciones", () => {
+    expect(opcionesEntrenamiento([])).toEqual([]);
   });
 
   it("dos rutinas activas con la misma clave dan una sola opción", () => {
-    expect(opcionesEntrenamiento([{ clave: "A" }, { clave: "A" }])).toEqual([
-      "Sesión A",
-      "Bicicleta",
-      "Kinesiología",
-      "Descanso",
-    ]);
+    expect(
+      opcionesEntrenamiento([
+        { clave: "A", nombre: "Primera" },
+        { clave: "A", nombre: "Segunda" },
+      ]),
+    ).toEqual([{ etiqueta: "Sesión A", nombre: "Primera" }]);
   });
 });
 
@@ -60,26 +57,23 @@ describe("etiquetaPestana", () => {
   });
 });
 
-describe("textoEjercicio", () => {
+describe("celdasEjercicio", () => {
   it("series, reps y descanso", () => {
-    expect(textoEjercicio({ series: 4, reps: "8-12", descanso_seg: 90 })).toBe(
-      "4 series · 8-12 reps · 90 s",
-    );
-    expect(textoEjercicio({ series: 2, reps: "12", descanso_seg: 60 })).toBe(
-      "2 series · 12 reps · 60 s",
-    );
+    expect(celdasEjercicio({ series: 4, reps: "8-12", descanso_seg: 90 })).toEqual([
+      { etiqueta: "Series", valor: "4" },
+      { etiqueta: "Reps", valor: "8-12" },
+      { etiqueta: "Descanso", valor: "90 s" },
+    ]);
   });
 
-  it("reps con texto no llevan la palabra reps", () => {
-    expect(textoEjercicio({ series: 3, reps: "10 por lado", descanso_seg: 60 })).toBe(
-      "3 series · 10 por lado · 60 s",
-    );
-  });
-
-  it("singular y sin descanso", () => {
-    expect(textoEjercicio({ series: 1, reps: "1", descanso_seg: null })).toBe(
-      "1 serie · 1 rep",
-    );
+  it("las reps con texto van tal cual, y sin descanso va un guion", () => {
+    expect(
+      celdasEjercicio({ series: 3, reps: " 10 por lado ", descanso_seg: null }),
+    ).toEqual([
+      { etiqueta: "Series", valor: "3" },
+      { etiqueta: "Reps", valor: "10 por lado" },
+      { etiqueta: "Descanso", valor: "—" },
+    ]);
   });
 });
 

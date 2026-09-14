@@ -40,7 +40,6 @@ export type DiaPauta = Pick<
   | "agua_ml"
   | "kcal_activas"
   | "entrenamiento"
-  | "entrenamiento_minutos"
   | "estado_tobillo"
   | "cerrado"
 >;
@@ -188,9 +187,9 @@ export async function obtenerDia(
   const registradas = comidas.filter((c) => estadoComida(c) !== "pendiente").length;
   const metaAgua = config?.meta_agua_ml ?? META_AGUA_POR_DEFECTO;
   const tobillo = ESTADOS_TOBILLO.find((e) => e.clave === dia?.estado_tobillo);
+  // Sin minutos: entrenamiento_minutos quedó sin usar, igual que en la app.
   const entrenamiento = dia?.entrenamiento?.length
-    ? dia.entrenamiento.join(", ") +
-      (dia.entrenamiento_minutos ? ` · ${dia.entrenamiento_minutos} min` : "")
+    ? dia.entrenamiento.join(", ")
     : "sin registro";
 
   const lineas = [

@@ -183,40 +183,37 @@ describe("validarDia", () => {
   });
 
   describe("entrenamiento", () => {
-    it("acepta un arreglo de opciones conocidas", () => {
+    const permitidas = new Set(["Sesión A", "Sesión B", "Tren superior"]);
+    const conPermitidas = (entrenamiento: string[]) =>
+      validarDia(HOY, { entrenamiento }, AHORA, permitidas);
+
+    it("acepta vacío y null sin opciones", () => {
       expect(d({ entrenamiento: [] }).ok).toBe(true);
-      expect(d({ entrenamiento: ["Bicicleta", "Kinesiología"] }).ok).toBe(true);
       expect(d({ entrenamiento: null }).ok).toBe(true);
     });
 
-    it("rechaza una opción inventada", () => {
-      const r = d({ entrenamiento: ["Natación"] });
+    it("sin permitidas, ningún texto es una opción: salen de la base", () => {
+      expect(d({ entrenamiento: ["Sesión A"] }).ok).toBe(false);
+      expect(d({ entrenamiento: ["Bicicleta"] }).ok).toBe(false);
+      expect(d({ entrenamiento: ["Tren superior"] }).ok).toBe(false);
+    });
+
+    it("acepta las dos sesiones y un valor antiguo si están permitidos", () => {
+      expect(conPermitidas(["Sesión A", "Sesión B"]).ok).toBe(true);
+      expect(conPermitidas(["Sesión A", "Tren superior"]).ok).toBe(true);
+    });
+
+    it("rechaza lo que no está permitido", () => {
+      const r = conPermitidas(["Descanso"]);
       expect(r.ok).toBe(false);
-      if (!r.ok) expect(r.error).toContain("Natación");
+      if (!r.ok) expect(r.error).toContain("Descanso");
+      expect(conPermitidas(["Sesión C"]).ok).toBe(false);
     });
 
     it("rechaza repetidos", () => {
-      const r = d({ entrenamiento: ["Bicicleta", "Bicicleta"] });
+      const r = conPermitidas(["Sesión A", "Sesión A"]);
       expect(r.ok).toBe(false);
       if (!r.ok) expect(r.error).toContain("repetido");
-    });
-
-    it("acepta Descanso junto a otra opción: no es excluyente", () => {
-      expect(d({ entrenamiento: ["Descanso", "Kinesiología"] }).ok).toBe(true);
-    });
-
-    it("sin permitidas, Tren superior y Core ya no son opciones", () => {
-      expect(d({ entrenamiento: ["Tren superior"] }).ok).toBe(false);
-      expect(d({ entrenamiento: ["Core"] }).ok).toBe(false);
-    });
-
-    it("acepta una sesión de rutina y un valor antiguo si están permitidos", () => {
-      const permitidas = new Set(["Sesión A", "Sesión B", "Bicicleta", "Tren superior"]);
-      const conPermitidas = (entrenamiento: string[]) =>
-        validarDia(HOY, { entrenamiento }, AHORA, permitidas);
-      expect(conPermitidas(["Sesión A", "Tren superior"]).ok).toBe(true);
-      expect(conPermitidas(["Sesión C"]).ok).toBe(false);
-      expect(conPermitidas(["Core"]).ok).toBe(false);
     });
   });
 });

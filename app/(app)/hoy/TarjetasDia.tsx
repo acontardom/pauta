@@ -5,6 +5,7 @@ import Chip from "@/components/ui/Chip";
 import { ESTADOS_TOBILLO } from "@/lib/dominio";
 import { textoLitros } from "@/lib/dia";
 import { parsear } from "@/lib/numeros";
+import type { OpcionEntrenamiento } from "@/lib/rutinas";
 import type { EstadoTobillo } from "@/lib/supabase/tipos";
 
 const PASO_AGUA = 250;
@@ -16,15 +17,13 @@ type Props = {
   metaAguaMl: number;
   kcalActivas: number | null;
   entrenamiento: string[];
-  /** Las sesiones de las rutinas activas y las opciones fijas, en orden. */
-  opcionesEntrenamiento: string[];
-  minutos: number | null;
+  /** Las sesiones de las rutinas activas, en orden. */
+  opcionesEntrenamiento: OpcionEntrenamiento[];
   tobillo: EstadoTobillo | null;
   onAgua: (ml: number) => void;
   onKcal: (kcal: number | null) => void;
   onEntrenamiento: (opciones: string[]) => void;
   onVerRutina: () => void;
-  onMinutos: (minutos: number | null) => void;
   onTobillo: (estado: EstadoTobillo | null) => void;
 };
 
@@ -56,26 +55,23 @@ export default function TarjetasDia({
   kcalActivas,
   entrenamiento,
   opcionesEntrenamiento,
-  minutos,
   tobillo,
   onAgua,
   onKcal,
   onEntrenamiento,
   onVerRutina,
-  onMinutos,
   onTobillo,
 }: Props) {
   // Una celda por cada 250 ml de la meta, redondeando hacia arriba.
   const celdas = Math.max(1, Math.ceil(metaAguaMl / PASO_AGUA));
 
   /*
-    Lo guardado que ya no es una opción ("Tren superior", "Core", o la sesión
-    de una rutina desactivada). Se muestra marcado; tocarlo lo quita, y una
-    vez quitado no se puede volver a elegir.
+    Lo guardado que ya no es una opción ("Tren superior", "Bicicleta",
+    "Descanso", o la sesión de una rutina desactivada). Se muestra marcado al
+    final; tocarlo lo quita, y una vez quitado no se puede volver a elegir.
   */
-  const antiguas = entrenamiento.filter(
-    (x) => !opcionesEntrenamiento.includes(x),
-  );
+  const etiquetas = opcionesEntrenamiento.map((o) => o.etiqueta);
+  const antiguas = entrenamiento.filter((x) => !etiquetas.includes(x));
 
   return (
     <>
@@ -145,20 +141,23 @@ export default function TarjetasDia({
         }
       >
         <div className="mt-3 flex flex-wrap gap-[7px]">
-          {opcionesEntrenamiento.map((opcion) => {
-            const puesta = entrenamiento.includes(opcion);
+          {/* Dos líneas: la sesión y, en chico, el nombre de la rutina. */}
+          {opcionesEntrenamiento.map(({ etiqueta, nombre }) => {
+            const puesta = entrenamiento.includes(etiqueta);
             return (
               <Chip
-                key={opcion}
-                etiqueta={opcion}
+                key={etiqueta}
+                etiqueta={etiqueta}
+                detalle={nombre}
                 encendido={puesta}
                 onToggle={() =>
                   onEntrenamiento(
                     puesta
-                      ? entrenamiento.filter((x) => x !== opcion)
-                      : [...entrenamiento, opcion],
+                      ? entrenamiento.filter((x) => x !== etiqueta)
+                      : [...entrenamiento, etiqueta],
                   )
                 }
+                className="grow basis-[140px]"
               />
             );
           })}
@@ -172,16 +171,6 @@ export default function TarjetasDia({
               }
             />
           ))}
-        </div>
-        <div className="mt-3 flex items-center gap-3">
-          <CampoDiferido
-            valor={minutos}
-            onGuardar={onMinutos}
-            placeholder="—"
-            className="h-[52px] w-[110px] shrink-0 text-[22px]"
-            etiqueta="Minutos de entrenamiento"
-          />
-          <span className="text-[14px] text-tinta-3">minutos (opcional)</span>
         </div>
       </Tarjeta>
 

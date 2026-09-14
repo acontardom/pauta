@@ -1,4 +1,4 @@
-import { ENTRENAMIENTOS, etiquetaSesion } from "@/lib/dominio";
+import { etiquetaSesion } from "@/lib/dominio";
 import type { Ejercicio, Rutina } from "@/lib/supabase/tipos";
 
 /*
@@ -8,15 +8,30 @@ import type { Ejercicio, Rutina } from "@/lib/supabase/tipos";
   la hoja de rutina es solo para seguir la lista mientras se entrena.
 */
 
+export type OpcionEntrenamiento = {
+  /** Lo que se guarda en dias.entrenamiento: "Sesión A". */
+  etiqueta: string;
+  /** La segunda línea del chip: "Empuje + core". */
+  nombre: string;
+};
+
 /*
-  Las opciones de la tarjeta de entrenamiento, en orden: una por rutina activa
-  (ya ordenadas por `orden`) y después las fijas. Si dos rutinas activas
-  comparten clave, la etiqueta aparece una sola vez.
+  Las opciones de la tarjeta de entrenamiento: una por rutina activa, en el
+  orden en que llegan (ya ordenadas por `orden`). Si dos rutinas activas
+  comparten clave, la etiqueta aparece una sola vez, con el nombre de la primera.
 */
-export function opcionesEntrenamiento(rutinas: Pick<Rutina, "clave">[]): string[] {
-  return [
-    ...new Set([...rutinas.map((r) => etiquetaSesion(r.clave)), ...ENTRENAMIENTOS]),
-  ];
+export function opcionesEntrenamiento(
+  rutinas: Pick<Rutina, "clave" | "nombre">[],
+): OpcionEntrenamiento[] {
+  const vistas = new Set<string>();
+  const opciones: OpcionEntrenamiento[] = [];
+  for (const r of rutinas) {
+    const etiqueta = etiquetaSesion(r.clave);
+    if (vistas.has(etiqueta)) continue;
+    vistas.add(etiqueta);
+    opciones.push({ etiqueta, nombre: r.nombre });
+  }
+  return opciones;
 }
 
 /*
@@ -46,20 +61,21 @@ export function ejerciciosEnOrden(ejercicios: Ejercicio[]): Ejercicio[] {
   );
 }
 
+export type CeldaEjercicio = { etiqueta: string; valor: string };
+
 /*
-  "4 series · 8-12 reps · 90 s". Las reps llevan "reps" solo si son un número
-  o un rango: "10 por lado" o "30 seg por lado" ya se explican solas.
+  Las tres celdas de un ejercicio: series, reps y descanso. Las reps van tal
+  como están ("8-12", "10 por lado"); sin descanso, "—".
 */
-export function textoEjercicio(
+export function celdasEjercicio(
   e: Pick<Ejercicio, "series" | "reps" | "descanso_seg">,
-): string {
-  const partes = [`${e.series} ${e.series === 1 ? "serie" : "series"}`];
-  const reps = e.reps.trim();
-  if (/^\d+(\s*[-–]\s*\d+)?$/.test(reps)) {
-    partes.push(`${reps} ${reps === "1" ? "rep" : "reps"}`);
-  } else {
-    partes.push(reps);
-  }
-  if (e.descanso_seg != null) partes.push(`${e.descanso_seg} s`);
-  return partes.join(" · ");
+): CeldaEjercicio[] {
+  return [
+    { etiqueta: "Series", valor: String(e.series) },
+    { etiqueta: "Reps", valor: e.reps.trim() },
+    {
+      etiqueta: "Descanso",
+      valor: e.descanso_seg != null ? `${e.descanso_seg} s` : "—",
+    },
+  ];
 }

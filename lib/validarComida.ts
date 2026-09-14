@@ -1,4 +1,4 @@
-import { ENTRENAMIENTOS, ESTADOS_TOBILLO, GRUPOS, TIEMPOS } from "@/lib/dominio";
+import { ESTADOS_TOBILLO, GRUPOS, TIEMPOS } from "@/lib/dominio";
 import { hoyChile } from "@/lib/fechas";
 import type { Porciones } from "@/lib/supabase/tipos";
 
@@ -133,8 +133,8 @@ function enteroNoNegativo(
 }
 
 /*
-  `permitidas` son los textos que puede llevar entrenamiento. Sin ella, solo
-  las opciones fijas. El servidor pasa además las sesiones de las rutinas
+  `permitidas` son los textos que puede llevar entrenamiento. Sin ella, ninguno:
+  las opciones salen de la base. El servidor pasa las sesiones de las rutinas
   activas y lo que el día ya tenía guardado: un "Tren superior" antiguo se
   puede conservar al marcar otra cosa, pero no volver a agregar.
 */
@@ -142,7 +142,7 @@ export function validarDia(
   fecha: string,
   campos: EntradaDia,
   ahora?: Date,
-  permitidas: ReadonlySet<string> = new Set(ENTRENAMIENTOS),
+  permitidas: ReadonlySet<string> = new Set(),
 ): Resultado {
   if (typeof fecha !== "string" || !esFechaValida(fecha)) {
     return { ok: false, error: "La fecha no es válida" };

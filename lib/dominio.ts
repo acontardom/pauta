@@ -33,23 +33,15 @@ export type ClaveGrupo = (typeof GRUPOS)[number]["clave"];
 export type ClaveTiempo = (typeof TIEMPOS)[number]["clave"];
 
 /*
-  Opciones fijas de entrenamiento. Se guardan en dias.entrenamiento (text[])
-  con este mismo texto, así que cambiar una etiqueta rompe los registros viejos.
+  Entrenamiento. Las únicas opciones son las sesiones de las rutinas activas
+  de la base ("Sesión A", "Sesión B", con etiquetaSesion). Se guardan en
+  dias.entrenamiento (text[]) con ese mismo texto, así que cambiar la forma de
+  la etiqueta rompe los registros viejos.
 
-  Las sesiones de rutina ("Sesión A", "Sesión B") no están acá: salen de las
-  rutinas activas de la base, con etiquetaSesion.
-
-  "Tren superior" y "Core" ya no son opciones (las sesiones A y B los cubren),
-  pero los días viejos los tienen guardados: la app muestra cualquier texto
-  que venga de la base, aunque ya no se pueda elegir.
-
-  "Descanso" NO es excluyente: se puede descansar y hacer kinesiología el
-  mismo día.
+  "Tren superior", "Core", "Bicicleta", "Kinesiología" y "Descanso" fueron
+  opciones y ya no lo son, pero hay días que los tienen guardados: la app
+  muestra cualquier texto que venga de la base, aunque ya no se pueda elegir.
 */
-export const ENTRENAMIENTOS = ["Bicicleta", "Kinesiología", "Descanso"] as const;
-
-export type Entrenamiento = (typeof ENTRENAMIENTOS)[number];
-
 const PREFIJO_SESION = "Sesión ";
 
 /** La etiqueta que se guarda al marcar una rutina: "A" → "Sesión A". */
@@ -72,8 +64,9 @@ const CORTAS: Record<string, { corta: string; tono: TonoEntrenamiento }> = {
 
 /*
   La etiqueta corta de la fila de entrenamiento de Semana: "Sesión A" → "A",
-  "Bicicleta" → "Bici". Un texto que no se reconoce (los "Tren superior" y
-  "Core" antiguos) va con sus dos primeras letras y en tono neutro.
+  y los antiguos "Bicicleta" → "Bici", "Kinesiología" → "Kine", "Descanso" →
+  "Desc". Un texto que no se reconoce ("Tren superior", "Core") va con sus dos
+  primeras letras y en tono neutro.
 */
 export function entrenamientoCorto(texto: string): {
   corta: string;

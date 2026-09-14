@@ -115,7 +115,6 @@ function dia(fecha: string, extra: Partial<DiaPauta> = {}): DiaPauta {
     agua_ml: 0,
     kcal_activas: null,
     entrenamiento: [],
-    entrenamiento_minutos: null,
     estado_tobillo: null,
     cerrado: false,
     ...extra,
@@ -151,7 +150,7 @@ describe("obtener_dia", () => {
         comida({ fecha: HOY, tiempo: "almuerzo", modo: "menu", menu_id: MENU_ALMUERZO.id, nombre_menu: "Pollo con arroz", texto_libre: null, porciones: { cereales: 2, proteicos: 3 }, kcal: 600 }),
         comida({ fecha: HOY, tiempo: "cena", modo: "fuera", menu_id: null, nombre_menu: null, texto_libre: "Sushi", porciones: { cereales: 2 }, kcal: null }),
       ],
-      dias: [dia(HOY, { agua_ml: 1250, kcal_activas: 420, entrenamiento: ["Bicicleta"], entrenamiento_minutos: 40, estado_tobillo: "mejor", cerrado: true })],
+      dias: [dia(HOY, { agua_ml: 1250, kcal_activas: 420, entrenamiento: ["Sesión A", "Bicicleta"], estado_tobillo: "mejor", cerrado: true })],
     });
     const t = texto(await obtenerDia(repo, { fecha: HOY }, AHORA));
 
@@ -164,7 +163,7 @@ describe("obtener_dia", () => {
     expect(t).toContain("Kcal aportadas por las comidas: ≈600");
     expect(t).toContain("Agua: 1,25 de 2 L · faltan 0,75 L");
     expect(t).toContain("Calorías activas (gastadas): 420 kcal");
-    expect(t).toContain("Entrenamiento: Bicicleta · 40 min");
+    expect(t).toContain("Entrenamiento: Sesión A, Bicicleta\n");
     expect(t).toContain("Tobillo: Mejor");
   });
 

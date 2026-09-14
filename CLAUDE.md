@@ -187,21 +187,25 @@ Agua, calorías activas, entrenamiento, tobillo y cierre viven en `dias`.
   entrenamiento, tobillo) o al cerrarlo. Registrar solo comidas **no la crea**.
 - Sin fila, los valores por defecto son `agua_ml` 0, `cerrado` false y el resto
   null o `[]`.
-- Agua, entrenamiento y tobillo guardan al toque. Los dos campos numéricos
-  guardan 600 ms después de la última tecla, y también al perder el foco.
-- Las opciones de entrenamiento son una por rutina activa ("Sesión A",
-  "Sesión B", de `etiquetaSesion`) más `ENTRENAMIENTOS` en `lib/dominio.ts`
-  (Bicicleta, Kinesiología, Descanso), armadas por `opcionesEntrenamiento` en
-  `lib/rutinas.ts`. `entrenamiento` (`text[]`) guarda **el texto de la
-  etiqueta**, no un id: **cambiar una etiqueta rompe los registros viejos**.
-  "Descanso" no es excluyente.
-- **Valores antiguos:** "Tren superior" y "Core" dejaron de ser opciones, pero
-  hay días que los tienen. Nunca se borran ni se migran, y toda la app muestra
-  cualquier texto que venga de la base: en Hoy como chip marcado al final (tocarlo
-  lo quita y ya no se puede volver a elegir), en el cierre y en Semana como
-  texto. Por eso `guardarDia` valida `entrenamiento` contra las sesiones
-  activas, las fijas **y lo que el día ya tenía guardado** (`validarDia` recibe
-  `permitidas`).
+- Agua, entrenamiento y tobillo guardan al toque. Las calorías activas guardan
+  600 ms después de la última tecla, y también al perder el foco.
+- **Las únicas opciones de entrenamiento son las sesiones de las rutinas
+  activas** ("Sesión A", "Sesión B", de `etiquetaSesion`), armadas por
+  `opcionesEntrenamiento` en `lib/rutinas.ts`, que devuelve `{ etiqueta, nombre }`.
+  Cada chip va en dos líneas: la sesión y, en chico, el nombre de la rutina
+  (`Chip` con `detalle`). Ya no hay opciones fijas: `ENTRENAMIENTOS` se eliminó.
+  `entrenamiento` (`text[]`) guarda **el texto de la etiqueta**, no un id:
+  **cambiar la forma de la etiqueta rompe los registros viejos**.
+- **Valores antiguos:** "Tren superior", "Core", "Bicicleta", "Kinesiología" y
+  "Descanso" dejaron de ser opciones, pero hay días que los tienen. Nunca se
+  borran ni se migran, y toda la app muestra cualquier texto que venga de la
+  base: en Hoy como chip marcado al final (tocarlo lo quita y ya no se puede
+  volver a elegir), en el cierre y en Semana como texto. Por eso `guardarDia`
+  valida `entrenamiento` contra las sesiones activas **y lo que el día ya tenía
+  guardado** (`validarDia` recibe `permitidas`; sin ella no acepta ningún texto).
+- **Sin minutos de entrenamiento.** La columna `dias.entrenamiento_minutos`
+  sigue en la base, sin usar y sin migración: no se muestra en Hoy, ni en el
+  cierre, ni en `obtener_dia` del MCP, y los días viejos que la tienen se ven igual.
 - `lib/dia.ts` tiene `resumenDia` (las 8 filas de la hoja de cierre),
   `textoAgua` (dos decimales fijas) y `textoLitros` (hasta dos, sin relleno).
 
@@ -218,12 +222,21 @@ Borrar el registro de una comida pide confirmación en la misma hoja
 ### Hoja de rutina
 "Ver rutina", a la derecha del título de la tarjeta de entrenamiento, abre
 `HojaRutina`: título con el nombre del bloque, `Segmentos` con una pestaña por
-rutina activa ("A · Empuje + core"), la nota del bloque en una tarjeta verde y
-una tarjeta por ejercicio en su orden, con "4 series · 8-12 reps · 90 s"
-(`textoEjercicio`). Abre en la sesión marcada ese día; con las dos o ninguna,
-en la primera (`rutinaInicial`). **Es solo de lectura:** no se marca ejercicio
-por ejercicio ni se registran pesos ni repeticiones. Lo que se registra es la
-sesión, con el chip.
+rutina activa ("A · Empuje + core") y una tarjeta por ejercicio en su orden.
+Abre en la sesión marcada ese día; con las dos o ninguna, en la primera
+(`rutinaInicial`). **Es solo de lectura:** no se marca ejercicio por ejercicio
+ni se registran pesos ni repeticiones. Lo que se registra es la sesión, con el
+chip.
+
+**A la vista queda solo lo esencial, el resto se despliega:**
+- La nota del bloque parte oculta, tras "Ver reglas del bloque" / "Ocultar
+  reglas"; al abrirla aparece la tarjeta verde.
+- Cada ejercicio muestra número y nombre, y debajo tres celdas iguales
+  (Series, Reps, Descanso, de `celdasEjercicio`) con la etiqueta en mayúsculas
+  y el valor en serif. Si tiene notas, "Ver nota" / "Ocultar"; sin notas no
+  hay botón. Cada ejercicio abre y cierra por su cuenta.
+- Todo parte cerrado cada vez que se abre la hoja: se monta al abrirse, así
+  que el estado no sobrevive entre aperturas.
 
 ## Rutinas de entrenamiento
 Tabla `rutinas`: una fila por sesión tipo. `bloque` es el nombre del plan,
@@ -237,8 +250,8 @@ vacío; el validador de la semilla repite esas reglas.
 - **Van en la base, no en el código**, porque el plan cambia cada pocas semanas.
 - **No se editan desde la app:** se cargan por semilla. Hoy solo lee las activas.
 - `lib/rutinas.ts` tiene la lógica pura; el mapeo a etiqueta corta de Semana
-  ("Sesión A" → "A", "Bicicleta" → "Bici") es `entrenamientoCorto` en
-  `lib/dominio.ts`.
+  ("Sesión A" → "A", y los antiguos "Bicicleta" → "Bici", "Kinesiología" →
+  "Kine", "Descanso" → "Desc") es `entrenamientoCorto` en `lib/dominio.ts`.
 - **Cambiar de plan:** agregar a `rutinas` en `datos.json` las sesiones del
   bloque nuevo (con otro `bloque`), correr
   `npm run semilla:revisar -- --tabla rutinas` y

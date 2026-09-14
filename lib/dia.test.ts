@@ -95,8 +95,7 @@ describe("textoAgua", () => {
 describe("resumenDia", () => {
   const dia = {
     agua_ml: 1250,
-    entrenamiento: ["Bicicleta", "Kinesiología"],
-    entrenamiento_minutos: 45,
+    entrenamiento: ["Sesión A", "Kinesiología"],
     estado_tobillo: "mejor" as const,
   };
 
@@ -156,13 +155,22 @@ describe("resumenDia", () => {
     expect(resumenDia([comida("fuera", {})], dia)[2].valor).toBe("Estimada");
   });
 
-  it("el entrenamiento junta las opciones y agrega los minutos", () => {
-    expect(resumenDia([], dia)[6].valor).toBe("Bicicleta, Kinesiología · 45 min");
+  it("el entrenamiento junta lo guardado, aunque ya no sea una opción", () => {
+    expect(resumenDia([], dia)[6].valor).toBe("Sesión A, Kinesiología");
   });
 
-  it("sin minutos, no agrega el sufijo", () => {
-    const filas = resumenDia([], { ...dia, entrenamiento_minutos: null });
-    expect(filas[6].valor).toBe("Bicicleta, Kinesiología");
+  it("un día antiguo con minutos guardados no los muestra", () => {
+    const antiguo = {
+      ...dia,
+      entrenamiento: ["Tren superior", "Core"],
+      entrenamiento_minutos: 45,
+    };
+    const filas = resumenDia([], antiguo);
+    expect(filas[6]).toEqual({
+      etiqueta: "Entrenamiento",
+      valor: "Tren superior, Core",
+      tono: "neutro",
+    });
   });
 
   it("traduce el estado del tobillo", () => {

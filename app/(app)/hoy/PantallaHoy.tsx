@@ -57,7 +57,6 @@ export type DiaVista = Pick<
   | "agua_ml"
   | "kcal_activas"
   | "entrenamiento"
-  | "entrenamiento_minutos"
   | "estado_tobillo"
   | "cerrado"
 >;
@@ -67,7 +66,6 @@ const DIA_VACIO: DiaVista = {
   agua_ml: 0,
   kcal_activas: null,
   entrenamiento: [],
-  entrenamiento_minutos: null,
   estado_tobillo: null,
   cerrado: false,
 };
@@ -301,7 +299,6 @@ export default function PantallaHoy({
           entrenamiento={diaVista.entrenamiento}
           opcionesEntrenamiento={opcionesEntrenamiento(rutinas)}
           onVerRutina={() => setRutinaAbierta(true)}
-          minutos={diaVista.entrenamiento_minutos}
           tobillo={diaVista.estado_tobillo}
           onAgua={(agua_ml) =>
             mutarDia({ agua_ml }, () => guardarDia(fecha, { agua_ml }))
@@ -314,11 +311,6 @@ export default function PantallaHoy({
           onEntrenamiento={(entrenamiento) =>
             mutarDia({ entrenamiento }, () =>
               guardarDia(fecha, { entrenamiento }),
-            )
-          }
-          onMinutos={(entrenamiento_minutos) =>
-            mutarDia({ entrenamiento_minutos }, () =>
-              guardarDia(fecha, { entrenamiento_minutos }),
             )
           }
           onTobillo={(estado_tobillo) =>

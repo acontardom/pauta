@@ -35,7 +35,7 @@ export function crearRepositorio({ supabase, userId }: SesionMcp): Repositorio {
       const { data, error } = await supabase
         .from("dias")
         .select(
-          "fecha, agua_ml, kcal_activas, entrenamiento, entrenamiento_minutos, estado_tobillo, cerrado",
+          "fecha, agua_ml, kcal_activas, entrenamiento, estado_tobillo, cerrado",
         )
         .gte("fecha", desde)
         .lte("fecha", hasta);

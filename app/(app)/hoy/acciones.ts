@@ -163,14 +163,14 @@ async function upsertDia(
   if (!validacionFecha.ok) return validacionFecha;
 
   /*
-    Lo que puede llevar entrenamiento: las sesiones de las rutinas activas,
-    las opciones fijas y lo que el día ya tenía guardado. Así un "Tren
-    superior" antiguo sobrevive a marcar otra cosa, pero no se puede agregar.
+    Lo que puede llevar entrenamiento: las sesiones de las rutinas activas y
+    lo que el día ya tenía guardado. Así un "Tren superior" o un "Bicicleta"
+    antiguo sobrevive a marcar otra cosa, pero no se puede agregar.
   */
   let permitidas: Set<string> | undefined;
   if (Array.isArray(campos.entrenamiento)) {
     const [rutinas, dia] = await Promise.all([
-      supabase.from("rutinas").select("clave").eq("activa", true),
+      supabase.from("rutinas").select("clave, nombre").eq("activa", true),
       supabase
         .from("dias")
         .select("entrenamiento")
@@ -181,7 +181,7 @@ async function upsertDia(
       return { ok: false, error: "No se pudo guardar el día" };
     }
     permitidas = new Set([
-      ...opcionesEntrenamiento(rutinas.data ?? []),
+      ...opcionesEntrenamiento(rutinas.data ?? []).map((o) => o.etiqueta),
       ...((dia.data?.entrenamiento as string[] | undefined) ?? []),
     ]);
   }

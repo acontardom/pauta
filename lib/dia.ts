@@ -84,7 +84,7 @@ export function resumenDia(
   comidas: Comida[],
   dia: Pick<
     Dia,
-    "agua_ml" | "entrenamiento" | "entrenamiento_minutos" | "estado_tobillo"
+    "agua_ml" | "entrenamiento" | "estado_tobillo"
   > | null,
 ): FilaResumen[] {
   const porTiempo = new Map(comidas.map((c) => [c.tiempo, c]));
@@ -116,14 +116,12 @@ export function resumenDia(
     tono: "azul",
   });
 
+  // Tal como vino de la base, aunque ya no sea una opción. Sin minutos: la
+  // columna entrenamiento_minutos quedó sin usar.
   const entrenamiento = dia?.entrenamiento ?? [];
-  const minutos = dia?.entrenamiento_minutos;
   filas.push({
     etiqueta: "Entrenamiento",
-    valor:
-      entrenamiento.length > 0
-        ? entrenamiento.join(", ") + (minutos ? ` · ${minutos} min` : "")
-        : "Sin registro",
+    valor: entrenamiento.length > 0 ? entrenamiento.join(", ") : "Sin registro",
     tono: "neutro",
   });
 
