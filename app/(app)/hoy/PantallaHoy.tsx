@@ -7,6 +7,7 @@ import { estadoComida, resumenDia, totalesDia } from "@/lib/dia";
 import { TIEMPOS, type ClaveTiempo } from "@/lib/dominio";
 import { sumarDias } from "@/lib/fechas";
 import { limpiarPorciones } from "@/lib/porciones";
+import { AVISO_FALLO, avisoDeFallo } from "@/lib/red";
 import type {
   Alimento,
   Comida,
@@ -68,8 +69,6 @@ const DIA_VACIO: DiaVista = {
 };
 
 const META_AGUA_POR_DEFECTO = 2000;
-
-const AVISO_FALLO = "No se pudo guardar. Intenta de nuevo.";
 
 export default function PantallaHoy({
   fecha,
@@ -148,14 +147,26 @@ export default function PantallaHoy({
     };
   }
 
+  /*
+    Llama al servidor. Sin red la acción no responde: rechaza, y sin el catch
+    ese rechazo reemplazaría la pantalla entera por el error.
+  */
+  async function llamar(accion: () => Promise<{ ok: boolean }>) {
+    try {
+      const r = await accion();
+      if (!r.ok) setAviso(AVISO_FALLO);
+    } catch (e) {
+      setAviso(avisoDeFallo(e));
+    }
+  }
+
   /** Cierra la hoja, pinta el resultado y recién después llama al servidor. */
   function ejecutar(optimista: Accion, accion: () => Promise<{ ok: boolean }>) {
     setAbierta(null);
     setAviso("");
     iniciar(async () => {
       aplicar(optimista);
-      const r = await accion();
-      if (!r.ok) setAviso(AVISO_FALLO);
+      await llamar(accion);
     });
   }
 
@@ -167,8 +178,7 @@ export default function PantallaHoy({
     setAviso("");
     iniciar(async () => {
       aplicarDia(campos);
-      const r = await accion();
-      if (!r.ok) setAviso(AVISO_FALLO);
+      await llamar(accion);
     });
   }
 
@@ -309,16 +319,22 @@ export default function PantallaHoy({
             )
           }
         />
-
-        {aviso ? (
-          <p role="status" className="pt-1 text-[13.5px] text-tinta-2">
-            {aviso}
-          </p>
-        ) : null}
       </div>
 
       {/* Botón fijo, por encima de la barra inferior. */}
       <div className="fixed bottom-[calc(env(safe-area-inset-bottom)+74px)] left-1/2 z-[41] w-full max-w-[430px] -translate-x-1/2 px-5">
+        {/*
+          El aviso va pegado al botón, igual que en Configuración: si fuera al
+          final de la lista, al registrar una comida de arriba no se vería.
+        */}
+        {aviso ? (
+          <p
+            role="status"
+            className="mb-2 rounded-control border border-linea bg-fondo px-3 py-2 text-[13px] leading-snug text-tinta-2"
+          >
+            {aviso}
+          </p>
+        ) : null}
         {diaVista.cerrado ? (
           // Reabrir no pide confirmación: es reversible y no pierde nada.
           <Boton

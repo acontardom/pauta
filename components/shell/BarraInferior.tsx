@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-export const PESTANAS = [
+const PESTANAS = [
   { href: "/hoy", etiqueta: "Hoy" },
   { href: "/semana", etiqueta: "Semana" },
   { href: "/progreso", etiqueta: "Progreso" },

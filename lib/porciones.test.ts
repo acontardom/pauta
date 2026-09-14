@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 import {
   ajustarPorcion,
   limpiarPorciones,
-  pasoDe,
   porcionesVacias,
   textoPorciones,
 } from "./porciones";
@@ -87,14 +86,5 @@ describe("porcionesVacias", () => {
     expect(porcionesVacias({ cereales: 0, aceite: 0 })).toBe(true);
     expect(porcionesVacias(null)).toBe(true);
     expect(porcionesVacias({ aceite: 0.5 })).toBe(false);
-  });
-});
-
-describe("pasoDe", () => {
-  it("es 0,5 en aceite y grasas, 1 en el resto", () => {
-    expect(pasoDe("aceite")).toBe(0.5);
-    expect(pasoDe("grasas")).toBe(0.5);
-    expect(pasoDe("cereales")).toBe(1);
-    expect(pasoDe("proteicos")).toBe(1);
   });
 });

@@ -20,7 +20,7 @@ export default async function Semana() {
   const supabase = await crearClienteServidor();
 
   /*
-    Una consulta por tabla para TODO el rango, no una por día: siete viajes a
+    Una consulta por tabla para todo el rango, no una por día: siete viajes a
     São Paulo por pantalla se notan, y además el filtro por rango lo resuelve
     el índice (user_id, fecha) que ya existe.
   */

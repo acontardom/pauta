@@ -357,7 +357,7 @@ Progreso y las fechas la barra de avance de Recuperación.
 - **Números:** siempre con `lib/numeros.ts` (coma decimal, máximo 1 decimal, `—` si no hay dato).
 - **Colores:** solo desde tokens de `app/globals.css`. Ningún hex suelto en
   `app/` ni `components/`. Las únicas excepciones son `lib/tokens.ts`, que alimenta
-  el manifest y los íconos generados.
+  el manifest, el theme-color y las imágenes de `npm run iconos`.
 - **Componentes:** antes de crear uno nuevo, revisar `components/ui` y
   `components/porciones`. Ya existen y se reutilizan:
   - `SelectorPorciones` — filas de +/− por grupo, con el paso de cada uno.
@@ -365,14 +365,47 @@ Progreso y las fechas la barra de avance de Recuperación.
   - `CampoTexto` — texto de una línea o área. Para números va `CampoNumerico`.
   - `Boton` — variantes `primaria`, `secundaria` y `estimada` (el azul de comí fuera).
 - **Cálculos:** `lib/porciones.ts` (`textoPorciones`, `ajustarPorcion`,
-  `limpiarPorciones`, `porcionesVacias`, `pasoDe`) y `lib/dia.ts` (`totalesDia`,
-  `estadoComida`). No rehacer estas sumas a mano en una pantalla.
+  `limpiarPorciones`, `porcionesVacias`) y `lib/dia.ts` (`totalesDia`,
+  `estadoComida`). No rehacer estas sumas a mano en una pantalla. El paso de
+  cada grupo es `GRUPOS[].paso` en `lib/dominio.ts`.
+- **Llamar una Server Action desde el cliente:** siempre atrapando el rechazo.
+  Sin red la acción no devuelve `{ ok: false }`, rechaza, y sin catch la
+  pantalla entera cae en `error.tsx`. `lib/red.ts` tiene `llamarAccion` (para
+  acciones que devuelven `{ ok, error }`), `avisoDeFallo` y los textos
+  `AVISO_SIN_CONEXION` y `AVISO_FALLO`. El aviso de sin conexión es uno solo en
+  toda la app: "Sin conexión. Vuelve a intentarlo cuando tengas señal."
 - **Inputs numéricos:** siempre `CampoNumerico`. Nunca `type="number"`: en iOS
   descarta la coma decimal del teclado chileno. Mínimo 16px de fuente para que
   iOS no haga zoom al enfocar.
 - **Sin almacenamiento del navegador:** no usar `localStorage` ni `sessionStorage`.
 - **Sin librerías** de componentes, íconos ni animaciones. Los íconos son SVG propios.
 - **Sin modo oscuro.**
+
+## PWA en iOS
+- **Íconos y pantallas de arranque:** `npm run iconos` (`scripts/iconos.ts`)
+  genera todo desde `public/logo.png`, aplanado sobre `COLOR_FONDO` y sin canal
+  alfa. Las pantallas de arranque salen de `PANTALLAS_IPHONE` en
+  `lib/splash.ts`, que también usa el layout para emitir los
+  `apple-touch-startup-image`: iOS no escala la imagen, así que cada tamaño de
+  iPhone necesita su entrada. Un iPhone nuevo se agrega ahí y se vuelve a correr
+  el script. `proxy.ts` ya deja pasar los `.png` sin sesión.
+- **Áreas seguras:** todo encabezado lleva
+  `pt-[calc(env(safe-area-inset-top)+22px)]`; la barra, los botones fijos y el
+  pie de las hojas suman `env(safe-area-inset-bottom)`.
+- **Botones fijos** (Cerrar día en Hoy, Guardar en Configuración): van a
+  `safe-area + 74px` del borde, sobre la barra. Los avisos van pegados encima
+  del botón, no al final de la lista, y el padding inferior del contenido deja
+  lugar para ambos.
+- **Sin rebote:** `overscroll-behavior: none` en `html` y `body`; las hojas
+  llevan `overscroll-contain` para conservar su scroll.
+- **Sin scroll horizontal:** la columna del layout raíz tiene `overflow-x-clip`
+  (no `hidden`, que la volvería contenedor de scroll).
+- `formatDetection` apaga los enlaces automáticos de iOS (teléfonos, fechas):
+  un toque ahí saca al usuario de la app.
+- **Carga y error:** cada pantalla tiene su `loading.tsx`, armado con
+  `components/ui/Esqueleto.tsx` (bloques sin animación). `app/error.tsx` muestra
+  un mensaje neutro con "Reintentar" (usa `retry`, estable desde Next 16.3) y,
+  sin red, el aviso de sin conexión. `app/not-found.tsx` lleva a `/hoy`.
 
 ## Radios del diseño
 - 11px (`rounded-control`): inputs y botones chicos.
@@ -416,13 +449,14 @@ Advertencias:
 | 8 | Progreso | Terminada (8a y 8b) |
 | 9 | Recuperación | Terminada (9a y 9b) |
 | 10 | Configuración | Terminada |
-| 11 | Pulido PWA | Pendiente |
+| 11 | Pulido PWA | Terminada |
 
-## Estado actual (tareas 1 a 10 terminadas)
+## Estado actual (las 11 tareas terminadas)
 Todas las pantallas están completas: `/hoy` (4 y 5), `/menus` (6), `/semana` (7),
 `/progreso` (8), `/recuperacion` (9) y `/configuracion` (10), sobre el esqueleto
-(1), el esquema con RLS y el login (2) y los datos iniciales (3). **Solo queda la
-tarea 11, pulido PWA.**
+(1), el esquema con RLS y el login (2) y los datos iniciales (3). La tarea 11
+sumó las pantallas de arranque, los esqueletos de carga, `error.tsx` y
+`not-found.tsx`, el aviso de sin conexión y la limpieza final (ver "PWA en iOS").
 
 `/hoy` tiene encabezado con navegación entre días y estado del día, contadores,
 las cinco tarjetas con su hoja de registro, agua, calorías activas,
@@ -446,3 +480,17 @@ las llena la app.
   encabezado. No se recuerda la pestaña de origen.
 - La página temporal `/componentes` **se eliminó en la tarea 10**. Para revisar
   un componente, se revisa en la pantalla que lo usa.
+
+## Pendientes conocidos
+Quedó fuera de la v1, a propósito:
+- **Sin service worker ni modo offline.** La app requiere conexión. Una acción
+  sin red muestra el aviso de sin conexión, pero **cambiar de pantalla sin red**
+  no tiene cómo resolverse: Next recurre a una navegación completa y iOS muestra
+  su propia página de error.
+- **Sin edición de alimentos desde la app.** La tabla de equivalencias se carga
+  con la semilla y solo se consulta.
+- **Sin exportación de datos.**
+- **Sin atajos de hitos en el formulario de control médico.** El diseño trae
+  atajos para marcar un hito como cumplido y para reprogramarlo; se decidió no
+  construirlos para que los hitos cambien en un único lugar (su propia hoja) y
+  su historial no quede repartido.

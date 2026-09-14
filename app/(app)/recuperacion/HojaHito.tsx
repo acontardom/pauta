@@ -5,6 +5,7 @@ import Boton from "@/components/ui/Boton";
 import CampoTexto from "@/components/ui/CampoTexto";
 import HojaInferior from "@/components/ui/HojaInferior";
 import { diferenciaCumplimiento, textoHistorial } from "@/lib/recuperacion";
+import { llamarAccion } from "@/lib/red";
 import type { Hito } from "@/lib/supabase/tipos";
 import { MAXIMO_NOMBRE_HITO } from "@/lib/validarHito";
 import { actualizarHito, eliminarHito, guardarHito } from "./acciones";
@@ -60,9 +61,9 @@ export default function HojaHito({ hito, hoy, onCerrar }: Props) {
         cumplido,
         motivo: cambioDeFecha ? motivo : null,
       };
-      const r = editando
-        ? await actualizarHito(hito.id, datos)
-        : await guardarHito(datos);
+      const r = await llamarAccion(() =>
+        editando ? actualizarHito(hito.id, datos) : guardarHito(datos),
+      );
       if (r.ok) onCerrar();
       else setError(r.error);
     });
@@ -71,7 +72,7 @@ export default function HojaHito({ hito, hoy, onCerrar }: Props) {
   function eliminar() {
     setError("");
     iniciarEliminado(async () => {
-      const r = await eliminarHito(hito!.id);
+      const r = await llamarAccion(() => eliminarHito(hito!.id));
       if (r.ok) onCerrar();
       else setError(r.error);
     });

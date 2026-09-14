@@ -10,7 +10,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "semilla": "tsx --env-file=.env.local scripts/semilla/cargar.ts",
-    "semilla:revisar": "tsx --env-file=.env.local scripts/semilla/cargar.ts --revisar"
+    "semilla:revisar": "tsx --env-file=.env.local scripts/semilla/cargar.ts --revisar",
+    "iconos": "tsx scripts/iconos.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.7",
@@ -26,6 +27,7 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.3.4",
+    "sharp": "^0.35.4",
     "supabase": "^2.117.0",
     "tailwindcss": "^4",
     "tsx": "^4.23.13",

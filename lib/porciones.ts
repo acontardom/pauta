@@ -1,4 +1,4 @@
-import { GRUPOS, type ClaveGrupo } from "@/lib/dominio";
+import { GRUPOS } from "@/lib/dominio";
 import { formatear } from "@/lib/numeros";
 import type { Porciones } from "@/lib/supabase/tipos";
 
@@ -9,8 +9,6 @@ import type { Porciones } from "@/lib/supabase/tipos";
   por eso limpiarPorciones() se usa antes de guardar, para que la base no
   acumule ceros que no dicen nada.
 */
-
-const PASOS = new Map(GRUPOS.map((g) => [g.clave, g.paso]));
 
 /**
  * Texto de una comida, en el orden de GRUPOS y sin los ceros.
@@ -62,9 +60,4 @@ export function porcionesVacias(
   porciones: Porciones | null | undefined,
 ): boolean {
   return Object.keys(limpiarPorciones(porciones)).length === 0;
-}
-
-/** El paso de un grupo: 0,5 en aceite y grasas, 1 en el resto. */
-export function pasoDe(grupo: ClaveGrupo): number {
-  return PASOS.get(grupo) ?? 1;
 }

@@ -15,8 +15,6 @@ type Props = {
   titulo: string;
   subtitulo?: string;
   children: ReactNode;
-  /** Acciones fijas al final de la hoja. */
-  pie?: ReactNode;
 };
 
 /*
@@ -51,7 +49,6 @@ export default function HojaInferior({
   titulo,
   subtitulo,
   children,
-  pie,
 }: Props) {
   const montado = useSyncExternalStore(noSuscribir, enCliente, enServidor);
   const [identidad] = useState(() => Symbol("hoja"));
@@ -102,7 +99,8 @@ export default function HojaInferior({
         role="dialog"
         aria-modal="true"
         aria-label={titulo}
-        className="relative flex max-h-[88dvh] w-full max-w-[430px] animate-hoja flex-col overflow-y-auto rounded-t-hoja bg-fondo"
+        // overscroll-contain: el scroll de la hoja no se encadena al documento.
+        className="relative flex max-h-[88dvh] w-full max-w-[430px] animate-hoja flex-col overflow-y-auto overscroll-contain rounded-t-hoja bg-fondo"
       >
         <div className="sticky top-0 z-[2] border-b border-linea bg-fondo px-5 pb-3 pt-[14px]">
           <div className="mx-auto mb-[14px] h-1 w-[38px] rounded-sm bg-borde-fuerte" />
@@ -127,7 +125,6 @@ export default function HojaInferior({
 
         <div className="px-5 pb-[calc(env(safe-area-inset-bottom)+16px)] pt-4">
           {children}
-          {pie ? <div className="mt-4">{pie}</div> : null}
         </div>
       </div>
     </div>,

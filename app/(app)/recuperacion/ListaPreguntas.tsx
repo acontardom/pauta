@@ -4,6 +4,7 @@ import { useOptimistic, useState, useTransition, type FormEvent } from "react";
 import CampoTexto from "@/components/ui/CampoTexto";
 import { formatoDiaMes } from "@/lib/fechas";
 import { ordenarPreguntas } from "@/lib/recuperacion";
+import { AVISO_FALLO, avisoDeFallo } from "@/lib/red";
 import type { PreguntaControl } from "@/lib/supabase/tipos";
 import { MAXIMO_PREGUNTA, validarPregunta } from "@/lib/validarPregunta";
 import { agregarPregunta, alternarPregunta, eliminarPregunta } from "./acciones";
@@ -17,8 +18,6 @@ type Accion =
   | { tipo: "agregar"; pregunta: PreguntaControl }
   | { tipo: "alternar"; id: string; preguntada: boolean }
   | { tipo: "eliminar"; id: string };
-
-const AVISO_FALLO = "No se pudo guardar. Intenta de nuevo.";
 
 export default function ListaPreguntas({ preguntas, proximoControl }: Props) {
   const [texto, setTexto] = useState("");
@@ -54,9 +53,17 @@ export default function ListaPreguntas({ preguntas, proximoControl }: Props) {
     setAviso("");
     iniciar(async () => {
       aplicar(optimista);
-      const r = await accion();
-      if (!r.ok) {
-        setAviso(AVISO_FALLO);
+      // Sin red la acción rechaza en vez de responder: se atrapa acá para
+      // mostrar el aviso en lugar de la pantalla de error.
+      let aviso = "";
+      try {
+        const r = await accion();
+        if (!r.ok) aviso = AVISO_FALLO;
+      } catch (e) {
+        aviso = avisoDeFallo(e);
+      }
+      if (aviso) {
+        setAviso(aviso);
         alFallar?.();
       }
     });

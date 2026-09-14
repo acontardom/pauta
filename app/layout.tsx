@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { IBM_Plex_Mono, IBM_Plex_Sans, IBM_Plex_Serif } from "next/font/google";
+import { PANTALLAS_IPHONE, mediaSplash, urlSplash } from "@/lib/splash";
 import { COLOR_FONDO } from "@/lib/tokens";
 import "./globals.css";
 
@@ -25,6 +26,7 @@ const plexMono = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
+  applicationName: "Pauta",
   title: "Pauta",
   description: "Pauta nutricional por porciones y recuperación de tobillo.",
   appleWebApp: {
@@ -33,6 +35,20 @@ export const metadata: Metadata = {
     // "default" y no "black-translucent": con fondo claro el reloj quedaría
     // en blanco sobre blanco y no se leería.
     statusBarStyle: "default",
+    // Pantallas de arranque generadas con "npm run iconos". Sin la que calza
+    // con el iPhone, la app instalada abre en blanco.
+    startupImage: PANTALLAS_IPHONE.map((p) => ({
+      url: urlSplash(p),
+      media: mediaSplash(p),
+    })),
+  },
+  // iOS convierte en enlace lo que parece un teléfono o una fecha, y un toque
+  // ahí saca al usuario de la app. Ningún número de la app es un teléfono.
+  formatDetection: {
+    telephone: false,
+    date: false,
+    address: false,
+    email: false,
   },
   other: {
     // Next emite el moderno "mobile-web-app-capable"; iOS anterior a 17 solo
@@ -57,7 +73,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       className={`${plexSans.variable} ${plexSerif.variable} ${plexMono.variable} h-full antialiased`}
     >
       <body className="flex min-h-full justify-center bg-marco font-sans text-tinta">
-        <div className="relative min-h-screen w-full max-w-[430px] bg-fondo shadow-columna">
+        {/* overflow-x-clip y no hidden: corta un desborde accidental a lo
+            ancho sin volver la columna un contenedor de scroll. */}
+        <div className="relative min-h-screen w-full max-w-[430px] overflow-x-clip bg-fondo shadow-columna">
           {children}
         </div>
       </body>

@@ -12,11 +12,12 @@ import {
   type ClaveGrupo,
   type ClaveTiempo,
 } from "@/lib/dominio";
+import { avisoDeFallo } from "@/lib/red";
 import {
   validarConfiguracion,
   type ConfiguracionFormulario,
 } from "@/lib/validarConfiguracion";
-import { guardarConfiguracion } from "./acciones";
+import { guardarConfiguracion, type RespuestaConfiguracion } from "./acciones";
 import BotonCerrarSesion from "./BotonCerrarSesion";
 
 type Props = {
@@ -182,7 +183,15 @@ export default function FormularioConfiguracion({ inicial, existe, correo }: Pro
 
     const enviados = valores;
     iniciar(async () => {
-      const r = await guardarConfiguracion(enviados);
+      // Sin red la acción rechaza en vez de responder: el aviso va al pie,
+      // como cualquier otro error, y lo escrito queda en el formulario.
+      let r: RespuestaConfiguracion;
+      try {
+        r = await guardarConfiguracion(enviados);
+      } catch (e) {
+        setErrorServidor(avisoDeFallo(e));
+        return;
+      }
       if (r.ok) {
         // Lo enviado pasa a ser lo guardado. Si se siguió escribiendo mientras
         // tanto, eso sigue contando como cambio.
@@ -203,8 +212,17 @@ export default function FormularioConfiguracion({ inicial, existe, correo }: Pro
 
   return (
     <>
-      {/* El padding inferior deja el contenido por encima del botón fijo. */}
-      <div className="px-5 pb-[110px] pt-[calc(env(safe-area-inset-top)+22px)]">
+      {/*
+        El padding inferior deja el contenido por encima del botón fijo. Con un
+        mensaje encima del botón, el bloque fijo crece (una lista de errores
+        puede ocupar varias líneas) y el padding crece con él, para que no tape
+        el final de la pantalla.
+      */}
+      <div
+        className={`px-5 pt-[calc(env(safe-area-inset-top)+22px)] ${
+          aviso || mensajeAlPie ? "pb-[190px]" : "pb-[110px]"
+        }`}
+      >
         <div className="flex items-center gap-2.5">
           <button
             type="button"

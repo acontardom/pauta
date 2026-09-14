@@ -5,6 +5,7 @@ import Boton from "@/components/ui/Boton";
 import CampoNumerico from "@/components/ui/CampoNumerico";
 import HojaInferior from "@/components/ui/HojaInferior";
 import { formatoLargoConAnio } from "@/lib/fechas";
+import { llamarAccion } from "@/lib/red";
 import type { Medida } from "@/lib/supabase/tipos";
 import { actualizarMedida, eliminarMedida, guardarMedida } from "./acciones";
 
@@ -40,9 +41,9 @@ export default function HojaMedida({ medida, hoy, onCerrar }: Props) {
     setError("");
     iniciarGuardado(async () => {
       const entrada = { fecha, peso, cintura };
-      const r = editando
-        ? await actualizarMedida(medida.id, entrada)
-        : await guardarMedida(entrada);
+      const r = await llamarAccion(() =>
+        editando ? actualizarMedida(medida.id, entrada) : guardarMedida(entrada),
+      );
       // Si falla, la hoja queda abierta con lo escrito adentro.
       if (r.ok) onCerrar();
       else setError(r.error);
@@ -52,7 +53,7 @@ export default function HojaMedida({ medida, hoy, onCerrar }: Props) {
   function eliminar() {
     setError("");
     iniciarEliminado(async () => {
-      const r = await eliminarMedida(medida!.id);
+      const r = await llamarAccion(() => eliminarMedida(medida!.id));
       if (r.ok) onCerrar();
       else setError(r.error);
     });

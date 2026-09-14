@@ -8,9 +8,6 @@ type Props = {
   onChange: (valor: string) => void;
   modo?: "entero" | "decimal";
   placeholder?: string;
-  sufijo?: string;
-  /** Para casos como el código de un solo uso ("one-time-code"). */
-  autoComplete?: string;
   /**
    * "grande" para los campos protagonistas de una hoja (peso, cintura).
    * "compacto" para formularios de varias columnas (InBody).
@@ -50,8 +47,6 @@ export default function CampoNumerico({
   onChange,
   modo = "decimal",
   placeholder = "—",
-  sufijo,
-  autoComplete = "off",
   tamano = "normal",
   invalido = false,
   className = "",
@@ -93,14 +88,14 @@ export default function CampoNumerico({
       >
         {etiqueta}
       </label>
-      <div className="relative mt-1.5">
+      <div className="mt-1.5">
         <input
           id={id}
           ref={ref}
           type="text"
           inputMode={modo === "entero" ? "numeric" : "decimal"}
           enterKeyHint="done"
-          autoComplete={autoComplete}
+          autoComplete="off"
           value={valor}
           placeholder={placeholder}
           aria-invalid={invalido || undefined}
@@ -110,13 +105,8 @@ export default function CampoNumerico({
             invalido
               ? "border-ambar focus:border-ambar"
               : "border-borde focus:border-verde-borde"
-          } ${ESTILO_TAMANO[tamano]} ${sufijo ? "pr-12" : ""}`}
+          } ${ESTILO_TAMANO[tamano]}`}
         />
-        {sufijo ? (
-          <span className="pointer-events-none absolute right-[14px] top-1/2 -translate-y-1/2 text-[14px] text-tinta-4">
-            {sufijo}
-          </span>
-        ) : null}
       </div>
     </div>
   );

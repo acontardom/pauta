@@ -98,11 +98,23 @@
 }
 
 @layer base {
+  /*
+    Sin rebote elástico del documento: en la app instalada, arrastrar de más
+    deja ver lo que hay detrás. Las hojas inferiores conservan su propio
+    scroll (overscroll-contain en HojaInferior).
+  */
   html,
   body {
     margin: 0;
     padding: 0;
+    overscroll-behavior: none;
     -webkit-font-smoothing: antialiased;
+  }
+
+  /* Una palabra larga (un enlace pegado en una nota) se corta antes que
+     ensanchar la pantalla. */
+  body {
+    overflow-wrap: break-word;
   }
 
   * {

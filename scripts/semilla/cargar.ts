@@ -87,6 +87,11 @@ const PLANES: Plan[] = [
   },
 ];
 
+/** La salida del script: lo que ve quien lo corre, no un log de depuración. */
+function imprimir(texto = "") {
+  process.stdout.write(`${texto}\n`);
+}
+
 function morir(mensaje: string): never {
   console.error(`\n  ${mensaje}\n`);
   process.exit(1);
@@ -131,22 +136,22 @@ function imprimirTabla(
     celdas[0].padEnd(anchoTabla) +
     cols.map((c, i) => celdas[i + 1].padStart(c.length + 3)).join("");
 
-  console.log("");
-  console.log(linea(["tabla", ...cols]));
-  console.log("  " + "─".repeat(anchoTabla + cols.reduce((s, c) => s + c.length + 3, 0)));
+  imprimir();
+  imprimir(linea(["tabla", ...cols]));
+  imprimir("  " + "─".repeat(anchoTabla + cols.reduce((s, c) => s + c.length + 3, 0)));
   for (const r of resumen) {
-    console.log(
+    imprimir(
       linea([r.tabla, String(r.archivo), String(r.existian), String(r.nuevas)]),
     );
   }
   const total = resumen.reduce((s, r) => s + r.nuevas, 0);
-  console.log("");
-  console.log(
+  imprimir();
+  imprimir(
     REVISAR
       ? `  Revisión: se insertarían ${total} filas. No se escribió nada.`
       : `  Listo: ${total} filas insertadas.`,
   );
-  console.log("");
+  imprimir();
 }
 
 async function main() {
@@ -186,9 +191,9 @@ async function main() {
     );
   }
 
-  console.log(`\n  Usuario: ${usuario.email}`);
-  console.log(`  Archivo: ${ARCHIVO}`);
-  if (REVISAR) console.log("  Modo revisar: no se escribe nada.");
+  imprimir(`\n  Usuario: ${usuario.email}`);
+  imprimir(`  Archivo: ${ARCHIVO}`);
+  if (REVISAR) imprimir("  Modo revisar: no se escribe nada.");
 
   const resumen: {
     tabla: string;

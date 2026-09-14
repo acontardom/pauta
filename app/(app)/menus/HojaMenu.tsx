@@ -9,6 +9,7 @@ import Chip from "@/components/ui/Chip";
 import HojaInferior from "@/components/ui/HojaInferior";
 import { TIEMPOS } from "@/lib/dominio";
 import { parsear } from "@/lib/numeros";
+import { llamarAccion } from "@/lib/red";
 import type { Menu, Porciones } from "@/lib/supabase/tipos";
 import { MAXIMO_NOMBRE, type EntradaMenu } from "@/lib/validarMenu";
 import { actualizarMenu, crearMenu, eliminarMenu } from "./acciones";
@@ -55,9 +56,9 @@ export default function HojaMenu({ menu, onCerrar }: Props) {
   function guardar() {
     setError("");
     iniciarGuardado(async () => {
-      const r = editando
-        ? await actualizarMenu(menu.id, entrada())
-        : await crearMenu(entrada());
+      const r = await llamarAccion(() =>
+        editando ? actualizarMenu(menu.id, entrada()) : crearMenu(entrada()),
+      );
       // Si falla, la hoja queda abierta con todo lo escrito adentro.
       if (r.ok) onCerrar();
       else setError(r.error);
@@ -67,7 +68,7 @@ export default function HojaMenu({ menu, onCerrar }: Props) {
   function eliminar() {
     setError("");
     iniciarEliminado(async () => {
-      const r = await eliminarMenu(menu!.id);
+      const r = await llamarAccion(() => eliminarMenu(menu!.id));
       if (r.ok) onCerrar();
       else setError(r.error);
     });

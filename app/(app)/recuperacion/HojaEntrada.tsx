@@ -8,6 +8,7 @@ import Chip from "@/components/ui/Chip";
 import HojaInferior from "@/components/ui/HojaInferior";
 import { AUTORIZACIONES } from "@/lib/dominio";
 import { siguienteSesion } from "@/lib/recuperacion";
+import { llamarAccion } from "@/lib/red";
 import type {
   EntradaRecuperacion,
   Hinchazon,
@@ -22,8 +23,6 @@ type Props = {
   /** Todas las entradas, para sugerir el número de la próxima sesión. */
   entradas: EntradaRecuperacion[];
   hoy: string;
-  /** Tipo con el que abre un registro nuevo. Por defecto, kinesiología. */
-  tipoInicial?: TipoEntrada;
   onCerrar: () => void;
 };
 
@@ -59,7 +58,6 @@ export default function HojaEntrada({
   entrada,
   entradas,
   hoy,
-  tipoInicial = "kine",
   onCerrar,
 }: Props) {
   const editando = entrada !== null;
@@ -70,7 +68,8 @@ export default function HojaEntrada({
   const guardadas = entrada?.autorizado ?? [];
   const personalizadas = guardadas.filter((a) => !PREDEFINIDAS.has(a));
 
-  const [tipo, setTipo] = useState<TipoEntrada>(entrada?.tipo ?? tipoInicial);
+  // Un registro nuevo abre como kinesiología, el tipo más frecuente.
+  const [tipo, setTipo] = useState<TipoEntrada>(entrada?.tipo ?? "kine");
   const [fecha, setFecha] = useState(entrada?.fecha ?? hoy);
   const [numero, setNumero] = useState(
     entrada?.numero_sesion != null ? String(entrada.numero_sesion) : "",
@@ -148,9 +147,9 @@ export default function HojaEntrada({
   function guardar() {
     setError("");
     iniciarGuardado(async () => {
-      const r = editando
-        ? await actualizarEntrada(entrada.id, datos())
-        : await guardarEntrada(datos());
+      const r = await llamarAccion(() =>
+        editando ? actualizarEntrada(entrada.id, datos()) : guardarEntrada(datos()),
+      );
       // Si falla, la hoja queda abierta con lo escrito.
       if (r.ok) onCerrar();
       else setError(r.error);
@@ -160,7 +159,7 @@ export default function HojaEntrada({
   function eliminar() {
     setError("");
     iniciarEliminado(async () => {
-      const r = await eliminarEntrada(entrada!.id);
+      const r = await llamarAccion(() => eliminarEntrada(entrada!.id));
       if (r.ok) onCerrar();
       else setError(r.error);
     });

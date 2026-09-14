@@ -5,6 +5,7 @@ import Boton from "@/components/ui/Boton";
 import CampoNumerico from "@/components/ui/CampoNumerico";
 import { CAMPOS_INBODY, type ClaveInbody } from "@/lib/dominio";
 import { tarjetasInbody, type TonoInbody } from "@/lib/progreso";
+import { llamarAccion } from "@/lib/red";
 import type { Inbody } from "@/lib/supabase/tipos";
 import { actualizarInbody, eliminarInbody, guardarInbody } from "./acciones";
 
@@ -176,9 +177,9 @@ function FormularioInbody({
     setError("");
     iniciarGuardado(async () => {
       const entrada = { fecha, valores };
-      const r = editando
-        ? await actualizarInbody(medicion.id, entrada)
-        : await guardarInbody(entrada);
+      const r = await llamarAccion(() =>
+        editando ? actualizarInbody(medicion.id, entrada) : guardarInbody(entrada),
+      );
       // Si falla, el formulario queda abierto con lo escrito.
       if (r.ok) onCerrar();
       else setError(r.error);
@@ -188,7 +189,7 @@ function FormularioInbody({
   function eliminar() {
     setError("");
     iniciarEliminado(async () => {
-      const r = await eliminarInbody(medicion!.id);
+      const r = await llamarAccion(() => eliminarInbody(medicion!.id));
       if (r.ok) onCerrar();
       else setError(r.error);
     });
