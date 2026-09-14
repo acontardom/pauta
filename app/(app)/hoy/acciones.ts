@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { limpiarPorciones, porcionesVacias } from "@/lib/porciones";
+import { opcionesEntrenamiento } from "@/lib/rutinas";
 import { crearClienteServidor } from "@/lib/supabase/servidor";
 import type { ModoComida, Porciones } from "@/lib/supabase/tipos";
 import { validarComida, validarDia, type EntradaDia } from "@/lib/validarComida";
@@ -158,7 +159,39 @@ async function upsertDia(
   const { supabase, user } = await sesion();
   if (!user) return { ok: false, error: "Sesión expirada" };
 
-  const validacion = validarDia(fecha, campos as EntradaDia);
+  const validacionFecha = validarDia(fecha, {});
+  if (!validacionFecha.ok) return validacionFecha;
+
+  /*
+    Lo que puede llevar entrenamiento: las sesiones de las rutinas activas,
+    las opciones fijas y lo que el día ya tenía guardado. Así un "Tren
+    superior" antiguo sobrevive a marcar otra cosa, pero no se puede agregar.
+  */
+  let permitidas: Set<string> | undefined;
+  if (Array.isArray(campos.entrenamiento)) {
+    const [rutinas, dia] = await Promise.all([
+      supabase.from("rutinas").select("clave").eq("activa", true),
+      supabase
+        .from("dias")
+        .select("entrenamiento")
+        .eq("fecha", fecha)
+        .maybeSingle(),
+    ]);
+    if (rutinas.error || dia.error) {
+      return { ok: false, error: "No se pudo guardar el día" };
+    }
+    permitidas = new Set([
+      ...opcionesEntrenamiento(rutinas.data ?? []),
+      ...((dia.data?.entrenamiento as string[] | undefined) ?? []),
+    ]);
+  }
+
+  const validacion = validarDia(
+    fecha,
+    campos as EntradaDia,
+    undefined,
+    permitidas,
+  );
   if (!validacion.ok) return validacion;
 
   const { error } = await supabase

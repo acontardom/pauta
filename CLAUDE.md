@@ -61,7 +61,7 @@ se escribe dentro de la app y la sesión queda en su propio contenedor.
   correo: se cambia desde el dashboard de Supabase.
 
 ## Esquema de la base
-10 tablas, todas con `id`, `user_id` (por defecto `auth.uid()`), `created_at` y
+11 tablas, todas con `id`, `user_id` (por defecto `auth.uid()`), `created_at` y
 `updated_at` (un trigger compartido lo mantiene). **RLS activo en todas**, con
 políticas de select/insert/update/delete solo para `authenticated`. Ninguna para `anon`.
 
@@ -77,6 +77,7 @@ políticas de select/insert/update/delete solo para `authenticated`. Ninguna par
 | `hitos` | etapas de recuperación, con fecha planificada y real |
 | `entradas_recuperacion` | controles, kinesiología y notas |
 | `preguntas_control` | qué preguntar en el próximo control |
+| `rutinas` | sesiones tipo del plan de entrenamiento (ver "Rutinas de entrenamiento") |
 
 **Claves de dominio** (iguales en la base y en `lib/dominio.ts`; si cambian en
 una, cambian en la otra):
@@ -132,6 +133,12 @@ editar datos.json  →  npm run semilla:revisar  →  npm run semilla
   Cada error indica su ruta exacta (`menus[3].porciones.aceite`).
 - **Corolario importante:** cambiar un dato ya cargado en `datos.json` NO lo
   actualiza en la base. Las correcciones de datos ya cargados se hacen desde la app.
+- **La semilla completa vuelve a insertar lo que se borró desde la app.** Ya
+  pasó con las preguntas: el archivo tiene 7 y en la base queda 1. Para cargar
+  una tabla nueva sin revivir filas borradas, filtrar por tabla (el archivo se
+  valida entero igual):
+  `npm run semilla:revisar -- --tabla rutinas` y `npm run semilla -- --tabla rutinas`.
+  Mirar siempre la tabla de `semilla:revisar` antes de insertar.
 
 ### SUPABASE_SECRET_KEY
 El script usa la clave secreta de Supabase, que **salta RLS**. Reglas:
@@ -182,9 +189,19 @@ Agua, calorías activas, entrenamiento, tobillo y cierre viven en `dias`.
   null o `[]`.
 - Agua, entrenamiento y tobillo guardan al toque. Los dos campos numéricos
   guardan 600 ms después de la última tecla, y también al perder el foco.
-- Las opciones de entrenamiento son `ENTRENAMIENTOS` en `lib/dominio.ts`, y se
-  guardan como texto en `entrenamiento` (`text[]`): **cambiar una etiqueta
-  rompe los registros viejos**. "Descanso" no es excluyente.
+- Las opciones de entrenamiento son una por rutina activa ("Sesión A",
+  "Sesión B", de `etiquetaSesion`) más `ENTRENAMIENTOS` en `lib/dominio.ts`
+  (Bicicleta, Kinesiología, Descanso), armadas por `opcionesEntrenamiento` en
+  `lib/rutinas.ts`. `entrenamiento` (`text[]`) guarda **el texto de la
+  etiqueta**, no un id: **cambiar una etiqueta rompe los registros viejos**.
+  "Descanso" no es excluyente.
+- **Valores antiguos:** "Tren superior" y "Core" dejaron de ser opciones, pero
+  hay días que los tienen. Nunca se borran ni se migran, y toda la app muestra
+  cualquier texto que venga de la base: en Hoy como chip marcado al final (tocarlo
+  lo quita y ya no se puede volver a elegir), en el cierre y en Semana como
+  texto. Por eso `guardarDia` valida `entrenamiento` contra las sesiones
+  activas, las fijas **y lo que el día ya tenía guardado** (`validarDia` recibe
+  `permitidas`).
 - `lib/dia.ts` tiene `resumenDia` (las 8 filas de la hoja de cierre),
   `textoAgua` (dos decimales fijas) y `textoLitros` (hasta dos, sin relleno).
 
@@ -197,6 +214,40 @@ no pide confirmación. Los días anteriores se completan y cierran igual que hoy
 
 Borrar el registro de una comida pide confirmación en la misma hoja
 ("Eliminar" y "Cancelar"), como el resto de las eliminaciones.
+
+### Hoja de rutina
+"Ver rutina", a la derecha del título de la tarjeta de entrenamiento, abre
+`HojaRutina`: título con el nombre del bloque, `Segmentos` con una pestaña por
+rutina activa ("A · Empuje + core"), la nota del bloque en una tarjeta verde y
+una tarjeta por ejercicio en su orden, con "4 series · 8-12 reps · 90 s"
+(`textoEjercicio`). Abre en la sesión marcada ese día; con las dos o ninguna,
+en la primera (`rutinaInicial`). **Es solo de lectura:** no se marca ejercicio
+por ejercicio ni se registran pesos ni repeticiones. Lo que se registra es la
+sesión, con el chip.
+
+## Rutinas de entrenamiento
+Tabla `rutinas`: una fila por sesión tipo. `bloque` es el nombre del plan,
+`clave` ("A", "B"), `nombre`, `orden`, `activa`, `nota` (reglas del bloque:
+RIR, progresión, posición) y `ejercicios`, un jsonb con
+`{ orden, nombre, series, reps, descanso_seg, notas }`. Único por
+`(user_id, bloque, clave)`. El check `ejercicios_validos(jsonb)` exige un
+arreglo de objetos con `nombre` no vacío, `series` entero > 0 y `reps` texto no
+vacío; el validador de la semilla repite esas reglas.
+
+- **Van en la base, no en el código**, porque el plan cambia cada pocas semanas.
+- **No se editan desde la app:** se cargan por semilla. Hoy solo lee las activas.
+- `lib/rutinas.ts` tiene la lógica pura; el mapeo a etiqueta corta de Semana
+  ("Sesión A" → "A", "Bicicleta" → "Bici") es `entrenamientoCorto` en
+  `lib/dominio.ts`.
+- **Cambiar de plan:** agregar a `rutinas` en `datos.json` las sesiones del
+  bloque nuevo (con otro `bloque`), correr
+  `npm run semilla:revisar -- --tabla rutinas` y
+  `npm run semilla -- --tabla rutinas`, y desactivar las del bloque anterior
+  (`activa = false`). Como la semilla nunca hace update, desactivar se hace con
+  una migración de datos o desde el SQL Editor, preguntando antes. Si el
+  bloque nuevo reutiliza las claves A y B, los días viejos siguen diciendo
+  "Sesión A" y se ven igual; si usa otras claves, las viejas se muestran como
+  valores antiguos.
 
 ## Pantalla Menús
 `/menus` lista, crea, edita y elimina menús. Agrupados por tiempo en el orden
@@ -227,6 +278,13 @@ cubierto está el registro reciente.
 - Los días con comidas estimadas se pintan en azul y **no bajan ninguna
   métrica**: sus porciones suman igual.
 - Se carga con **una consulta por tabla para todo el rango**, nunca una por día.
+- Bajo la grilla, la tarjeta **Entrenamiento**: 7 columnas con los mismos
+  márgenes y gap que la grilla (una por día, en el orden de sus filas, con la
+  etiqueta del día arriba) y píldoras cortas de lo marcado: sesiones en verde,
+  Bici y Kine neutras, Desc en "vacio", un guion si no hay nada; un valor que
+  no se reconoce va con sus dos primeras letras. Debajo, "4 sesiones esta
+  semana", contando solo sesiones de rutina (`entrenamientoSemana` y
+  `textoSesiones`).
 
 `lib/semana.ts` es el lugar de la lógica de agregación, toda pura y sin JSX:
 `construirSemana`, `promedios`, `observaciones` y los formateadores de texto.
@@ -537,8 +595,9 @@ entrenamiento, tobillo y el botón de cierre con su hoja de resumen.
 
 `dias.nota` sigue **sin usar**.
 
-Ya hay datos en la base: configuración, 5 hitos, 21 menús, 105 alimentos, 1 medida,
-1 InBody, 4 entradas de recuperación y 7 preguntas. `dias` y `comidas` están vacías:
+La semilla cargó configuración, 5 hitos, 21 menús, 105 alimentos, 1 medida,
+1 InBody, 4 entradas de recuperación, 7 preguntas (6 ya se borraron desde la
+app) y 2 rutinas (bloque "Bloque sin carga de tobillo"). `dias` y `comidas`
 las llena la app.
 
 - Rutas: `/hoy`, `/semana`, `/progreso`, `/menus`, `/recuperacion`, `/configuracion`,
@@ -563,6 +622,8 @@ Quedó fuera de la v1, a propósito:
   su propia página de error.
 - **Sin edición de alimentos desde la app.** La tabla de equivalencias se carga
   con la semilla y solo se consulta.
+- **Sin edición de rutinas desde la app**, ni registro de pesos, repeticiones o
+  ejercicios. Las rutinas se cambian por semilla.
 - **Sin exportación de datos.**
 - **Sin atajos de hitos en el formulario de control médico.** El diseño trae
   atajos para marcar un hito como cumplido y para reprogramarlo; se decidió no

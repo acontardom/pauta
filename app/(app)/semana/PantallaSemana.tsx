@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { GRUPOS } from "@/lib/dominio";
+import { GRUPOS, type TonoEntrenamiento } from "@/lib/dominio";
 import type {
   DiaSemana,
   Observacion,
@@ -7,9 +7,11 @@ import type {
   TonoCelda,
 } from "@/lib/semana";
 import {
+  entrenamientoSemana,
   fraseSemana,
   textoPromedioAgua,
   textoPromedioKcal,
+  textoSesiones,
 } from "@/lib/semana";
 
 type Props = {
@@ -31,12 +33,20 @@ const FONDO: Record<TonoCelda, string> = {
   "azul-suave": "bg-azul-claro",
 };
 
+/* Píldoras de la fila de entrenamiento. Tampoco hay tono de falla. */
+const PILDORA: Record<TonoEntrenamiento, string> = {
+  sesion: "bg-verde-fondo text-verde-oscuro",
+  neutro: "bg-superficie-suave text-tinta-2",
+  descanso: "bg-vacio text-tinta-4",
+};
+
 export default function PantallaSemana({
   semana,
   promedios,
   observaciones,
 }: Props) {
   const registrados = semana.filter((d) => d.cerrado).length;
+  const entrenamiento = entrenamientoSemana(semana);
 
   return (
     <div className="px-5 pb-8 pt-[calc(env(safe-area-inset-top)+22px)]">
@@ -153,6 +163,51 @@ export default function PantallaSemana({
             </span>
           ))}
         </div>
+      </div>
+
+      {/* Entrenamiento */}
+      <div className="mt-3 rounded-tarjeta border border-linea bg-superficie px-2.5 py-3.5">
+        <h2 className="px-1 text-[13px] uppercase tracking-[0.06em] text-tinta-3">
+          Entrenamiento
+        </h2>
+
+        {/*
+          Siete columnas con los mismos márgenes y gap que las de la grilla,
+          así cada día queda justo bajo una columna. Los días van en el orden
+          de las filas de la grilla, de izquierda a derecha, con su etiqueta
+          arriba. min-w-0 y overflow-hidden: una píldora nunca ensancha la
+          pantalla, aunque la columna sea angosta.
+        */}
+        <div className="mt-2.5 flex gap-1.5 pl-[46px] pr-[22px]">
+          {entrenamiento.columnas.map((c) => (
+            <div
+              key={c.fecha}
+              className="flex min-w-0 flex-1 flex-col gap-[3px] text-center"
+            >
+              <span className="overflow-hidden whitespace-nowrap text-[9.5px] uppercase tracking-[0.04em] text-tinta-4">
+                {c.etiqueta}
+              </span>
+              {c.etiquetas.length === 0 ? (
+                <span className="py-1 text-[11.5px] leading-none text-tinta-5">
+                  —
+                </span>
+              ) : (
+                c.etiquetas.map((e) => (
+                  <span
+                    key={e.texto}
+                    className={`overflow-hidden whitespace-nowrap rounded-full py-1 text-[11.5px] leading-none ${PILDORA[e.tono]}`}
+                  >
+                    {e.corta}
+                  </span>
+                ))
+              )}
+            </div>
+          ))}
+        </div>
+
+        <p className="mt-3 px-1 text-[13px] text-tinta-3">
+          {textoSesiones(entrenamiento.sesiones)}
+        </p>
       </div>
 
       {/* Promedios */}

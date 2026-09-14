@@ -137,3 +137,31 @@ export type PreguntaControl = Comun & {
   texto: string;
   preguntada: boolean;
 };
+
+/** Un ejercicio de una rutina. Solo nombre, series y reps son obligatorios. */
+export type Ejercicio = {
+  orden?: number | null;
+  nombre: string;
+  series: number;
+  /** Texto: "8-12", "10 por lado", "30 seg por lado". */
+  reps: string;
+  descanso_seg?: number | null;
+  notas?: string | null;
+};
+
+/*
+  Una sesión tipo de un bloque de entrenamiento. dias.entrenamiento no apunta
+  acá: guarda el texto de la etiqueta ("Sesión A").
+*/
+export type Rutina = Comun & {
+  /** Nombre del plan. */
+  bloque: string;
+  /** "A", "B". */
+  clave: string;
+  nombre: string;
+  orden: number;
+  activa: boolean;
+  /** Reglas del bloque: RIR, progresión, posición. */
+  nota: string | null;
+  ejercicios: Ejercicio[];
+};

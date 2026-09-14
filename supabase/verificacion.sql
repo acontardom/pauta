@@ -5,9 +5,11 @@
 --   npx supabase db execute --file supabase/verificacion.sql --linked
 --
 -- Qué esperar:
---   1. 10 tablas, todas con rls_activo = true
---   2. 40 políticas (4 por tabla), todas para el rol authenticated
+--   1. 11 tablas, todas con rls_activo = true
+--   2. 44 políticas (4 por tabla), todas para el rol authenticated
 --   3. ninguna política para anon
+--   4. rutinas con su check rutinas_ejercicios_validos, su unique
+--      (user_id, bloque, clave) y su índice (user_id, activa)
 -- ============================================================================
 
 
@@ -36,7 +38,7 @@ where p.schemaname = 'public'
 order by p.tablename, p.cmd, p.policyname;
 
 
--- 3. Resumen: cuántas políticas tiene cada tabla. Deben ser 4 en las 10.
+-- 3. Resumen: cuántas políticas tiene cada tabla. Deben ser 4 en las 11.
 select
   p.tablename                      as tabla,
   count(*)                         as politicas,
@@ -72,7 +74,8 @@ order by rel.relname, con.conname;
 
 
 -- 6. Restricciones únicas, para confirmar las claves de negocio
---    (dias por fecha, comidas por fecha+tiempo, hitos por clave...).
+--    (dias por fecha, comidas por fecha+tiempo, hitos por clave,
+--    rutinas por bloque+clave...).
 select
   rel.relname                      as tabla,
   con.conname                      as restriccion,
@@ -106,3 +109,16 @@ join pg_namespace nsp on nsp.oid = rel.relnamespace
 where nsp.nspname = 'public'
   and not tg.tgisinternal
 order by rel.relname, tg.tgname;
+
+
+-- 9. Funciones de validación de columnas jsonb. Deben ser inmutables ('i').
+--    ejercicios_validos es la del check de rutinas.ejercicios.
+select
+  p.proname                        as funcion,
+  p.provolatile                    as volatilidad,
+  pg_get_function_arguments(p.oid) as argumentos
+from pg_proc p
+join pg_namespace n on n.oid = p.pronamespace
+where n.nspname = 'public'
+  and p.proname in ('porciones_validas', 'horarios_validos', 'ejercicios_validos')
+order by p.proname;

@@ -26,6 +26,7 @@ export const TABLAS = [
   "inbody",
   "entradas_recuperacion",
   "preguntas_control",
+  "rutinas",
 ] as const;
 
 export const COLUMNAS_INBODY = [
@@ -235,6 +236,7 @@ export function validarSemilla(datos: unknown): Resultado {
   validarInbody(a, datos);
   validarEntradas(a, datos);
   validarPreguntas(a, datos);
+  validarRutinas(a, datos);
 
   return { ok: a.errores.length === 0, errores: a.errores };
 }
@@ -471,5 +473,57 @@ function validarPreguntas(a: Acumulador, datos: Record<string, unknown>) {
     filas,
     (f) => String(f.texto),
     "texto de pregunta",
+  );
+}
+
+function validarRutinas(a: Acumulador, datos: Record<string, unknown>) {
+  const filas = a.arreglo(datos, "rutinas");
+  if (!filas) return;
+
+  filas.forEach((fila, i) => {
+    const r = `rutinas[${i}]`;
+    if (!esObjeto(fila)) {
+      a.agregar(r, "debe ser un objeto");
+      return;
+    }
+    a.texto(`${r}.bloque`, fila.bloque);
+    a.texto(`${r}.clave`, fila.clave);
+    a.texto(`${r}.nombre`, fila.nombre);
+    a.entero(`${r}.orden`, fila.orden, { nuloOk: false, minimo: 0 });
+    if (fila.activa !== undefined && typeof fila.activa !== "boolean") {
+      a.agregar(`${r}.activa`, "debe ser true o false");
+    }
+    if (fila.nota !== null && fila.nota !== undefined) {
+      a.texto(`${r}.nota`, fila.nota);
+    }
+
+    // Las mismas reglas que el check ejercicios_validos de la tabla.
+    const ejercicios = fila.ejercicios;
+    if (!Array.isArray(ejercicios)) {
+      a.agregar(`${r}.ejercicios`, "debe ser un arreglo");
+      return;
+    }
+    ejercicios.forEach((e, j) => {
+      const re = `${r}.ejercicios[${j}]`;
+      if (!esObjeto(e)) {
+        a.agregar(re, "debe ser un objeto");
+        return;
+      }
+      a.texto(`${re}.nombre`, e.nombre);
+      a.entero(`${re}.series`, e.series, { nuloOk: false, minimo: 1 });
+      a.texto(`${re}.reps`, e.reps);
+      a.entero(`${re}.orden`, e.orden, { minimo: 0 });
+      a.entero(`${re}.descanso_seg`, e.descanso_seg, { minimo: 0 });
+      if (e.notas !== null && e.notas !== undefined) {
+        a.texto(`${re}.notas`, e.notas);
+      }
+    });
+  });
+
+  a.sinDuplicados(
+    "rutinas",
+    filas,
+    (f) => `${f.bloque}${String.fromCharCode(31)}${f.clave}`,
+    "rutina (bloque, clave)",
   );
 }

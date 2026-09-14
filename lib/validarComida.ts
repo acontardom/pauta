@@ -107,7 +107,6 @@ export function validarComida(
 /* Validación del resto del día (tabla dias)                                 */
 /* ------------------------------------------------------------------------- */
 
-const OPCIONES_ENTRENAMIENTO = new Set<string>(ENTRENAMIENTOS);
 const CLAVES_TOBILLO = new Set<string>(ESTADOS_TOBILLO.map((e) => e.clave));
 
 export type EntradaDia = {
@@ -133,10 +132,17 @@ function enteroNoNegativo(
   return { ok: true };
 }
 
+/*
+  `permitidas` son los textos que puede llevar entrenamiento. Sin ella, solo
+  las opciones fijas. El servidor pasa además las sesiones de las rutinas
+  activas y lo que el día ya tenía guardado: un "Tren superior" antiguo se
+  puede conservar al marcar otra cosa, pero no volver a agregar.
+*/
 export function validarDia(
   fecha: string,
   campos: EntradaDia,
   ahora?: Date,
+  permitidas: ReadonlySet<string> = new Set(ENTRENAMIENTOS),
 ): Resultado {
   if (typeof fecha !== "string" || !esFechaValida(fecha)) {
     return { ok: false, error: "La fecha no es válida" };
@@ -176,7 +182,7 @@ export function validarDia(
     }
     const vistos = new Set<string>();
     for (const v of lista) {
-      if (typeof v !== "string" || !OPCIONES_ENTRENAMIENTO.has(v)) {
+      if (typeof v !== "string" || !permitidas.has(v)) {
         return { ok: false, error: `"${String(v)}" no es una opción de entrenamiento` };
       }
       if (vistos.has(v)) {

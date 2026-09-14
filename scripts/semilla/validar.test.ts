@@ -68,6 +68,26 @@ function semillaValida() {
       },
     ],
     preguntas_control: [{ texto: "¿Cuántas porciones de aceite?" }],
+    rutinas: [
+      {
+        bloque: "Bloque sin carga de tobillo",
+        clave: "A",
+        nombre: "Empuje + core",
+        orden: 1,
+        activa: true,
+        nota: "RIR 2",
+        ejercicios: [
+          {
+            orden: 1,
+            nombre: "Press plano con mancuernas",
+            series: 4,
+            reps: "8-12",
+            descanso_seg: 90,
+            notas: null as string | null,
+          },
+        ],
+      },
+    ],
   };
 }
 
@@ -167,6 +187,76 @@ describe("validarSemilla", () => {
       (s.inbody[0] as Record<string, unknown>).grasa_visceral = 7;
     });
     expect(rutas).toContain("inbody[0].grasa_visceral");
+  });
+
+  describe("rutinas", () => {
+    it("rechaza bloque, clave y nombre vacíos", () => {
+      const rutas = rutasDeError((s) => {
+        s.rutinas[0].bloque = "";
+        s.rutinas[0].clave = " ";
+        s.rutinas[0].nombre = "";
+      });
+      expect(rutas).toEqual(
+        expect.arrayContaining([
+          "rutinas[0].bloque",
+          "rutinas[0].clave",
+          "rutinas[0].nombre",
+        ]),
+      );
+    });
+
+    it("rechaza un orden que no es entero", () => {
+      const rutas = rutasDeError((s) => {
+        s.rutinas[0].orden = 1.5;
+      });
+      expect(rutas).toContain("rutinas[0].orden");
+    });
+
+    it("rechaza ejercicios que no son arreglo", () => {
+      const rutas = rutasDeError((s) => {
+        (s.rutinas[0] as Record<string, unknown>).ejercicios = {};
+      });
+      expect(rutas).toContain("rutinas[0].ejercicios");
+    });
+
+    it("rechaza un ejercicio sin nombre, con series 0 o sin reps", () => {
+      const rutas = rutasDeError((s) => {
+        const e = s.rutinas[0].ejercicios[0];
+        e.nombre = "";
+        e.series = 0;
+        e.reps = "";
+      });
+      expect(rutas).toEqual(
+        expect.arrayContaining([
+          "rutinas[0].ejercicios[0].nombre",
+          "rutinas[0].ejercicios[0].series",
+          "rutinas[0].ejercicios[0].reps",
+        ]),
+      );
+    });
+
+    it("rechaza series con decimales y reps como número", () => {
+      const rutas = rutasDeError((s) => {
+        const e = s.rutinas[0].ejercicios[0] as Record<string, unknown>;
+        e.series = 2.5;
+        e.reps = 12;
+      });
+      expect(rutas).toContain("rutinas[0].ejercicios[0].series");
+      expect(rutas).toContain("rutinas[0].ejercicios[0].reps");
+    });
+
+    it("rechaza una rutina duplicada por (bloque, clave)", () => {
+      const rutas = rutasDeError((s) => {
+        s.rutinas.push({ ...s.rutinas[0], nombre: "Otra" });
+      });
+      expect(rutas).toContain("rutinas[1]");
+    });
+
+    it("acepta la misma clave en otro bloque", () => {
+      const s = semillaValida();
+      s.rutinas.push({ ...s.rutinas[0], bloque: "Bloque con carga" });
+      expect(validarSemilla(s).ok).toBe(true);
+    });
   });
 });
 

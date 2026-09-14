@@ -8,6 +8,7 @@ import { TIEMPOS, type ClaveTiempo } from "@/lib/dominio";
 import { sumarDias } from "@/lib/fechas";
 import { limpiarPorciones } from "@/lib/porciones";
 import { AVISO_FALLO, avisoDeFallo } from "@/lib/red";
+import { opcionesEntrenamiento } from "@/lib/rutinas";
 import type {
   Alimento,
   Comida,
@@ -26,6 +27,7 @@ import {
 import EncabezadoHoy from "./EncabezadoHoy";
 import HojaCierre from "./HojaCierre";
 import HojaComida from "./HojaComida";
+import HojaRutina, { type RutinaHoja } from "./HojaRutina";
 import TarjetaComida from "./TarjetaComida";
 import TarjetasDia from "./TarjetasDia";
 
@@ -41,6 +43,8 @@ type Props = {
   dia: DiaVista | null;
   menus: Menu[];
   alimentos: Alimento[];
+  /** Las rutinas activas, en su orden. */
+  rutinas: RutinaHoja[];
 };
 
 type Accion =
@@ -78,11 +82,13 @@ export default function PantallaHoy({
   dia,
   menus,
   alimentos,
+  rutinas,
 }: Props) {
   const router = useRouter();
   const [, iniciar] = useTransition();
   const [abierta, setAbierta] = useState<ClaveTiempo | null>(null);
   const [cierreAbierto, setCierreAbierto] = useState(false);
+  const [rutinaAbierta, setRutinaAbierta] = useState(false);
   const [aviso, setAviso] = useState("");
 
   /*
@@ -293,6 +299,8 @@ export default function PantallaHoy({
           metaAguaMl={metaAgua}
           kcalActivas={diaVista.kcal_activas}
           entrenamiento={diaVista.entrenamiento}
+          opcionesEntrenamiento={opcionesEntrenamiento(rutinas)}
+          onVerRutina={() => setRutinaAbierta(true)}
           minutos={diaVista.entrenamiento_minutos}
           tobillo={diaVista.estado_tobillo}
           onAgua={(agua_ml) =>
@@ -366,6 +374,16 @@ export default function PantallaHoy({
           mutarDia({ cerrado: true }, () => cerrarDia(fecha));
         }}
       />
+
+      {/* Se monta al abrir: la pestaña inicial sigue a lo marcado ese día. */}
+      {rutinaAbierta ? (
+        <HojaRutina
+          abierta
+          onCerrar={() => setRutinaAbierta(false)}
+          rutinas={rutinas}
+          entrenamiento={diaVista.entrenamiento}
+        />
+      ) : null}
 
       {tiempoAbierto ? (
         <HojaComida

@@ -33,21 +33,57 @@ export type ClaveGrupo = (typeof GRUPOS)[number]["clave"];
 export type ClaveTiempo = (typeof TIEMPOS)[number]["clave"];
 
 /*
-  Opciones de entrenamiento. Se guardan en dias.entrenamiento (text[]) con
-  este mismo texto, así que cambiar una etiqueta rompe los registros viejos.
+  Opciones fijas de entrenamiento. Se guardan en dias.entrenamiento (text[])
+  con este mismo texto, así que cambiar una etiqueta rompe los registros viejos.
+
+  Las sesiones de rutina ("Sesión A", "Sesión B") no están acá: salen de las
+  rutinas activas de la base, con etiquetaSesion.
+
+  "Tren superior" y "Core" ya no son opciones (las sesiones A y B los cubren),
+  pero los días viejos los tienen guardados: la app muestra cualquier texto
+  que venga de la base, aunque ya no se pueda elegir.
 
   "Descanso" NO es excluyente: se puede descansar y hacer kinesiología el
   mismo día.
 */
-export const ENTRENAMIENTOS = [
-  "Tren superior",
-  "Core",
-  "Bicicleta",
-  "Kinesiología",
-  "Descanso",
-] as const;
+export const ENTRENAMIENTOS = ["Bicicleta", "Kinesiología", "Descanso"] as const;
 
 export type Entrenamiento = (typeof ENTRENAMIENTOS)[number];
+
+const PREFIJO_SESION = "Sesión ";
+
+/** La etiqueta que se guarda al marcar una rutina: "A" → "Sesión A". */
+export function etiquetaSesion(clave: string): string {
+  return `${PREFIJO_SESION}${clave}`;
+}
+
+/** Es una sesión de rutina ("Sesión A"), no una actividad suelta. */
+export function esSesion(texto: string): boolean {
+  return texto.startsWith(PREFIJO_SESION) && texto.length > PREFIJO_SESION.length;
+}
+
+export type TonoEntrenamiento = "sesion" | "neutro" | "descanso";
+
+const CORTAS: Record<string, { corta: string; tono: TonoEntrenamiento }> = {
+  Bicicleta: { corta: "Bici", tono: "neutro" },
+  Kinesiología: { corta: "Kine", tono: "neutro" },
+  Descanso: { corta: "Desc", tono: "descanso" },
+};
+
+/*
+  La etiqueta corta de la fila de entrenamiento de Semana: "Sesión A" → "A",
+  "Bicicleta" → "Bici". Un texto que no se reconoce (los "Tren superior" y
+  "Core" antiguos) va con sus dos primeras letras y en tono neutro.
+*/
+export function entrenamientoCorto(texto: string): {
+  corta: string;
+  tono: TonoEntrenamiento;
+} {
+  if (esSesion(texto)) {
+    return { corta: texto.slice(PREFIJO_SESION.length), tono: "sesion" };
+  }
+  return CORTAS[texto] ?? { corta: [...texto.trim()].slice(0, 2).join(""), tono: "neutro" };
+}
 
 /** Estados del tobillo. "Peor" se ve igual que los otros: no es una alerta. */
 export const ESTADOS_TOBILLO = [

@@ -8,6 +8,7 @@ import type {
   Configuracion,
   Menu,
 } from "@/lib/supabase/tipos";
+import type { RutinaHoja } from "./HojaRutina";
 import PantallaHoy, { type DiaVista } from "./PantallaHoy";
 
 /** "YYYY-MM-DD" que además existe en el calendario. */
@@ -35,8 +36,8 @@ export default async function Hoy({ searchParams }: PageProps<"/hoy">) {
 
   const supabase = await crearClienteServidor();
 
-  // En paralelo: la latencia a São Paulo se paga una vez, no cuatro.
-  const [configuracion, comidas, dia, menus, alimentos] = await Promise.all([
+  // En paralelo: la latencia a São Paulo se paga una vez, no seis.
+  const [configuracion, comidas, dia, menus, alimentos, rutinas] = await Promise.all([
     supabase
       .from("configuracion")
       .select("metas_porciones, horarios, meta_agua_ml")
@@ -52,6 +53,13 @@ export default async function Hoy({ searchParams }: PageProps<"/hoy">) {
       .maybeSingle(),
     supabase.from("menus").select("*").order("nombre"),
     supabase.from("alimentos").select("*").order("grupo").order("orden"),
+    // Solo las activas: dan los chips de sesión y las pestañas de la hoja.
+    supabase
+      .from("rutinas")
+      .select("id, bloque, clave, nombre, nota, ejercicios")
+      .eq("activa", true)
+      .order("orden")
+      .order("clave"),
   ]);
 
   if (!configuracion.data) {
@@ -77,6 +85,7 @@ export default async function Hoy({ searchParams }: PageProps<"/hoy">) {
       dia={(dia.data ?? null) as DiaVista | null}
       menus={(menus.data ?? []) as Menu[]}
       alimentos={(alimentos.data ?? []) as Alimento[]}
+      rutinas={(rutinas.data ?? []) as RutinaHoja[]}
     />
   );
 }

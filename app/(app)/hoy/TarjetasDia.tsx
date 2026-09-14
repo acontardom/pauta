@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Chip from "@/components/ui/Chip";
-import { ENTRENAMIENTOS, ESTADOS_TOBILLO } from "@/lib/dominio";
+import { ESTADOS_TOBILLO } from "@/lib/dominio";
 import { textoLitros } from "@/lib/dia";
 import { parsear } from "@/lib/numeros";
 import type { EstadoTobillo } from "@/lib/supabase/tipos";
@@ -16,11 +16,14 @@ type Props = {
   metaAguaMl: number;
   kcalActivas: number | null;
   entrenamiento: string[];
+  /** Las sesiones de las rutinas activas y las opciones fijas, en orden. */
+  opcionesEntrenamiento: string[];
   minutos: number | null;
   tobillo: EstadoTobillo | null;
   onAgua: (ml: number) => void;
   onKcal: (kcal: number | null) => void;
   onEntrenamiento: (opciones: string[]) => void;
+  onVerRutina: () => void;
   onMinutos: (minutos: number | null) => void;
   onTobillo: (estado: EstadoTobillo | null) => void;
 };
@@ -52,16 +55,27 @@ export default function TarjetasDia({
   metaAguaMl,
   kcalActivas,
   entrenamiento,
+  opcionesEntrenamiento,
   minutos,
   tobillo,
   onAgua,
   onKcal,
   onEntrenamiento,
+  onVerRutina,
   onMinutos,
   onTobillo,
 }: Props) {
   // Una celda por cada 250 ml de la meta, redondeando hacia arriba.
   const celdas = Math.max(1, Math.ceil(metaAguaMl / PASO_AGUA));
+
+  /*
+    Lo guardado que ya no es una opción ("Tren superior", "Core", o la sesión
+    de una rutina desactivada). Se muestra marcado; tocarlo lo quita, y una
+    vez quitado no se puede volver a elegir.
+  */
+  const antiguas = entrenamiento.filter(
+    (x) => !opcionesEntrenamiento.includes(x),
+  );
 
   return (
     <>
@@ -118,9 +132,20 @@ export default function TarjetasDia({
         </div>
       </Tarjeta>
 
-      <Tarjeta titulo="Entrenamiento">
+      <Tarjeta
+        titulo="Entrenamiento"
+        derecha={
+          <button
+            type="button"
+            onClick={onVerRutina}
+            className="-my-2 py-2 pl-3 text-[14px] font-medium text-verde"
+          >
+            Ver rutina
+          </button>
+        }
+      >
         <div className="mt-3 flex flex-wrap gap-[7px]">
-          {ENTRENAMIENTOS.map((opcion) => {
+          {opcionesEntrenamiento.map((opcion) => {
             const puesta = entrenamiento.includes(opcion);
             return (
               <Chip
@@ -137,6 +162,16 @@ export default function TarjetasDia({
               />
             );
           })}
+          {antiguas.map((antigua) => (
+            <Chip
+              key={antigua}
+              etiqueta={antigua}
+              encendido
+              onToggle={() =>
+                onEntrenamiento(entrenamiento.filter((x) => x !== antigua))
+              }
+            />
+          ))}
         </div>
         <div className="mt-3 flex items-center gap-3">
           <CampoDiferido

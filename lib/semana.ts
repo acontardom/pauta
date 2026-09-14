@@ -1,5 +1,12 @@
 import { estadoComida, totalesDia, type TotalesDia } from "@/lib/dia";
-import { GRUPOS, TIEMPOS, type ClaveGrupo } from "@/lib/dominio";
+import {
+  entrenamientoCorto,
+  esSesion,
+  GRUPOS,
+  TIEMPOS,
+  type ClaveGrupo,
+  type TonoEntrenamiento,
+} from "@/lib/dominio";
 import { diaDelMes, inicialDia } from "@/lib/fechas";
 import { formatear } from "@/lib/numeros";
 import type { Comida, Dia, Porciones } from "@/lib/supabase/tipos";
@@ -274,6 +281,52 @@ export function observaciones(
   }
 
   return lista.slice(0, MAXIMO_OBSERVACIONES);
+}
+
+export type EtiquetaEntrenamiento = {
+  /** El texto guardado: "Sesión A", "Bicicleta", "Tren superior". */
+  texto: string;
+  /** "A", "Bici", "Tr". */
+  corta: string;
+  tono: TonoEntrenamiento;
+};
+
+export type ColumnaEntrenamiento = {
+  fecha: string;
+  /** "V 11" */
+  etiqueta: string;
+  etiquetas: EtiquetaEntrenamiento[];
+};
+
+/*
+  La fila de entrenamiento: una columna por día, en el orden de la semana, con
+  lo que se marcó ese día tal como vino de la base. Cualquier texto se
+  muestra, aunque ya no sea una opción.
+
+  `sesiones` cuenta solo las sesiones de rutina: bicicleta, kine y descanso no
+  son sesiones. Dos sesiones el mismo día son dos.
+*/
+export function entrenamientoSemana(semana: DiaSemana[]): {
+  columnas: ColumnaEntrenamiento[];
+  sesiones: number;
+} {
+  let sesiones = 0;
+  const columnas = semana.map((d) => {
+    const lista = d.dia?.entrenamiento ?? [];
+    sesiones += lista.filter(esSesion).length;
+    return {
+      fecha: d.fecha,
+      etiqueta: d.etiqueta,
+      etiquetas: lista.map((texto) => ({ texto, ...entrenamientoCorto(texto) })),
+    };
+  });
+  return { columnas, sesiones };
+}
+
+/** "4 sesiones esta semana". Describe, no evalúa. */
+export function textoSesiones(sesiones: number): string {
+  if (sesiones === 0) return "Sin sesiones esta semana";
+  return `${sesiones} ${sesiones === 1 ? "sesión" : "sesiones"} esta semana`;
 }
 
 /** Litros con dos decimales, redondeando a 50 ml: 1740 → "1,75 L". */

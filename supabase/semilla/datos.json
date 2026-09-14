@@ -1235,5 +1235,139 @@
     {
       "texto": "¿Para cuándo se espera la vuelta a la marcha sin muletas?"
     }
+  ],
+  "rutinas": [
+    {
+      "bloque": "Bloque sin carga de tobillo",
+      "clave": "A",
+      "nombre": "Empuje + core",
+      "orden": 1,
+      "activa": true,
+      "nota": "RIR 2 en todas las series, RIR 0 en la última. Progresión: sumar repeticiones hasta el tope del rango en todas las series; recién ahí subir al par siguiente de mancuernas y volver al piso del rango. Sentado a horcajadas en el banco, pie sano plantado a un lado y pierna operada estirada sobre el banco. Pie elevado entre series y al terminar. Calentamiento: 5 min de movilidad de hombro y dorsal, más 2×15-20 de band pull-apart.",
+      "ejercicios": [
+        {
+          "orden": 1,
+          "nombre": "Press plano con mancuernas",
+          "series": 4,
+          "reps": "8-12",
+          "descanso_seg": 90,
+          "notas": "Sin pies en el suelo, base acostada. Que te pasen las mancuernas ya en posición."
+        },
+        {
+          "orden": 2,
+          "nombre": "Aperturas planas o press neutro juntando",
+          "series": 3,
+          "reps": "12-15",
+          "descanso_seg": 90,
+          "notas": "Peso liviano, foco en el estiramiento del pectoral."
+        },
+        {
+          "orden": 3,
+          "nombre": "Press de hombro sentado a horcajadas",
+          "series": 3,
+          "reps": "8-12",
+          "descanso_seg": 60,
+          "notas": "Primer candidato a sacar si el hombro se resiente."
+        },
+        {
+          "orden": 4,
+          "nombre": "Elevaciones laterales",
+          "series": 3,
+          "reps": "12-15",
+          "descanso_seg": 60,
+          "notas": null
+        },
+        {
+          "orden": 5,
+          "nombre": "Press francés acostado o extensión sobre la cabeza",
+          "series": 3,
+          "reps": "10-12",
+          "descanso_seg": 60,
+          "notas": null
+        },
+        {
+          "orden": 6,
+          "nombre": "Pallof press con banda",
+          "series": 3,
+          "reps": "10 por lado",
+          "descanso_seg": 60,
+          "notas": "Sentado, banda anclada a la altura del pecho."
+        },
+        {
+          "orden": 7,
+          "nombre": "Dead bug",
+          "series": 3,
+          "reps": "10 por lado",
+          "descanso_seg": 60,
+          "notas": "Sin extender la pierna operada contra resistencia."
+        }
+      ]
+    },
+    {
+      "bloque": "Bloque sin carga de tobillo",
+      "clave": "B",
+      "nombre": "Tirón + core",
+      "orden": 2,
+      "activa": true,
+      "nota": "RIR 2 en todas las series, RIR 0 en la última. Progresión: sumar repeticiones hasta el tope del rango en todas las series; recién ahí subir al par siguiente de mancuernas y volver al piso del rango. Sentado a horcajadas en el banco, pie sano plantado a un lado y pierna operada estirada sobre el banco. Pie elevado entre series y al terminar. Calentamiento: 5 min de movilidad de hombro y dorsal, más 2×15-20 de band pull-apart.",
+      "ejercicios": [
+        {
+          "orden": 1,
+          "nombre": "Remo con pecho apoyado en el banco",
+          "series": 4,
+          "reps": "10-12",
+          "descanso_seg": 90,
+          "notas": "Banco elevado 15-20 cm sobre discos o tacos firmes para que las mancuernas no toquen el suelo. Candidato principal a serie descendente al llegar a 25 kg."
+        },
+        {
+          "orden": 2,
+          "nombre": "Jalón con banda anclada arriba",
+          "series": 3,
+          "reps": "12-15",
+          "descanso_seg": 90,
+          "notas": null
+        },
+        {
+          "orden": 3,
+          "nombre": "Remo sentado con banda",
+          "series": 3,
+          "reps": "12-15",
+          "descanso_seg": 60,
+          "notas": "Anclaje a la altura del pecho, o que la sostenga quien te acompaña."
+        },
+        {
+          "orden": 4,
+          "nombre": "Face pull con banda",
+          "series": 3,
+          "reps": "15-20",
+          "descanso_seg": 60,
+          "notas": "Clave para compensar la postura de las muletas."
+        },
+        {
+          "orden": 5,
+          "nombre": "Curl alterno sentado",
+          "series": 3,
+          "reps": "10-12",
+          "descanso_seg": 60,
+          "notas": null
+        },
+        {
+          "orden": 6,
+          "nombre": "Curl martillo",
+          "series": 2,
+          "reps": "12",
+          "descanso_seg": 60,
+          "notas": null
+        },
+        {
+          "orden": 7,
+          "nombre": "Plancha lateral desde antebrazo, rodillas apoyadas",
+          "series": 3,
+          "reps": "30 seg por lado",
+          "descanso_seg": 60,
+          "notas": "Rodillas apoyadas siempre, sin cargar el pie."
+        }
+      ]
+    }
   ]
 }

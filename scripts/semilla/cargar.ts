@@ -17,10 +17,19 @@ import { TABLAS, validarSemilla } from "./validar";
   Uso:
     npm run semilla:revisar   muestra lo que haría, sin escribir
     npm run semilla           inserta
+
+  Con "-- --tabla <nombre>" solo inserta en esa tabla (el archivo se valida
+  entero igual). Sirve cuando en la app se borraron filas que vinieron de la
+  semilla: correrla completa las volvería a insertar.
+    npm run semilla:revisar -- --tabla rutinas
+    npm run semilla -- --tabla rutinas
 */
 
 const ARCHIVO = resolve(process.cwd(), "supabase/semilla/datos.json");
 const REVISAR = process.argv.includes("--revisar");
+const POSICION_TABLA = process.argv.indexOf("--tabla");
+const TABLA =
+  POSICION_TABLA === -1 ? undefined : (process.argv[POSICION_TABLA + 1] ?? "");
 
 type Fila = Record<string, unknown>;
 
@@ -84,6 +93,12 @@ const PLANES: Plan[] = [
     tabla: "preguntas_control",
     clave: (f) => k(f.texto),
     columnas: "texto",
+  },
+  {
+    // Un plan nuevo es un bloque nuevo: nunca se pisa una rutina ya cargada.
+    tabla: "rutinas",
+    clave: (f) => k(f.bloque, f.clave),
+    columnas: "bloque, clave",
   },
 ];
 
@@ -162,6 +177,10 @@ async function main() {
   if (!url) morir("Falta NEXT_PUBLIC_SUPABASE_URL en .env.local");
   if (!secreta) morir("Falta SUPABASE_SECRET_KEY en .env.local");
   if (!correo) morir("Falta EMAIL_PERMITIDO en .env.local");
+  if (TABLA !== undefined && !PLANES.some((p) => p.tabla === TABLA)) {
+    morir(`"${TABLA}" no es una tabla de la semilla. Opciones: ${TABLAS.join(", ")}`);
+  }
+  const planes = TABLA ? PLANES.filter((p) => p.tabla === TABLA) : PLANES;
 
   let datos: Record<string, unknown>;
   try {
@@ -194,6 +213,7 @@ async function main() {
   imprimir(`\n  Usuario: ${usuario.email}`);
   imprimir(`  Archivo: ${ARCHIVO}`);
   if (REVISAR) imprimir("  Modo revisar: no se escribe nada.");
+  if (TABLA) imprimir(`  Solo la tabla: ${TABLA}`);
 
   const resumen: {
     tabla: string;
@@ -202,7 +222,7 @@ async function main() {
     nuevas: number;
   }[] = [];
 
-  for (const plan of PLANES) {
+  for (const plan of planes) {
     const delArchivo = filasDelArchivo(datos, plan.tabla);
 
     const { data: existentes, error } = await supabase

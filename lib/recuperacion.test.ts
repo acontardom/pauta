@@ -255,6 +255,25 @@ describe("notaTobillo", () => {
     expect(nota).toBe("El tobillo estuvo peor los días siguientes a entrenar en 2 ocasiones.");
   });
 
+  it("las sesiones de rutina cuentan como entrenar, igual que los valores antiguos", () => {
+    expect(
+      notaTobillo([
+        dia("2026-09-01", null, ["Sesión A"]),
+        dia("2026-09-02", "peor"),
+        dia("2026-09-05", null, ["Sesión B", "Descanso"]),
+        dia("2026-09-06", "peor"),
+      ]),
+    ).toBe("El tobillo estuvo peor los días siguientes a entrenar en 2 ocasiones.");
+    expect(
+      notaTobillo([
+        dia("2026-09-01", null, ["Sesión A"]),
+        dia("2026-09-02", "peor"),
+        dia("2026-09-05", null, ["Tren superior"]),
+        dia("2026-09-06", "peor"),
+      ]),
+    ).toBe("El tobillo estuvo peor los días siguientes a entrenar en 2 ocasiones.");
+  });
+
   it("kinesiología y descanso no cuentan como entrenar", () => {
     const nota = notaTobillo([
       dia("2026-09-01", null, ["Kinesiología"]),

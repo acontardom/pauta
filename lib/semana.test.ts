@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
   construirSemana,
+  entrenamientoSemana,
   fraseSemana,
+  textoSesiones,
   observaciones,
   promedios,
   textoPromedioAgua,
@@ -397,3 +399,52 @@ const TIEMPOS_CLAVES = [
   "colacion_pm",
   "cena",
 ];
+
+describe("entrenamientoSemana", () => {
+  const semana = construirSemana(
+    FECHAS,
+    [
+      fila("2026-09-07", { entrenamiento: ["Sesión A", "Bicicleta"] }),
+      fila("2026-09-09", { entrenamiento: ["Tren superior"] }),
+      fila("2026-09-10", { entrenamiento: ["Sesión B"] }),
+      fila("2026-09-11", { entrenamiento: ["Descanso", "Kinesiología"] }),
+      fila("2026-09-12", { entrenamiento: ["Sesión A", "Sesión B"] }),
+    ],
+    [],
+    CONFIG,
+  );
+
+  it("una columna por día, en el orden de la semana", () => {
+    const { columnas } = entrenamientoSemana(semana);
+    expect(columnas.map((c) => c.fecha)).toEqual(FECHAS);
+    expect(columnas.map((c) => c.etiquetas.map((e) => e.corta))).toEqual([
+      [],
+      ["A", "Bici"],
+      [],
+      ["Tr"],
+      ["B"],
+      ["Desc", "Kine"],
+      ["A", "B"],
+    ]);
+  });
+
+  it("un valor antiguo se muestra con dos letras, en tono neutro", () => {
+    const { columnas } = entrenamientoSemana(semana);
+    expect(columnas[3].etiquetas).toEqual([
+      { texto: "Tren superior", corta: "Tr", tono: "neutro" },
+    ]);
+  });
+
+  it("cuenta solo las sesiones de rutina", () => {
+    expect(entrenamientoSemana(semana).sesiones).toBe(4);
+    expect(entrenamientoSemana(construirSemana(FECHAS, [], [], CONFIG)).sesiones).toBe(0);
+  });
+});
+
+describe("textoSesiones", () => {
+  it("plural, singular y sin sesiones", () => {
+    expect(textoSesiones(4)).toBe("4 sesiones esta semana");
+    expect(textoSesiones(1)).toBe("1 sesión esta semana");
+    expect(textoSesiones(0)).toBe("Sin sesiones esta semana");
+  });
+});
