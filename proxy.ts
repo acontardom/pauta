@@ -74,12 +74,14 @@ export const config = {
     /*
       Quedan fuera:
       - /entrar : el propio formulario de login.
+      - /api/mcp : el endpoint MCP. No usa cookies: valida su propio token
+        (encabezado access-key) y abre su propia sesión (lib/mcp).
       - _next/static, _next/image : estáticos del build.
       - manifest.webmanifest, icon, apple-icon, icon-512, favicon.ico :
         iOS los pide SIN sesión al instalar la app. Si pasaran por aquí,
         la PWA se instalaría sin ícono y sin nombre.
       - archivos con extensión (imágenes, fuentes).
     */
-    "/((?!entrar|_next/static|_next/image|manifest\.webmanifest|icon|apple-icon|icon-512|favicon\.ico|.*\.(?:svg|png|jpg|jpeg|gif|webp|ico|woff|woff2|ttf)$).*)",
+    "/((?!entrar|api/mcp(?:/|$)|_next/static|_next/image|manifest\.webmanifest|icon|apple-icon|icon-512|favicon\.ico|.*\.(?:svg|png|jpg|jpeg|gif|webp|ico|woff|woff2|ttf)$).*)",
   ],
 };

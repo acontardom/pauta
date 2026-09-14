@@ -14,6 +14,8 @@ y de la recuperación de una operación de tobillo.
 - Supabase para base de datos y autenticación (`@supabase/supabase-js` + `@supabase/ssr`).
 - Tailwind CSS v4 (tokens con `@theme` en `app/globals.css`).
 - Vitest para pruebas unitarias (`npm test`).
+- Servidor MCP en `/api/mcp` con `mcp-handler` v2, `@modelcontextprotocol/server`
+  v2 y `zod` 4 (ver "Servidor MCP").
 - PWA en iOS sin service worker: la app requiere conexión.
 - **Región `gru1` (São Paulo)** en `vercel.json`: es donde está la base de
   Supabase. Sin eso, cada consulta cruza el continente dos veces.
@@ -50,8 +52,8 @@ se escribe dentro de la app y la sesión queda en su propio contenedor.
 - La sesión va en **cookies**, nunca en `localStorage` ni `sessionStorage`.
 - `proxy.ts` (lo que hasta Next 15 se llamaba `middleware.ts`) refresca la sesión
   en cada request y protege las rutas. Del matcher quedan fuera `/entrar`, los
-  estáticos y **el manifest y los íconos**: iOS los pide sin sesión al instalar
-  la app.
+  estáticos, **el manifest y los íconos** (iOS los pide sin sesión al instalar
+  la app) y **`/api/mcp`**, que no usa cookies y valida su propio token.
 - Si hay sesión de un correo distinto al permitido, se cierra y se vuelve a `/entrar`.
 - Clientes: `lib/supabase/cliente.ts` (navegador) y `lib/supabase/servidor.ts`
   (Server Components, Server Actions y Route Handlers).
@@ -368,6 +370,46 @@ Progreso y las fechas la barra de avance de Recuperación.
   captura sobre `window`**, dentro de la propia pantalla: la barra inferior del
   shell no sabe nada de esto.
 - La sección Cuenta muestra el correo de la sesión y el botón de cerrar sesión.
+
+## Servidor MCP
+`/api/mcp` expone la pauta a Claude como conector remoto (Streamable HTTP).
+Cinco herramientas: `obtener_dia`, `listar_menus`, `registrar_comida`,
+`registrar_agua` y `obtener_resumen_semana`.
+
+- **Autenticación:** cada petición trae el token en el encabezado
+  **`access-key`**, plano y sin "Bearer": Claude reserva `Authorization` para
+  su token de OAuth y el conector no deja usarlo. Como alternativa se acepta
+  `Authorization: Bearer <MCP_TOKEN>`. Si vienen los dos, decide `access-key`
+  (el `Authorization` puede ser el OAuth de Claude). `lib/mcp/token.ts`:
+  comparación en tiempo constante, mínimo 32 caracteres. Sin token o con uno
+  inválido: 401, **sin** `WWW-Authenticate` (un desafío Bearer haría que Claude
+  intente OAuth). Sin `MCP_TOKEN` en el servidor: 503.
+- **RLS:** el endpoint inicia sesión como el usuario con `EMAIL_PERMITIDO` y
+  `MCP_PASSWORD` (`lib/mcp/sesion.ts`) y usa ese JWT, así que RLS filtra por su
+  `user_id` igual que en la app. **No usa la clave secreta**, que sigue sin ir a
+  Vercel. El proyecto firma los JWT con clave asimétrica (ES256): no se pueden
+  fabricar tokens de usuario. La sesión se cachea mientras viva la instancia.
+  Si la contraseña cambia en Supabase, hay que cambiar `MCP_PASSWORD` en Vercel.
+- `MCP_TOKEN` y `MCP_PASSWORD` son **solo de servidor**: nunca con prefijo
+  `NEXT_PUBLIC_`, nunca en un archivo versionado.
+- **Capas:** `lib/mcp/pauta.ts` tiene la lógica de las cinco herramientas sobre
+  una interfaz `Repositorio`, sin MCP ni Supabase, y se prueba con un
+  repositorio en memoria. `repositorio.ts` la implementa con Supabase y
+  `servidor.ts` declara esquemas, descripciones y anotaciones.
+- **Reglas de la app que repite:** las porciones de un menú se leen del menú
+  guardado y se copian; manual exige al menos una porción; fuera usa "Comí
+  fuera" por defecto; no se registran fechas futuras (`validarComida` y
+  `validarDia`); la semana son 7 días móviles (`construirSemana` y
+  `promedios`). La regla de copiar el menú está también en
+  `app/(app)/hoy/acciones.ts`: **si cambia en un lugar, cambia en el otro.**
+- **Escrituras con confirmación:** `registrar_comida` y `registrar_agua`
+  empiezan su descripción con "ESCRIBE EN LA BASE DE DATOS", piden
+  confirmación explícita y van con `readOnlyHint: false`. Las de lectura van
+  con `readOnlyHint: true`. El servidor no puede obligar a Claude a
+  confirmar: en la configuración del conector, esas dos herramientas tienen que
+  quedar en "pedir aprobación", nunca en "permitir siempre".
+- `registrar_comida` sobre un tiempo ya registrado lo reemplaza (upsert por
+  fecha y tiempo) y lo informa. `registrar_agua` suma, no reemplaza.
 
 ## Convenciones
 - **Idioma:** toda la UI en español de Chile. Nombres de componentes, props y

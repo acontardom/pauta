@@ -35,6 +35,8 @@ Variables de `.env.local` (el detalle está en `.env.example`):
 | `NEXT_PUBLIC_SUPABASE_URL` | URL del proyecto de Supabase |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Clave pública (anon o publishable). La protege RLS |
 | `EMAIL_PERMITIDO` | Único correo con acceso. Solo de servidor |
+| `MCP_TOKEN` | Token del servidor MCP (32 caracteres o más). Solo de servidor |
+| `MCP_PASSWORD` | Contraseña del usuario, para que el servidor MCP abra sesión. Solo de servidor |
 | `SUPABASE_SECRET_KEY` | Clave secreta, **solo local** y solo para el script de semilla |
 
 `.env.local` está en `.gitignore`. La clave secreta nunca va a Vercel ni lleva
@@ -102,9 +104,40 @@ Los tamaños de iPhone están en `lib/splash.ts`, que usan tanto el script como
 el layout. Para sumar un modelo nuevo se agrega ahí y se vuelve a correr
 `npm run iconos`. Las imágenes generadas se versionan.
 
+## Servidor MCP
+
+`/api/mcp` permite consultar y registrar desde un chat con Claude, como
+conector remoto. Herramientas:
+
+| Herramienta | Qué hace |
+|---|---|
+| `obtener_dia` | Comidas, totales por grupo, lo que falta para las metas, agua, calorías activas, entrenamiento, tobillo y cierre |
+| `listar_menus` | Menús guardados, con su id |
+| `registrar_comida` | Registra o reemplaza la comida de un tiempo (**escribe**) |
+| `registrar_agua` | Suma agua al día (**escribe**) |
+| `obtener_resumen_semana` | Días registrados, metas cumplidas por día y promedios |
+
+Para activarlo:
+
+1. Generar un token:
+   `node -e "console.log(require('crypto').randomBytes(32).toString('base64url'))"`
+2. En Vercel, agregar `MCP_TOKEN` (ese token) y `MCP_PASSWORD` (la contraseña
+   del usuario de `EMAIL_PERMITIDO`), y volver a desplegar.
+3. En Claude, agregar un conector personalizado con la URL
+   `https://pauta-zeta.vercel.app/api/mcp` y el encabezado `access-key` con el
+   token plano, sin "Bearer". (`Authorization` lo reserva Claude para OAuth; el
+   servidor igual acepta `Authorization: Bearer <token>` si algún día se puede
+   usar. Si llegan los dos, decide `access-key`.)
+4. Dejar `registrar_comida` y `registrar_agua` en "pedir aprobación".
+
+El servidor inicia sesión como el usuario, así que RLS filtra por su `user_id`
+como en la app. Si la contraseña cambia en Supabase, hay que actualizar
+`MCP_PASSWORD` en Vercel.
+
 ## Despliegue
 
 Vercel despliega desde `main`. En el proyecto de Vercel van solo
-`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` y `EMAIL_PERMITIDO`.
+`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `EMAIL_PERMITIDO`,
+`MCP_TOKEN` y `MCP_PASSWORD`.
 La región `gru1` (São Paulo) está fijada en `vercel.json` porque ahí está la
 base de Supabase.
