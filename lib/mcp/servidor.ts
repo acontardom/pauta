@@ -131,7 +131,7 @@ export function registrarHerramientas(server: McpServer) {
         'copian del menú guardado. Modo "manual": porciones obligatorias, al menos ' +
         'una. Modo "fuera" (comí fuera, queda como estimada): texto_libre y ' +
         "porciones estimadas, ambos opcionales. Devuelve lo registrado y el nuevo " +
-        "acumulado del día.",
+        "acumulado del día: porciones por grupo, kcal de las comidas y agua.",
       inputSchema: z.object({
         fecha: FECHA,
         tiempo: TIEMPO,
@@ -193,8 +193,8 @@ export function registrarHerramientas(server: McpServer) {
       title: "Resumen de la semana",
       description:
         "Solo lectura. Resume 7 días: días registrados (cerrados) sobre 7, las metas " +
-        "de porciones cumplidas en cada día y los promedios de agua y calorías " +
-        "activas (sobre los días que tienen el dato). Sin fecha_inicio mira los 7 " +
+        "de porciones cumplidas y el agua de cada día, y los promedios de agua y " +
+        "calorías activas con cuántos días con dato se calcularon. Sin fecha_inicio mira los 7 " +
         "días que terminan hoy, igual que la pantalla Semana de la app (no es de " +
         "lunes a domingo).",
       inputSchema: z.object({

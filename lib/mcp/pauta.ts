@@ -140,6 +140,19 @@ function lineasPorciones(comidas: Comida[], metas: Porciones): string[] {
   });
 }
 
+/** Kcal que aportan las comidas del día. No son las activas: no se mezclan. */
+function lineaKcalComidas(comidas: Comida[]): string {
+  const { kcal, comidasConKcal } = totalesDia(comidas);
+  return `Kcal aportadas por las comidas: ${
+    comidasConKcal === 0 ? "sin dato" : `≈${MILES.format(kcal)}`
+  }`;
+}
+
+/** "sobre 3 días con dato", para que un promedio se pueda auditar. */
+function sobreDias(n: number): string {
+  return n === 0 ? "ningún día con dato" : `sobre ${n} ${n === 1 ? "día" : "días"} con dato`;
+}
+
 function textoAguaConMeta(aguaMl: number, metaMl: number): string {
   const falta = Math.max(0, metaMl - aguaMl);
   return `${textoLitros(aguaMl)} de ${textoLitros(metaMl)} L · ${
@@ -170,7 +183,6 @@ export async function obtenerDia(
 
   const porTiempo = new Map(comidas.map((c) => [c.tiempo, c]));
   const registradas = comidas.filter((c) => estadoComida(c) !== "pendiente").length;
-  const totales = totalesDia(comidas);
   const metaAgua = config?.meta_agua_ml ?? META_AGUA_POR_DEFECTO;
   const tobillo = ESTADOS_TOBILLO.find((e) => e.clave === dia?.estado_tobillo);
   const entrenamiento = dia?.entrenamiento?.length
@@ -193,9 +205,7 @@ export async function obtenerDia(
       ? "Porciones del día:"
       : "Porciones del día (falta la configuración: no hay metas):",
     ...lineasPorciones(comidas, config?.metas_porciones ?? {}),
-    `Kcal aportadas por las comidas: ${
-      totales.comidasConKcal === 0 ? "sin dato" : `≈${MILES.format(totales.kcal)}`
-    }`,
+    lineaKcalComidas(comidas),
     "",
     `Agua: ${textoAguaConMeta(dia?.agua_ml ?? 0, metaAgua)}`,
     // Son calorías gastadas: no se suman ni restan con las de las comidas.
@@ -345,9 +355,10 @@ export async function registrarComida(
 
   const anterior = (await repo.comidas(fecha, fecha)).find((c) => c.tiempo === tiempo);
   await repo.guardarComida(fila);
-  const [config, comidas] = await Promise.all([
+  const [config, comidas, dias] = await Promise.all([
     repo.configuracion(),
     repo.comidas(fecha, fecha),
+    repo.dias(fecha, fecha),
   ]);
 
   const lineas = [
@@ -359,10 +370,16 @@ export async function registrarComida(
     );
   }
   if (aviso) lineas.push(aviso);
+  // El acumulado completo, para no tener que llamar a obtener_dia para verificar.
   lineas.push(
     "",
     "Acumulado del día:",
     ...lineasPorciones(comidas, config?.metas_porciones ?? {}),
+    lineaKcalComidas(comidas),
+    `Agua: ${textoAguaConMeta(
+      dias[0]?.agua_ml ?? 0,
+      config?.meta_agua_ml ?? META_AGUA_POR_DEFECTO,
+    )}`,
   );
 
   return { ok: true, texto: lineas.join("\n") };
@@ -436,6 +453,10 @@ export async function resumenSemana(
   const registrados = semana.filter((d) => d.cerrado).length;
   const conMeta = GRUPOS.filter((g) => (metas[g.clave] ?? 0) > 0);
   const prom = promedios(dias);
+  // Con cuántos días se calculó cada promedio: mismo criterio que promedios()
+  // en lib/semana.ts (agua mayor que 0; calorías activas no nulas).
+  const diasConAgua = dias.filter((d) => d.agua_ml != null && d.agua_ml > 0).length;
+  const diasConKcal = dias.filter((d) => d.kcal_activas != null).length;
 
   const lineas = [
     `Semana del ${formatoDiaMes(inicio)} al ${formatoDiaMes(fin)}`,
@@ -445,7 +466,8 @@ export async function resumenSemana(
     ...semana.map((d) => {
       const encabezado = `- ${d.etiqueta} (${d.fecha}) · ${d.cerrado ? "registrado" : "abierto"}`;
       if (d.fecha > hoy) return `${encabezado} · todavía no llega`;
-      if (d.comidas.length === 0) return `${encabezado} · sin comidas registradas`;
+      const agua = d.dia?.agua_ml ? `agua ${textoLitros(d.dia.agua_ml)} L` : "agua sin registro";
+      if (d.comidas.length === 0) return `${encabezado} · sin comidas registradas · ${agua}`;
 
       const cumplidos = d.celdas
         .filter((c) => c.razon >= 1)
@@ -453,12 +475,14 @@ export async function resumenSemana(
       return (
         `${encabezado} · ${d.comidas.length} de ${TIEMPOS.length} comidas` +
         (d.estimado ? " (con comida estimada)" : "") +
-        ` · cumplidas ${cumplidos.length}: ${cumplidos.join(", ") || "ninguna"}`
+        ` · cumplidas ${cumplidos.length}: ${cumplidos.join(", ") || "ninguna"}` +
+        ` · ${agua}`
       );
     }),
     "",
     // Promedios sobre los días que tienen el dato, como en la pantalla Semana.
-    `Promedio de agua: ${textoPromedioAgua(prom.agua)} · calorías activas: ${textoPromedioKcal(prom.kcal)} (sobre los días con dato)`,
+    `Promedio de agua: ${textoPromedioAgua(prom.agua)} (${sobreDias(diasConAgua)}) · ` +
+      `calorías activas: ${textoPromedioKcal(prom.kcal)} (${sobreDias(diasConKcal)})`,
   ];
 
   return { ok: true, texto: lineas.join("\n") };

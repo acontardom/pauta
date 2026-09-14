@@ -225,6 +225,32 @@ describe("registrar_comida", () => {
     expect(t).not.toContain("Reemplazó");
   });
 
+  it("devuelve también las kcal y el agua del día, sin tener que llamar a obtener_dia", async () => {
+    const { repo } = repoFalso({
+      comidas: [
+        comida({ fecha: HOY, tiempo: "desayuno", modo: "menu", menu_id: MENU_DESAYUNO.id, nombre_menu: "Avena con fruta", texto_libre: null, porciones: { cereales: 1, fruta: 1, lacteos: 1 }, kcal: 350 }),
+      ],
+      dias: [dia(HOY, { agua_ml: 1250 })],
+    });
+    const t = texto(
+      await registrarComida(repo, { tiempo: "almuerzo", modo: "menu", menu_id: MENU_ALMUERZO.id }, AHORA),
+    );
+
+    // 350 del desayuno más 600 del almuerzo.
+    expect(t).toContain("Kcal aportadas por las comidas: ≈950");
+    expect(t).toContain("Agua: 1,25 de 2 L · faltan 0,75 L");
+    expect(t.indexOf("Acumulado del día:")).toBeLessThan(t.indexOf("Agua:"));
+  });
+
+  it("sin kcal ni agua lo dice, en vez de omitirlo", async () => {
+    const { repo } = repoFalso();
+    const t = texto(
+      await registrarComida(repo, { tiempo: "cena", modo: "manual", porciones: { proteicos: 3 } }, AHORA),
+    );
+    expect(t).toContain("Kcal aportadas por las comidas: sin dato");
+    expect(t).toContain("Agua: 0 de 2 L · faltan 2 L");
+  });
+
   it("sobre un tiempo ya registrado lo reemplaza e informa qué había", async () => {
     const { repo, estado } = repoFalso({
       comidas: [
@@ -329,13 +355,19 @@ describe("obtener_resumen_semana", () => {
 
     expect(t).toContain("Semana del 9 de septiembre al 15 de septiembre");
     expect(t).toContain("Días registrados (cerrados): 2/7");
-    expect(t).toContain("(2026-09-09) · abierto · sin comidas registradas");
+    expect(t).toContain("(2026-09-09) · abierto · sin comidas registradas · agua sin registro");
     expect(t).toContain(
-      "(2026-09-10) · registrado · 1 de 5 comidas · cumplidas 7: cereales, verduras, fruta, proteicos, lácteos, aceite, grasas",
+      "(2026-09-10) · registrado · 1 de 5 comidas · cumplidas 7: cereales, verduras, fruta, proteicos, lácteos, aceite, grasas · agua 2 L",
     );
-    expect(t).toContain("(2026-09-12) · registrado · 1 de 5 comidas (con comida estimada) · cumplidas 1: proteicos");
+    expect(t).toContain(
+      "(2026-09-12) · registrado · 1 de 5 comidas (con comida estimada) · cumplidas 1: proteicos · agua 1,5 L",
+    );
+    // Un día con fila pero sin agua no cuenta como dato de agua.
+    expect(t).toContain("(2026-09-13) · abierto · sin comidas registradas · agua sin registro");
     // Agua sobre los días con dato (2000 y 1500); kcal activas sobre 400 y 200.
-    expect(t).toContain("Promedio de agua: 1,75 L · calorías activas: 300 kcal");
+    expect(t).toContain(
+      "Promedio de agua: 1,75 L (sobre 2 días con dato) · calorías activas: 300 kcal (sobre 2 días con dato)",
+    );
   });
 
   it("acepta una fecha de inicio y marca los días que todavía no llegan", async () => {
@@ -343,7 +375,18 @@ describe("obtener_resumen_semana", () => {
     const t = texto(await resumenSemana(repo, { fecha_inicio: "2026-09-13" }, AHORA));
     expect(t).toContain("Semana del 13 de septiembre al 19 de septiembre");
     expect(t).toContain("(2026-09-16) · abierto · todavía no llega");
-    expect(t).toContain("Promedio de agua: — · calorías activas: —");
+    expect(t).toContain(
+      "Promedio de agua: — (ningún día con dato) · calorías activas: — (ningún día con dato)",
+    );
+  });
+
+  it("con un solo día con dato lo dice en singular", async () => {
+    const { repo } = repoFalso({ dias: [dia("2026-09-14", { agua_ml: 750, kcal_activas: 150 })] });
+    const t = texto(await resumenSemana(repo, {}, AHORA));
+    expect(t).toContain("(2026-09-14) · abierto · sin comidas registradas · agua 0,75 L");
+    expect(t).toContain(
+      "Promedio de agua: 0,75 L (sobre 1 día con dato) · calorías activas: 150 kcal (sobre 1 día con dato)",
+    );
 
     expect(await resumenSemana(repo, { fecha_inicio: "2026-09-20" }, AHORA)).toMatchObject({ ok: false });
   });

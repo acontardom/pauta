@@ -113,9 +113,9 @@ conector remoto. Herramientas:
 |---|---|
 | `obtener_dia` | Comidas, totales por grupo, lo que falta para las metas, agua, calorías activas, entrenamiento, tobillo y cierre |
 | `listar_menus` | Menús guardados, con su id |
-| `registrar_comida` | Registra o reemplaza la comida de un tiempo (**escribe**) |
+| `registrar_comida` | Registra o reemplaza la comida de un tiempo y devuelve el acumulado del día: porciones, kcal y agua (**escribe**) |
 | `registrar_agua` | Suma agua al día (**escribe**) |
-| `obtener_resumen_semana` | Días registrados, metas cumplidas por día y promedios |
+| `obtener_resumen_semana` | Días registrados, metas cumplidas y agua de cada día, y promedios con cuántos días con dato se calcularon |
 
 Para activarlo:
 
