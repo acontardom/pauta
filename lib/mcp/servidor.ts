@@ -127,10 +127,15 @@ export function registrarHerramientas(server: McpServer) {
         "Registra la comida de un tiempo en un día. Si ese tiempo ya tenía una " +
         "comida, la REEMPLAZA: revísalo antes con obtener_dia y avísalo al pedir " +
         "confirmación. " +
-        'Modo "menu": menu_id obligatorio (sale de listar_menus); las porciones se ' +
-        'copian del menú guardado. Modo "manual": porciones obligatorias, al menos ' +
-        'una. Modo "fuera" (comí fuera, queda como estimada): texto_libre y ' +
-        "porciones estimadas, ambos opcionales. Devuelve lo registrado y el nuevo " +
+        'Modo "menu": menu_id obligatorio (sale de listar_menus); las porciones y ' +
+        'las kcal se copian del menú guardado. Modo "manual": porciones ' +
+        'obligatorias, al menos una. Modo "fuera" (comí fuera, queda como ' +
+        "estimada): texto_libre y porciones estimadas, ambos opcionales. " +
+        'kcal es opcional y solo sirve en "manual" y "fuera": envíalo cuando se ' +
+        "conozcan o se puedan estimar las calorías de lo que se comió (el usuario " +
+        "las dice, vienen en una etiqueta o las estimas y el usuario las confirma); si no, " +
+        'omítelo y la comida queda sin kcal. En "menu" se ignora. Devuelve lo ' +
+        "registrado y el nuevo " +
         "acumulado del día: porciones por grupo, kcal de las comidas y agua.",
       inputSchema: z.object({
         fecha: FECHA,
@@ -144,6 +149,15 @@ export function registrarHerramientas(server: McpServer) {
           .string()
           .max(120)
           .describe('Qué se comió, solo en modo "fuera". Por defecto "Comí fuera".')
+          .optional(),
+        kcal: z
+          .number()
+          .int()
+          .min(0)
+          .describe(
+            'Calorías aportadas por la comida, en modo "manual" o "fuera". Opcional. ' +
+              'En modo "menu" se ignora: se usan las del menú.',
+          )
           .optional(),
       }),
       annotations: {

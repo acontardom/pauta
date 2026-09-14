@@ -397,8 +397,9 @@ Cinco herramientas: `obtener_dia`, `listar_menus`, `registrar_comida`,
   repositorio en memoria. `repositorio.ts` la implementa con Supabase y
   `servidor.ts` declara esquemas, descripciones y anotaciones.
 - **Reglas de la app que repite:** las porciones de un menú se leen del menú
-  guardado y se copian; manual exige al menos una porción; fuera usa "Comí
-  fuera" por defecto; no se registran fechas futuras (`validarComida` y
+  guardado y se copian, igual que sus kcal (el parámetro `kcal` se ignora en
+  modo menu); manual exige al menos una porción; fuera usa "Comí fuera" por
+  defecto; en manual y fuera `kcal` es opcional y se valida con `validarComida`; no se registran fechas futuras (`validarComida` y
   `validarDia`); la semana son 7 días móviles (`construirSemana` y
   `promedios`). La regla de copiar el menú está también en
   `app/(app)/hoy/acciones.ts`: **si cambia en un lugar, cambia en el otro.**

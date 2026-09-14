@@ -302,6 +302,55 @@ describe("registrar_comida", () => {
     expect(estado.comidas).toHaveLength(0);
   });
 
+  describe("kcal", () => {
+    it("en modo manual se guardan las kcal enviadas y suman al acumulado", async () => {
+      const { repo, estado } = repoFalso();
+      const t = texto(
+        await registrarComida(repo, { tiempo: "cena", modo: "manual", porciones: { proteicos: 3 }, kcal: 450 }, AHORA),
+      );
+      expect(estado.comidas[0]).toMatchObject({ modo: "manual", kcal: 450 });
+      expect(t).toContain("porciones marcadas · 3 proteicos · 450 kcal");
+      expect(t).toContain("Kcal aportadas por las comidas: ≈450");
+    });
+
+    it("en modo fuera se guardan aunque no haya porciones", async () => {
+      const { repo, estado } = repoFalso();
+      const t = texto(
+        await registrarComida(repo, { tiempo: "cena", modo: "fuera", texto_libre: "Sushi", kcal: 800 }, AHORA),
+      );
+      expect(estado.comidas[0]).toMatchObject({ modo: "fuera", porciones: {}, kcal: 800 });
+      expect(t).toContain('comí fuera, estimada ("Sushi") · 800 kcal');
+    });
+
+    it("sin kcal, manual y fuera quedan en null", async () => {
+      const { repo, estado } = repoFalso();
+      texto(await registrarComida(repo, { tiempo: "cena", modo: "manual", porciones: { proteicos: 3 } }, AHORA));
+      texto(await registrarComida(repo, { tiempo: "almuerzo", modo: "fuera" }, AHORA));
+      expect(estado.comidas.map((c) => c.kcal)).toEqual([null, null]);
+    });
+
+    it("en modo menu se ignoran: se copian las del menú y se avisa", async () => {
+      const { repo, estado } = repoFalso();
+      const t = texto(
+        await registrarComida(repo, { tiempo: "almuerzo", modo: "menu", menu_id: MENU_ALMUERZO.id, kcal: 999 }, AHORA),
+      );
+      expect(estado.comidas[0].kcal).toBe(600);
+      expect(t).toContain('Se ignoraron las 999 kcal enviadas: en modo "menu" se usan las del menú (600 kcal).');
+      expect(t).toContain("Kcal aportadas por las comidas: ≈600");
+    });
+
+    it("rechaza kcal no enteras o negativas en manual y fuera, sin escribir", async () => {
+      const { repo, estado } = repoFalso();
+      expect(
+        await registrarComida(repo, { tiempo: "cena", modo: "manual", porciones: { proteicos: 3 }, kcal: 450.5 }, AHORA),
+      ).toMatchObject({ ok: false });
+      expect(
+        await registrarComida(repo, { tiempo: "cena", modo: "fuera", kcal: -10 }, AHORA),
+      ).toMatchObject({ ok: false });
+      expect(estado.comidas).toHaveLength(0);
+    });
+  });
+
   it("avisa si el menú es de otro tiempo", async () => {
     const { repo } = repoFalso();
     const t = texto(
@@ -387,6 +436,27 @@ describe("obtener_resumen_semana", () => {
     expect(t).toContain(
       "Promedio de agua: 0,75 L (sobre 1 día con dato) · calorías activas: 150 kcal (sobre 1 día con dato)",
     );
+  });
+
+  it("el promedio de agua cuadra con los días que declara, con dos decimales", async () => {
+    // 1,5 + 0,25 + 1 = 2,75 L en 3 días = 0,9167 L. Redondeado a 50 ml daría
+    // 0,90, que no cuadra con los días mostrados; con dos decimales es 0,92.
+    const { repo } = repoFalso({
+      dias: [
+        dia("2026-09-11", { agua_ml: 1500 }),
+        dia("2026-09-12", { agua_ml: 250 }),
+        dia("2026-09-13", { agua_ml: 0, kcal_activas: 300 }),
+        dia("2026-09-14", { agua_ml: 1000 }),
+      ],
+    });
+    const t = texto(await resumenSemana(repo, {}, AHORA));
+
+    expect(t).toContain("(2026-09-11) · abierto · sin comidas registradas · agua 1,5 L");
+    expect(t).toContain("(2026-09-12) · abierto · sin comidas registradas · agua 0,25 L");
+    expect(t).toContain("(2026-09-13) · abierto · sin comidas registradas · agua sin registro");
+    expect(t).toContain("(2026-09-14) · abierto · sin comidas registradas · agua 1 L");
+    expect(t).toContain("Promedio de agua: 0,92 L (sobre 3 días con dato)");
+    expect(t).not.toContain("0,90 L");
 
     expect(await resumenSemana(repo, { fecha_inicio: "2026-09-20" }, AHORA)).toMatchObject({ ok: false });
   });

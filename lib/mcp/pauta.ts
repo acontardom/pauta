@@ -7,12 +7,7 @@ import {
   porcionesVacias,
   textoPorciones,
 } from "@/lib/porciones";
-import {
-  construirSemana,
-  promedios,
-  textoPromedioAgua,
-  textoPromedioKcal,
-} from "@/lib/semana";
+import { construirSemana, textoPromedioKcal } from "@/lib/semana";
 import type {
   Comida,
   Dia,
@@ -148,6 +143,14 @@ function lineaKcalComidas(comidas: Comida[]): string {
   }`;
 }
 
+/** Promedio y cantidad de valores, calculados de la misma lista. */
+function promedioDe(valores: number[]): { promedio: number | null; dias: number } {
+  return {
+    promedio: valores.length > 0 ? valores.reduce((s, v) => s + v, 0) / valores.length : null,
+    dias: valores.length,
+  };
+}
+
 /** "sobre 3 días con dato", para que un promedio se pueda auditar. */
 function sobreDias(n: number): string {
   return n === 0 ? "ningún día con dato" : `sobre ${n} ${n === 1 ? "día" : "días"} con dato`;
@@ -273,6 +276,8 @@ export type EntradaRegistrarComida = {
   menu_id?: string;
   porciones?: Porciones;
   texto_libre?: string;
+  /** Calorías aportadas, solo en modo manual o fuera. En modo menu se ignoran. */
+  kcal?: number;
 };
 
 export async function registrarComida(
@@ -282,10 +287,11 @@ export async function registrarComida(
 ): Promise<Resultado> {
   const hoy = hoyChile(ahora);
   const fecha = entrada.fecha ?? hoy;
-  const { tiempo, modo, menu_id, porciones, texto_libre } = entrada;
+  const { tiempo, modo, menu_id, porciones, texto_libre, kcal } = entrada;
 
   const validacion = validarComida(
-    { fecha, tiempo, porciones, texto: texto_libre },
+    // En modo menu las kcal enviadas se ignoran: no se validan ni se guardan.
+    { fecha, tiempo, porciones, texto: texto_libre, kcal: modo === "menu" ? null : kcal },
     ahora,
   );
   if (!validacion.ok) return error(`${validacion.error}.`);
@@ -293,7 +299,7 @@ export async function registrarComida(
   const etiqueta = ETIQUETA_TIEMPO.get(tiempo)!;
   const base = { fecha, tiempo: tiempo as ClaveTiempo };
   let fila: FilaComida;
-  let aviso = "";
+  const avisos: string[] = [];
 
   if (modo === "menu") {
     if (!menu_id) return error('En modo "menu" falta menu_id. Búscalo con listar_menus.');
@@ -316,8 +322,17 @@ export async function registrarComida(
       porciones: limpiarPorciones(menu.porciones),
       kcal: menu.kcal,
     };
+    if (kcal != null) {
+      avisos.push(
+        `Se ignoraron las ${MILES.format(kcal)} kcal enviadas: en modo "menu" se usan las del menú (${
+          menu.kcal != null ? `${MILES.format(menu.kcal)} kcal` : "sin kcal"
+        }).`,
+      );
+    }
     if (menu.tiempo !== tiempo) {
-      aviso = `Ojo: es un menú de ${ETIQUETA_TIEMPO.get(menu.tiempo)?.toLowerCase()}, registrado en ${etiqueta.toLowerCase()}.`;
+      avisos.push(
+        `Ojo: es un menú de ${ETIQUETA_TIEMPO.get(menu.tiempo)?.toLowerCase()}, registrado en ${etiqueta.toLowerCase()}.`,
+      );
     }
   } else if (modo === "manual") {
     if (menu_id || texto_libre) {
@@ -334,7 +349,7 @@ export async function registrarComida(
       nombre_menu: null,
       texto_libre: null,
       porciones: limpias,
-      kcal: null,
+      kcal: kcal ?? null,
     };
   } else if (modo === "fuera") {
     if (menu_id) return error('En modo "fuera" no va menu_id.');
@@ -347,7 +362,7 @@ export async function registrarComida(
       nombre_menu: null,
       texto_libre: texto ? texto : "Comí fuera",
       porciones: limpiarPorciones(porciones),
-      kcal: null,
+      kcal: kcal ?? null,
     };
   } else {
     return error('El modo debe ser "menu", "manual" o "fuera".');
@@ -369,7 +384,7 @@ export async function registrarComida(
       `Reemplazó lo que ya había registrado en ${etiqueta.toLowerCase()}: ${describirComida(anterior)}.`,
     );
   }
-  if (aviso) lineas.push(aviso);
+  lineas.push(...avisos);
   // El acumulado completo, para no tener que llamar a obtener_dia para verificar.
   lineas.push(
     "",
@@ -452,11 +467,18 @@ export async function resumenSemana(
   });
   const registrados = semana.filter((d) => d.cerrado).length;
   const conMeta = GRUPOS.filter((g) => (metas[g.clave] ?? 0) > 0);
-  const prom = promedios(dias);
-  // Con cuántos días se calculó cada promedio: mismo criterio que promedios()
-  // en lib/semana.ts (agua mayor que 0; calorías activas no nulas).
-  const diasConAgua = dias.filter((d) => d.agua_ml != null && d.agua_ml > 0).length;
-  const diasConKcal = dias.filter((d) => d.kcal_activas != null).length;
+  /*
+    Cada promedio sale de la misma lista de valores que su conteo, así el número
+    y "sobre N días" no pueden separarse. El criterio es el de promedios() en
+    lib/semana.ts: agua mayor que 0 (igual que "agua sin registro" en cada día)
+    y calorías activas no nulas.
+  */
+  const aguaSemana = promedioDe(
+    dias.map((d) => d.agua_ml).filter((v): v is number => v != null && v > 0),
+  );
+  const kcalSemana = promedioDe(
+    dias.map((d) => d.kcal_activas).filter((v): v is number => v != null),
+  );
 
   const lineas = [
     `Semana del ${formatoDiaMes(inicio)} al ${formatoDiaMes(fin)}`,
@@ -481,8 +503,12 @@ export async function resumenSemana(
     }),
     "",
     // Promedios sobre los días que tienen el dato, como en la pantalla Semana.
-    `Promedio de agua: ${textoPromedioAgua(prom.agua)} (${sobreDias(diasConAgua)}) · ` +
-      `calorías activas: ${textoPromedioKcal(prom.kcal)} (${sobreDias(diasConKcal)})`,
+    // El agua va con dos decimales, igual que la de cada día: el redondeo a
+    // 50 ml de la pantalla haría que no cuadre con los días que se muestran.
+    `Promedio de agua: ${
+      aguaSemana.promedio == null ? "—" : `${textoLitros(aguaSemana.promedio)} L`
+    } (${sobreDias(aguaSemana.dias)}) · ` +
+      `calorías activas: ${textoPromedioKcal(kcalSemana.promedio)} (${sobreDias(kcalSemana.dias)})`,
   ];
 
   return { ok: true, texto: lineas.join("\n") };
