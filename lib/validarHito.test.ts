@@ -37,9 +37,18 @@ describe("validarHito", () => {
       expect(r2.ok && r2.hito.fecha_planificada).toBe(null);
     });
 
-    it("las dos fechas pueden ser futuras", () => {
-      const r = validarHito(datos({ fecha_planificada: "2027-03-01", fecha_real: "2027-03-01", cumplido: true }), null, AHORA);
+    it("la fecha planificada puede ser futura", () => {
+      const r = validarHito(datos({ fecha_planificada: "2027-03-01" }), null, AHORA);
       expect(r.ok).toBe(true);
+    });
+
+    it("la fecha real no puede ser futura, pero sí hoy o antes", () => {
+      expect(validarHito(datos({ fecha_real: "2026-09-13", cumplido: true }), null, AHORA)).toEqual({
+        ok: false,
+        error: "La fecha real no puede ser posterior a hoy",
+      });
+      expect(validarHito(datos({ fecha_real: "2026-09-12", cumplido: true }), null, AHORA).ok).toBe(true);
+      expect(validarHito(datos({ fecha_real: "2026-09-01", cumplido: true }), null, AHORA).ok).toBe(true);
     });
 
     it("rechaza fechas inválidas", () => {
@@ -51,8 +60,8 @@ describe("validarHito", () => {
   describe("cumplido y fecha real", () => {
     it("tienen que coincidir, como exige el esquema", () => {
       expect(validarHito(datos({ cumplido: true, fecha_real: null }), null, AHORA).ok).toBe(false);
-      expect(validarHito(datos({ cumplido: false, fecha_real: "2026-10-13" }), null, AHORA).ok).toBe(false);
-      expect(validarHito(datos({ cumplido: true, fecha_real: "2026-10-13" }), null, AHORA).ok).toBe(true);
+      expect(validarHito(datos({ cumplido: false, fecha_real: "2026-09-10" }), null, AHORA).ok).toBe(false);
+      expect(validarHito(datos({ cumplido: true, fecha_real: "2026-09-10" }), null, AHORA).ok).toBe(true);
     });
   });
 

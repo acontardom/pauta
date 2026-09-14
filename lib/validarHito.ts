@@ -51,7 +51,7 @@ function esFechaValida(v: string): boolean {
   );
 }
 
-/** Fecha opcional: vacía es null; con contenido tiene que ser válida. Puede ser futura. */
+/** Fecha opcional: vacía es null; con contenido tiene que ser válida. */
 function fechaOpcional(
   v: string | null | undefined,
   nombre: string,
@@ -79,6 +79,10 @@ export function validarHito(
   if (!planificada.ok) return planificada;
   const real = fechaOpcional(datos.fecha_real, "fecha real");
   if (!real.ok) return real;
+  // La planificada puede ser futura; la real no: es algo que ya ocurrió.
+  if (real.fecha !== null && real.fecha > hoyChile(ahora)) {
+    return { ok: false, error: "La fecha real no puede ser posterior a hoy" };
+  }
 
   // El esquema exige cumplido = (fecha_real no es null).
   if (datos.cumplido && real.fecha === null) {

@@ -14,6 +14,7 @@ import {
   siguienteSesion,
   textoHistorial,
   type DiaTobillo,
+  type ItemLinea,
 } from "./recuperacion";
 import type { EntradaRecuperacion, Hito } from "./supabase/tipos";
 
@@ -388,9 +389,12 @@ const ENTRADAS_SEMILLA: EntradaRecuperacion[] = [
   entradaCompleta({ fecha: "2026-09-11", tipo: "kine", numero_sesion: 3 }),
 ];
 
+// Después del próximo control de la semilla (23 sep): no hay control agendado.
+const PASADO_EL_CONTROL = "2026-09-30";
+
 describe("lineaTiempo", () => {
   it("con la semilla: 5 hitos y 4 entradas en orden, el hito sin fecha al final", () => {
-    const items = lineaTiempo(HITOS_SEMILLA, ENTRADAS_SEMILLA);
+    const items = lineaTiempo(HITOS_SEMILLA, ENTRADAS_SEMILLA, PASADO_EL_CONTROL);
     expect(items.map((i) => i.titulo)).toEqual([
       "Operación de tobillo",
       "Sesión 1 · Movilidad activa",
@@ -408,7 +412,7 @@ describe("lineaTiempo", () => {
   });
 
   it("marca el hito cumplido como destacado", () => {
-    const [operacion] = lineaTiempo(HITOS_SEMILLA, []);
+    const [operacion] = lineaTiempo(HITOS_SEMILLA, [], PASADO_EL_CONTROL);
     expect(operacion.grupo).toBe("hito");
     expect(operacion.tipo).toBe("Hito cumplido");
     expect(operacion.destacado).toBe(true);
@@ -416,7 +420,7 @@ describe("lineaTiempo", () => {
   });
 
   it("una sesión sin autorizaciones nuevas va sin destacar, con 'sin cambios'", () => {
-    const sesion3 = lineaTiempo([], ENTRADAS_SEMILLA).find((i) => i.titulo.startsWith("Sesión 3"))!;
+    const sesion3 = lineaTiempo([], ENTRADAS_SEMILLA, PASADO_EL_CONTROL).find((i) => i.titulo.startsWith("Sesión 3"))!;
     expect(sesion3.grupo).toBe("kine");
     expect(sesion3.titulo).toBe("Sesión 3 · sin cambios");
     expect(sesion3.destacado).toBe(false);
@@ -430,6 +434,7 @@ describe("lineaTiempo", () => {
         entradaCompleta({ fecha: "2026-09-10", tipo: "kine", numero_sesion: 2, autorizado: ["Bicicleta", "Propiocepción"] }),
         entradaCompleta({ fecha: "2026-09-12", tipo: "kine", numero_sesion: 3, autorizado: ["Bicicleta"] }),
       ],
+      PASADO_EL_CONTROL,
     );
     expect(items.map((i) => i.titulo)).toEqual([
       "Sesión 1 · Bicicleta",
@@ -442,6 +447,7 @@ describe("lineaTiempo", () => {
     const control = lineaTiempo(
       [],
       [entradaCompleta({ fecha: "2026-09-09", tipo: "control", indicaciones: " Carga parcial ", proximo_control: "2026-10-21", nota: "Todo bien" })],
+      PASADO_EL_CONTROL,
     )[0];
     expect(control.grupo).toBe("control");
     expect(control.tipo).toBe("Control médico");
@@ -459,6 +465,7 @@ describe("lineaTiempo", () => {
         entradaCompleta({ id: "a", fecha: "2026-09-10", tipo: "nota", nota: "primera nota" }),
         entradaCompleta({ id: "b", fecha: "2026-09-10", tipo: "nota", nota: "segunda nota" }),
       ],
+      PASADO_EL_CONTROL,
     );
     expect(items.map((i) => i.clave)).toEqual(["hito-Hito del 10", "entrada-a", "entrada-b"]);
   });
@@ -467,8 +474,60 @@ describe("lineaTiempo", () => {
     const items = lineaTiempo(
       [hito({ nombre: "Adelantado", fecha_planificada: "2026-10-16", fecha_real: "2026-09-01", cumplido: true })],
       ENTRADAS_SEMILLA,
+      PASADO_EL_CONTROL,
     );
     expect(items[0].titulo).toBe("Adelantado");
+  });
+});
+
+describe("lineaTiempo: control agendado", () => {
+  // La semilla agenda el próximo control para el 23 de septiembre.
+  const HOY = "2026-09-14";
+  const agendados = (items: ItemLinea[]) => items.filter((i) => i.agendado);
+
+  it("sin próximo control no agrega nada", () => {
+    const items = lineaTiempo([], [entradaCompleta({ fecha: "2026-09-09", tipo: "control" })], HOY);
+    expect(agendados(items)).toEqual([]);
+  });
+
+  it("con uno futuro, lo agrega en su fecha con la distancia", () => {
+    const items = lineaTiempo(HITOS_SEMILLA, ENTRADAS_SEMILLA, HOY);
+    const lista = agendados(items);
+    expect(lista).toHaveLength(1);
+
+    const [agendado] = lista;
+    expect(agendado).toMatchObject({
+      grupo: "control",
+      fecha: "2026-09-23",
+      tipo: "Control agendado",
+      titulo: "Control médico",
+      lineas: ["en 9 días"],
+      destacado: false,
+    });
+    // No es editable por sí mismo: abre el control que lo agendó.
+    expect(agendado.origen).toEqual({ tipo: "entrada", entrada: ENTRADAS_SEMILLA[1] });
+
+    // Ordenado por su fecha, entre la sesión del 11 sep y el hito del 2 oct.
+    const i = items.indexOf(agendado);
+    expect(items[i - 1].titulo).toBe("Sesión 3 · sin cambios");
+    expect(items[i + 1].titulo).toBe("Fin del período sin apoyo");
+  });
+
+  it("la víspera dice 'mañana' y el mismo día dice 'hoy'", () => {
+    expect(agendados(lineaTiempo([], ENTRADAS_SEMILLA, "2026-09-22"))[0].lineas).toEqual(["mañana"]);
+    expect(agendados(lineaTiempo([], ENTRADAS_SEMILLA, "2026-09-23"))[0].lineas).toEqual(["hoy"]);
+  });
+
+  it("con uno ya pasado no agrega nada", () => {
+    expect(agendados(lineaTiempo([], ENTRADAS_SEMILLA, "2026-09-24"))).toEqual([]);
+  });
+
+  it("con el control ya registrado en esa fecha, deja de aparecer", () => {
+    const conControl = [
+      ...ENTRADAS_SEMILLA,
+      entradaCompleta({ fecha: "2026-09-23", tipo: "control", nota: "Control del 23" }),
+    ];
+    expect(agendados(lineaTiempo([], conControl, HOY))).toEqual([]);
   });
 });
 
@@ -557,9 +616,9 @@ describe("textoHistorial", () => {
 });
 
 describe("diferenciaCumplimiento", () => {
-  it("antes en verde, después y en la fecha en neutro", () => {
+  it("antes en verde, después en ámbar y en la fecha en neutro", () => {
     expect(diferenciaCumplimiento("2026-10-16", "2026-10-13")).toEqual({ texto: "3 días antes de lo previsto", tono: "bueno" });
-    expect(diferenciaCumplimiento("2026-10-16", "2026-10-21")).toEqual({ texto: "5 días después", tono: "neutro" });
+    expect(diferenciaCumplimiento("2026-10-16", "2026-10-21")).toEqual({ texto: "5 días después", tono: "ambar" });
     expect(diferenciaCumplimiento("2026-10-16", "2026-10-16")).toEqual({ texto: "En la fecha planificada.", tono: "neutro" });
   });
 

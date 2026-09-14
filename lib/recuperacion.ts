@@ -279,10 +279,24 @@ export function notaTobillo(dias: DiaTobillo[]): string {
 export function proximoControl(
   entradas: Pick<EntradaRecuperacion, "fecha" | "tipo" | "proximo_control">[],
 ): string | null {
+  return controlQueAgenda(entradas)?.proximo_control ?? null;
+}
+
+/** El control más reciente que dejó fecha de próximo control, o null. */
+function controlQueAgenda<
+  T extends Pick<EntradaRecuperacion, "fecha" | "tipo" | "proximo_control">,
+>(entradas: T[]): T | null {
   const controles = cronologico(
     entradas.filter((e) => e.tipo === "control" && e.proximo_control),
   );
-  return controles[controles.length - 1]?.proximo_control ?? null;
+  return controles[controles.length - 1] ?? null;
+}
+
+/** "hoy", "mañana", "en 9 días". */
+function textoDistancia(diasHasta: number): string {
+  if (diasHasta === 0) return "hoy";
+  if (diasHasta === 1) return "mañana";
+  return `en ${dias(diasHasta)}`;
 }
 
 /*
@@ -374,7 +388,8 @@ export function diferenciaCumplimiento(
   if (diferencia < 0) {
     return { texto: `${dias(-diferencia)} antes de lo previsto`, tono: "bueno" };
   }
-  return { texto: `${dias(diferencia)} después`, tono: "neutro" };
+  // Atrasarse va en ámbar, igual que en la línea de tiempo.
+  return { texto: `${dias(diferencia)} después`, tono: "ambar" };
 }
 
 /** Una línea por cambio: "16 oct → 23 oct · motivo · registrado el 12 sep". */
@@ -406,6 +421,8 @@ export type ItemLinea = {
   lineas: string[];
   /** Hito cumplido, o sesión de kine con autorizaciones nuevas. */
   destacado: boolean;
+  /** Control que viene: se calcula del próximo control, no está guardado. */
+  agendado: boolean;
   /** Solo en hitos. */
   notaHito: NotaHito | null;
   /** Lo que abre la tarjeta al tocarla. */
@@ -425,10 +442,14 @@ const SIN_FECHA = "9999-12-31";
     en el orden en que llegó: así el orden no salta entre recargas.
   - Una sesión de kine muestra solo lo que autorizó POR PRIMERA VEZ, igual que
     la tarjeta de kinesiología. Si repite algo ya autorizado, es "sin cambios".
+  - El próximo control aparece como un ítem propio, "agendado", mientras su
+    fecha sea hoy o posterior y no haya un control registrado en esa fecha. No
+    se guarda: registrar el control ese día basta para que deje de aparecer.
 */
 export function lineaTiempo(
   hitos: Hito[],
   entradas: EntradaRecuperacion[],
+  hoy: string,
 ): ItemLinea[] {
   const numeroDe = new Map<EntradaRecuperacion, number>();
   const nuevasDe = new Map<EntradaRecuperacion, string[]>();
@@ -460,6 +481,7 @@ export function lineaTiempo(
       titulo: hito.nombre,
       lineas: [],
       destacado: hito.cumplido,
+      agendado: false,
       notaHito: notaHito(hito),
       origen: { tipo: "hito", hito },
     },
@@ -469,6 +491,7 @@ export function lineaTiempo(
     const base = {
       clave: `entrada-${entrada.id}`,
       fecha: entrada.fecha,
+      agendado: false,
       notaHito: null,
       origen: { tipo: "entrada" as const, entrada },
     };
@@ -515,7 +538,36 @@ export function lineaTiempo(
     };
   });
 
-  return [...deHitos, ...deEntradas]
+  const deAgenda: ConOrden[] = [];
+  const agenda = controlQueAgenda(entradas);
+  const fechaAgendada = agenda?.proximo_control;
+  if (
+    agenda &&
+    fechaAgendada &&
+    fechaAgendada >= hoy &&
+    !entradas.some((e) => e.tipo === "control" && e.fecha === fechaAgendada)
+  ) {
+    deAgenda.push({
+      // Después de las entradas de su misma fecha.
+      grupoOrden: 1,
+      indice: entradas.length,
+      item: {
+        clave: `agendado-${fechaAgendada}`,
+        grupo: "control",
+        fecha: fechaAgendada,
+        tipo: "Control agendado",
+        titulo: "Control médico",
+        lineas: [textoDistancia(diferenciaDias(hoy, fechaAgendada))],
+        destacado: false,
+        agendado: true,
+        notaHito: null,
+        // No es editable: abre el control que lo agendó.
+        origen: { tipo: "entrada", entrada: agenda },
+      },
+    });
+  }
+
+  return [...deHitos, ...deEntradas, ...deAgenda]
     .sort(
       (a, b) =>
         (a.item.fecha ?? SIN_FECHA).localeCompare(b.item.fecha ?? SIN_FECHA) ||

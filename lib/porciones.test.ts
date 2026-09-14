@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   ajustarPorcion,
   limpiarPorciones,
+  porcionesIguales,
   porcionesVacias,
   textoPorciones,
 } from "./porciones";
@@ -86,5 +87,18 @@ describe("porcionesVacias", () => {
     expect(porcionesVacias({ cereales: 0, aceite: 0 })).toBe(true);
     expect(porcionesVacias(null)).toBe(true);
     expect(porcionesVacias({ aceite: 0.5 })).toBe(false);
+  });
+});
+
+describe("porcionesIguales", () => {
+  it("un 0 y la ausencia son lo mismo, y el orden de las claves no importa", () => {
+    expect(porcionesIguales({ cereales: 1, aceite: 0 }, { cereales: 1 })).toBe(true);
+    expect(porcionesIguales({ aceite: 0.5, cereales: 1 }, { cereales: 1, aceite: 0.5 })).toBe(true);
+    expect(porcionesIguales(null, {})).toBe(true);
+  });
+
+  it("distinto valor o distinto grupo no son iguales", () => {
+    expect(porcionesIguales({ cereales: 1 }, { cereales: 2 })).toBe(false);
+    expect(porcionesIguales({ cereales: 1 }, { verduras: 1 })).toBe(false);
   });
 });

@@ -61,3 +61,12 @@ export function porcionesVacias(
 ): boolean {
   return Object.keys(limpiarPorciones(porciones)).length === 0;
 }
+
+/** true si marcan lo mismo. Un 0 explícito vale lo mismo que la ausencia. */
+export function porcionesIguales(
+  a: Porciones | null | undefined,
+  b: Porciones | null | undefined,
+): boolean {
+  // limpiarPorciones recorre GRUPOS en orden: las claves salen siempre igual.
+  return JSON.stringify(limpiarPorciones(a)) === JSON.stringify(limpiarPorciones(b));
+}

@@ -11,6 +11,8 @@ type Filtro = "todo" | "controles" | "kine";
 type Props = {
   hitos: Hito[];
   entradas: EntradaRecuperacion[];
+  /** Para calcular el control agendado y su distancia. */
+  hoy: string;
   onAbrirHito: (hito: Hito) => void;
   onAbrirEntrada: (entrada: EntradaRecuperacion) => void;
   onNuevoHito: () => void;
@@ -28,6 +30,7 @@ const TRAZO = "bg-borde-suave";
 export default function LineaTiempo({
   hitos,
   entradas,
+  hoy,
   onAbrirHito,
   onAbrirEntrada,
   onNuevoHito,
@@ -35,7 +38,8 @@ export default function LineaTiempo({
   const [filtro, setFiltro] = useState<Filtro>("todo");
 
   // "Controles" muestra controles e hitos: los hitos se deciden en los controles.
-  const items = lineaTiempo(hitos, entradas).filter((item) =>
+  // El control agendado es del grupo "control": aparece en Todo y en Controles.
+  const items = lineaTiempo(hitos, entradas, hoy).filter((item) =>
     filtro === "todo"
       ? true
       : filtro === "controles"
@@ -125,6 +129,8 @@ function Fila({
 
       {item.grupo === "hito" ? (
         <TarjetaHito item={item} onAbrir={onAbrir} />
+      ) : item.agendado ? (
+        <TarjetaAgendado item={item} onAbrir={onAbrir} />
       ) : esKine ? (
         <TarjetaKine item={item} onAbrir={onAbrir} />
       ) : (
@@ -135,6 +141,12 @@ function Fila({
 }
 
 function Punto({ item }: { item: ItemLinea }) {
+  // Hueco como el de un hito planificado, en el azul de los controles.
+  if (item.agendado) {
+    return (
+      <span className="h-3 w-3 shrink-0 rounded-full border-2 border-azul bg-fondo" />
+    );
+  }
   if (item.grupo === "hito") {
     return (
       <span
@@ -210,6 +222,37 @@ function TarjetaHito({ item, onAbrir }: { item: ItemLinea; onAbrir: () => void }
           {item.notaHito.texto}
         </p>
       ) : null}
+    </button>
+  );
+}
+
+/*
+  El próximo control, antes de que ocurra. Se ve como un hito planificado
+  (borde punteado, fondo blanco) pero en azul, el color de los controles, para
+  distinguirlo a simple vista de los controles ya registrados. No se edita:
+  abre la hoja del control que lo agendó.
+*/
+function TarjetaAgendado({ item, onAbrir }: { item: ItemLinea; onAbrir: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onAbrir}
+      className={`${TOQUE} mb-2.5 rounded-tarjeta border border-dashed border-azul-claro bg-superficie px-[15px] py-3.5`}
+    >
+      <div className="flex items-baseline justify-between gap-2.5">
+        <span className="min-w-0 font-serif text-[17.5px] font-medium text-tinta-2">
+          {item.titulo}
+        </span>
+        <Fecha fecha={item.fecha} />
+      </div>
+      <p className="mt-[5px] text-[11.5px] uppercase tracking-[0.05em] text-azul-texto">
+        {item.tipo}
+      </p>
+      {item.lineas.map((linea, i) => (
+        <p key={i} className="mt-1.5 text-[14px] leading-snug text-tinta-2">
+          {linea}
+        </p>
+      ))}
     </button>
   );
 }

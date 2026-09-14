@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Boton from "@/components/ui/Boton";
+import { HojaDescartar } from "@/components/ui/HojaInferior";
 import { formatoCorto } from "@/lib/fechas";
 import { formatear } from "@/lib/numeros";
 import {
@@ -73,6 +74,25 @@ export default function PantallaProgreso({
 }: Props) {
   const [hoja, setHoja] = useState<Hoja>(null);
   const [formInbody, setFormInbody] = useState<FormInbody>(null);
+  const [inbodyConCambios, setInbodyConCambios] = useState(false);
+  /** El formulario de InBody que espera confirmación para reemplazar al actual. */
+  const [pendienteInbody, setPendienteInbody] = useState<{
+    siguiente: FormInbody;
+  } | null>(null);
+
+  /*
+    El formulario de InBody es en línea: lo cierran "Cancelar" y lo reemplazan
+    "Editar" o "Agregar medición". Si tiene algo escrito, cualquiera de esos
+    pide la misma confirmación que las hojas. Pedir el mismo formulario que ya
+    está abierto no descarta nada.
+  */
+  function cambiarFormInbody(siguiente: FormInbody) {
+    if (inbodyConCambios && claveInbody(siguiente) !== claveInbody(formInbody)) {
+      setPendienteInbody({ siguiente });
+    } else {
+      setFormInbody(siguiente);
+    }
+  }
 
   const metaPeso = configuracion.meta_peso;
   const metaCintura = configuracion.meta_cintura;
@@ -191,7 +211,7 @@ export default function PantallaProgreso({
               <Boton
                 variante="secundaria"
                 className="mt-3 h-12"
-                onClick={() => setFormInbody("nuevo")}
+                onClick={() => cambiarFormInbody("nuevo")}
               >
                 Agregar medición InBody
               </Boton>
@@ -212,7 +232,7 @@ export default function PantallaProgreso({
               <Boton
                 variante="secundaria"
                 className="mt-3 h-12"
-                onClick={() => setFormInbody("nuevo")}
+                onClick={() => cambiarFormInbody("nuevo")}
               >
                 Agregar medición InBody
               </Boton>
@@ -302,9 +322,11 @@ export default function PantallaProgreso({
           mediciones={inbody}
           hoy={hoy}
           form={formInbody}
-          onAbrirNuevo={() => setFormInbody("nuevo")}
-          onEditar={(m) => setFormInbody(m)}
+          onAbrirNuevo={() => cambiarFormInbody("nuevo")}
+          onEditar={(m) => cambiarFormInbody(m)}
+          onCancelar={() => cambiarFormInbody(null)}
           onCerrar={() => setFormInbody(null)}
+          onCambios={setInbodyConCambios}
         />
       </div>
 
@@ -327,6 +349,21 @@ export default function PantallaProgreso({
           onCerrar={() => setHoja(null)}
         />
       ) : null}
+
+      <HojaDescartar
+        abierta={pendienteInbody !== null}
+        onSeguir={() => setPendienteInbody(null)}
+        onDescartar={() => {
+          if (pendienteInbody) setFormInbody(pendienteInbody.siguiente);
+          setPendienteInbody(null);
+        }}
+      />
     </>
   );
+}
+
+/** Identifica qué formulario de InBody está abierto (la misma key que usa SeccionInbody). */
+function claveInbody(form: FormInbody): string | null {
+  if (form === null) return null;
+  return form === "nuevo" ? "nuevo" : `${form.id}-${form.updated_at}`;
 }

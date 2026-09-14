@@ -187,9 +187,14 @@ Agua, calorías activas, entrenamiento, tobillo y cierre viven en `dias`.
   `textoAgua` (dos decimales fijas) y `textoLitros` (hasta dos, sin relleno).
 
 **Cerrar el día es un registro, no una evaluación.** Se puede cerrar con
-comidas pendientes y el día cuenta igual como día registrado; las pendientes
-dicen "Sin registrar" en tono neutro. Reabrir no pide confirmación. Los días
-anteriores se completan y cierran igual que hoy.
+comidas pendientes y el día cuenta igual como día registrado; en la hoja de
+cierre las pendientes dicen "Sin registro" en tono neutro, el mismo nombre que
+en las leyendas (la tarjeta de comida sí dice "Pendiente": ahí es algo por
+completar durante el día). Un día anterior sin cerrar es "Día abierto". Reabrir
+no pide confirmación. Los días anteriores se completan y cierran igual que hoy.
+
+Borrar el registro de una comida pide confirmación en la misma hoja
+("Eliminar" y "Cancelar"), como el resto de las eliminaciones.
 
 ## Pantalla Menús
 `/menus` lista, crea, edita y elimina menús. Agrupados por tiempo en el orden
@@ -269,6 +274,9 @@ deltas salen de ahí. No repetir esas etiquetas a mano en una pantalla.
   delta. El % de grasa se valida entre 0 y 100.
 - El formulario de InBody es **en línea**, no en hoja. Los botones "Agregar
   medición InBody" de las tarjetas de arriba lo abren y bajan la vista hasta él.
+  Como no tiene fondo que tocar, la confirmación de cambios sin guardar la pide
+  `PantallaProgreso` al cerrarlo ("Cancelar") o al reemplazarlo por otro
+  ("Editar", "Agregar medición"); el formulario le avisa con `onCambios`.
 - `CampoNumerico` tiene `tamano`: `normal`, `grande` (peso y cintura) y
   `compacto` (el formulario de dos columnas de InBody).
 
@@ -292,6 +300,13 @@ Las validaciones están en `lib/validarEntrada.ts` y `lib/validarHito.ts`.
   sin registro en Hoy quedaría vacío.
 - El próximo control es el `proximo_control` del control más reciente que lo
   tenga: si el último control no dejó fecha, vale la de uno anterior.
+- **El control agendado se calcula, no se guarda.** `lineaTiempo` (que recibe
+  `hoy`) agrega un ítem "Control médico · Control agendado" en la fecha del
+  próximo control mientras sea hoy o posterior y no haya una entrada de tipo
+  control en esa fecha. Lleva la distancia ("en 9 días", "mañana", "hoy"), es
+  del grupo `control` (sale en Todo y Controles), se ve como un hito
+  planificado pero en azul, y al tocarlo abre el control que lo agendó.
+  Registrar el control ese día basta para que deje de aparecer.
 - Preguntas: pendientes primero, las más nuevas arriba, y **desempate por
   texto**, porque la semilla insertó todas en el mismo instante y sin eso su
   orden cambiaría entre recargas. Con UI optimista, como en Hoy.
@@ -311,7 +326,10 @@ Las validaciones están en `lib/validarEntrada.ts` y `lib/validarHito.ts`.
   anteriores. El motivo puede ir vacío y el cambio se registra igual. El
   servidor arma el historial **a partir del hito guardado en la base**, no del
   que tiene abierto el formulario, así un guardado no puede borrar cambios.
-- Adelantar un hito va en verde y atrasarlo en ámbar. Nunca en rojo.
+- Adelantar un hito va en verde y atrasarlo en ámbar, en la línea de tiempo y
+  en la hoja del hito. Nunca en rojo.
+- La **fecha planificada** puede ser futura; la **fecha real** no: es algo que
+  ya ocurrió. El campo tiene tope en hoy y `validarHito` lo revisa en el servidor.
 - `validarEntrada` devuelve **todas** las columnas, con null en las que no
   corresponden al tipo, para no chocar con los check constraints. Al editar
   una entrada el tipo no cambia, y el servidor lo compara con lo guardado.
@@ -374,6 +392,15 @@ Progreso y las fechas la barra de avance de Recuperación.
   acciones que devuelven `{ ok, error }`), `avisoDeFallo` y los textos
   `AVISO_SIN_CONEXION` y `AVISO_FALLO`. El aviso de sin conexión es uno solo en
   toda la app: "Sin conexión. Vuelve a intentarlo cuando tengas señal."
+- **Hojas con formulario:** pasan `hayCambios` a `HojaInferior`. Con cambios,
+  cerrar desde la hoja (fondo, "Cerrar" o Escape) abre `HojaDescartar`
+  ("Seguir editando" / "Descartar y salir"), la misma confirmación de
+  Configuración; sin cambios cierra directo. Los cambios se miden contra los
+  valores con que abrió el formulario (porciones con `porcionesIguales`).
+  Guardar llama a `onCerrar` directo y no pasa por la confirmación.
+- **Etiquetas de formularios:** al editar, el botón dice "Guardar cambios".
+  Al crear, las hojas se titulan "Nueva medida", "Nuevo menú", "Nuevo registro"
+  y "Nuevo hito".
 - **Inputs numéricos:** siempre `CampoNumerico`. Nunca `type="number"`: en iOS
   descarta la coma decimal del teclado chileno. Mínimo 16px de fuente para que
   iOS no haga zoom al enfocar.
@@ -471,6 +498,7 @@ las llena la app.
 - Rutas: `/hoy`, `/semana`, `/progreso`, `/menus`, `/recuperacion`, `/configuracion`,
   todas bajo el grupo `app/(app)/` con el shell común. `/` redirige a `/hoy`.
 - `/entrar` vive fuera del shell.
+- La barra inferior va en este orden: Hoy · Recuperación · Semana · Progreso · Menús.
 - **El acceso a Configuración está solo en Hoy**, dentro de su encabezado y a la
   derecha de la fila de la fecha. **No es fijo**: se desliza con el contenido.
   Antes era un botón fijo presente en todas las pantallas y, al bajar, quedaba
@@ -494,3 +522,22 @@ Quedó fuera de la v1, a propósito:
   atajos para marcar un hito como cumplido y para reprogramarlo; se decidió no
   construirlos para que los hitos cambien en un único lugar (su propia hoja) y
   su historial no quede repartido.
+
+### Deuda para un rediseño futuro
+Salió en la revisión de consistencia de la tarea 11 y se decidió **dejarla como
+está**. No corregirla de a poco: se revisa entera en un rediseño.
+- **Radios fuera de 11/14/20/píldora:** `rounded-xl`, `rounded-lg`,
+  `rounded-md`, `rounded-sm` y radios a medida (`[10px]`, `[9px]`, `[7px]`,
+  `[5px]`, `[4px]`, `[3px]`); píldoras con `rounded-[20px]` en vez de
+  `rounded-full`.
+- **Tamaños de fuente dispares:** títulos de pantalla de 27px y de 20px;
+  etiquetas de sección en mayúsculas de 13, 12,5 y 11px; títulos serif de
+  tarjeta de 19 a 17px; Segmentos de 40px de alto y Chip de 42px.
+- **Tarjetas duplicadas:** Hoy, Progreso y Recuperación definen su propia
+  `Tarjeta` local con padding distinto, y `components/ui/Tarjeta` solo la usa
+  `/entrar`.
+- **`text-white`** en `Boton`, `Segmentos` y el check de preguntas: es el
+  blanco de Tailwind, no un token.
+- **Terracota** en la línea de masa grasa: es lo más cercano a rojo de la app.
+- **Mensajes:** "Sesión expirada" y los avisos de falta de configuración (que
+  además se resuelven distinto en Hoy, Semana, Progreso y Recuperación).

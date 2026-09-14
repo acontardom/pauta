@@ -5,10 +5,10 @@ import { usePathname } from "next/navigation";
 
 const PESTANAS = [
   { href: "/hoy", etiqueta: "Hoy" },
+  { href: "/recuperacion", etiqueta: "Recuperación" },
   { href: "/semana", etiqueta: "Semana" },
   { href: "/progreso", etiqueta: "Progreso" },
   { href: "/menus", etiqueta: "Menús" },
-  { href: "/recuperacion", etiqueta: "Recuperación" },
 ] as const;
 
 export default function BarraInferior() {

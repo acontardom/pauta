@@ -4,7 +4,11 @@ import { useId, useState, useTransition } from "react";
 import Boton from "@/components/ui/Boton";
 import CampoTexto from "@/components/ui/CampoTexto";
 import HojaInferior from "@/components/ui/HojaInferior";
-import { diferenciaCumplimiento, textoHistorial } from "@/lib/recuperacion";
+import {
+  diferenciaCumplimiento,
+  textoHistorial,
+  type TonoNota,
+} from "@/lib/recuperacion";
 import { llamarAccion } from "@/lib/red";
 import type { Hito } from "@/lib/supabase/tipos";
 import { MAXIMO_NOMBRE_HITO } from "@/lib/validarHito";
@@ -20,15 +24,30 @@ type Props = {
 const CLASE_FECHA =
   "mt-1.5 h-[54px] w-full rounded-control border border-borde bg-superficie px-[14px] font-serif text-[19px] text-tinta focus:border-verde-borde focus:outline-none";
 
+/* Adelantarse en verde y atrasarse en ámbar, igual que en la línea de tiempo. Nunca rojo. */
+const TONO_DIFERENCIA: Record<TonoNota, string> = {
+  bueno: "text-verde",
+  ambar: "text-ambar",
+  neutro: "text-tinta-2",
+};
+
 export default function HojaHito({ hito, hoy, onCerrar }: Props) {
   const editando = hito !== null;
   const idPlanificada = useId();
   const idReal = useId();
 
-  const [nombre, setNombre] = useState(hito?.nombre ?? "");
-  const [planificada, setPlanificada] = useState(hito?.fecha_planificada ?? "");
-  const [cumplido, setCumplido] = useState(hito?.cumplido ?? false);
-  const [real, setReal] = useState(hito?.fecha_real ?? hoy);
+  // Lo que muestra el formulario al abrirse: contra esto se miden los cambios.
+  const inicial = {
+    nombre: hito?.nombre ?? "",
+    planificada: hito?.fecha_planificada ?? "",
+    cumplido: hito?.cumplido ?? false,
+    real: hito?.fecha_real ?? hoy,
+  };
+
+  const [nombre, setNombre] = useState(inicial.nombre);
+  const [planificada, setPlanificada] = useState(inicial.planificada);
+  const [cumplido, setCumplido] = useState(inicial.cumplido);
+  const [real, setReal] = useState(inicial.real);
   const [motivo, setMotivo] = useState("");
 
   const [confirmando, setConfirmando] = useState(false);
@@ -46,6 +65,14 @@ export default function HojaHito({ hito, hoy, onCerrar }: Props) {
   const diferencia = cumplido
     ? diferenciaCumplimiento(planificada || null, real || null)
     : null;
+
+  // La fecha real solo cuenta si está a la vista, con el hito cumplido.
+  const hayCambios =
+    nombre !== inicial.nombre ||
+    planificada !== inicial.planificada ||
+    cumplido !== inicial.cumplido ||
+    (cumplido && real !== inicial.real) ||
+    motivo.trim() !== "";
 
   const historial = textoHistorial(hito?.historial);
   // Los hitos fijos (los de la semilla) no se pueden eliminar.
@@ -83,6 +110,7 @@ export default function HojaHito({ hito, hoy, onCerrar }: Props) {
       abierta
       onCerrar={onCerrar}
       titulo={editando ? "Editar hito" : "Nuevo hito"}
+      hayCambios={hayCambios}
     >
       <div className="flex flex-col gap-3.5">
         <CampoTexto
@@ -140,20 +168,18 @@ export default function HojaHito({ hito, hoy, onCerrar }: Props) {
               <label htmlFor={idReal} className="block text-[12.5px] text-tinta-3">
                 Fecha real
               </label>
+              {/* Tope en hoy: la fecha real es algo que ya ocurrió. El servidor
+                  lo vuelve a validar. */}
               <input
                 id={idReal}
                 type="date"
                 value={real}
+                max={hoy}
                 onChange={(e) => setReal(e.target.value)}
                 className={`${CLASE_FECHA} bg-fondo`}
               />
               {diferencia?.texto ? (
-                <p
-                  className={`mt-2 text-[13px] ${
-                    // Adelantarse va en verde; atrasarse, en tinta normal. Nunca rojo.
-                    diferencia.tono === "bueno" ? "text-verde" : "text-tinta-2"
-                  }`}
-                >
+                <p className={`mt-2 text-[13px] ${TONO_DIFERENCIA[diferencia.tono]}`}>
                   {diferencia.texto}
                 </p>
               ) : null}
@@ -172,7 +198,7 @@ export default function HojaHito({ hito, hoy, onCerrar }: Props) {
         ) : null}
 
         <Boton onClick={guardar} disabled={nombre.trim() === "" || ocupada}>
-          {guardando ? "Guardando…" : "Guardar hito"}
+          {guardando ? "Guardando…" : editando ? "Guardar cambios" : "Guardar hito"}
         </Boton>
 
         {error ? (

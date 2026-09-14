@@ -270,6 +270,7 @@ export default function PantallaRecuperacion({
       </Tarjeta>
 
       <LineaTiempo
+        hoy={hoy}
         hitos={hitos}
         entradas={entradas}
         onAbrirHito={(hito) => setHoja({ tipo: "hito", hito })}

@@ -21,13 +21,17 @@ export default function HojaMedida({ medida, hoy, onCerrar }: Props) {
   const editando = medida !== null;
   const idFecha = useId();
 
-  const [fecha, setFecha] = useState(medida?.fecha ?? hoy);
-  const [peso, setPeso] = useState(
-    medida?.peso != null ? String(medida.peso).replace(".", ",") : "",
-  );
-  const [cintura, setCintura] = useState(
-    medida?.cintura != null ? String(medida.cintura).replace(".", ",") : "",
-  );
+  // Lo que muestra el formulario al abrirse: contra esto se miden los cambios.
+  const inicial = {
+    fecha: medida?.fecha ?? hoy,
+    peso: medida?.peso != null ? String(medida.peso).replace(".", ",") : "",
+    cintura:
+      medida?.cintura != null ? String(medida.cintura).replace(".", ",") : "",
+  };
+
+  const [fecha, setFecha] = useState(inicial.fecha);
+  const [peso, setPeso] = useState(inicial.peso);
+  const [cintura, setCintura] = useState(inicial.cintura);
 
   const [confirmando, setConfirmando] = useState(false);
   const [error, setError] = useState("");
@@ -36,6 +40,10 @@ export default function HojaMedida({ medida, hoy, onCerrar }: Props) {
 
   const ocupada = guardando || eliminando;
   const vacios = peso.trim() === "" && cintura.trim() === "";
+  const hayCambios =
+    fecha !== inicial.fecha ||
+    peso !== inicial.peso ||
+    cintura !== inicial.cintura;
 
   function guardar() {
     setError("");
@@ -63,8 +71,9 @@ export default function HojaMedida({ medida, hoy, onCerrar }: Props) {
     <HojaInferior
       abierta
       onCerrar={onCerrar}
-      titulo={editando ? "Editar registro" : "Registrar"}
+      titulo={editando ? "Editar registro" : "Nueva medida"}
       subtitulo={editando ? formatoLargoConAnio(medida.fecha) : undefined}
+      hayCambios={hayCambios}
     >
       <div className="flex flex-col gap-3.5">
         <div>
@@ -107,7 +116,7 @@ export default function HojaMedida({ medida, hoy, onCerrar }: Props) {
         </p>
 
         <Boton onClick={guardar} disabled={vacios || ocupada}>
-          {guardando ? "Guardando…" : "Guardar"}
+          {guardando ? "Guardando…" : editando ? "Guardar cambios" : "Guardar"}
         </Boton>
 
         {error ? (

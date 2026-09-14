@@ -16,7 +16,12 @@ type Props = {
   form: null | "nuevo" | Inbody;
   onAbrirNuevo: () => void;
   onEditar: (medicion: Inbody) => void;
+  /** "Cancelar" del encabezado: pasa por la confirmación si hay cambios. */
+  onCancelar: () => void;
+  /** Después de guardar o eliminar: cierra directo. */
   onCerrar: () => void;
+  /** El formulario avisa si tiene algo escrito sin guardar. */
+  onCambios: (hayCambios: boolean) => void;
 };
 
 /*
@@ -36,7 +41,9 @@ export default function SeccionInbody({
   form,
   onAbrirNuevo,
   onEditar,
+  onCancelar,
   onCerrar,
+  onCambios,
 }: Props) {
   const refFormulario = useRef<HTMLDivElement>(null);
   const tarjetas = tarjetasInbody(mediciones);
@@ -61,7 +68,7 @@ export default function SeccionInbody({
         <h2 className="font-serif text-[22px] font-medium text-tinta">InBody</h2>
         <button
           type="button"
-          onClick={form ? onCerrar : onAbrirNuevo}
+          onClick={form ? onCancelar : onAbrirNuevo}
           className="py-1 text-[13.5px] text-verde"
         >
           {form ? "Cancelar" : "Agregar medición"}
@@ -77,6 +84,7 @@ export default function SeccionInbody({
             medicion={form === "nuevo" ? null : form}
             hoy={hoy}
             onCerrar={onCerrar}
+            onCambios={onCambios}
           />
         </div>
       ) : null}
@@ -147,16 +155,20 @@ function FormularioInbody({
   medicion,
   hoy,
   onCerrar,
+  onCambios,
 }: {
   medicion: Inbody | null;
   hoy: string;
   onCerrar: () => void;
+  onCambios: (hayCambios: boolean) => void;
 }) {
   const editando = medicion !== null;
   const idFecha = useId();
 
-  const [fecha, setFecha] = useState(medicion?.fecha ?? hoy);
-  const [valores, setValores] = useState<Record<ClaveInbody, string>>(() => {
+  const fechaInicial = medicion?.fecha ?? hoy;
+  const [fecha, setFecha] = useState(fechaInicial);
+  // Los valores al abrir: contra esto se miden los cambios.
+  const [valoresIniciales] = useState<Record<ClaveInbody, string>>(() => {
     const inicial = {} as Record<ClaveInbody, string>;
     for (const campo of CAMPOS_INBODY) {
       const v = medicion?.[campo.clave];
@@ -164,6 +176,7 @@ function FormularioInbody({
     }
     return inicial;
   });
+  const [valores, setValores] = useState(valoresIniciales);
 
   const [confirmando, setConfirmando] = useState(false);
   const [error, setError] = useState("");
@@ -172,6 +185,19 @@ function FormularioInbody({
 
   const ocupado = guardando || eliminando;
   const todosVacios = CAMPOS_INBODY.every((c) => valores[c.clave].trim() === "");
+  const hayCambios =
+    fecha !== fechaInicial ||
+    CAMPOS_INBODY.some((c) => valores[c.clave] !== valoresIniciales[c.clave]);
+
+  /*
+    El formulario es en línea, no una hoja: lo cierran o lo reemplazan botones
+    de Progreso. Por eso avisa hacia arriba si tiene cambios, y al desmontarse
+    deja de tenerlos.
+  */
+  useEffect(() => {
+    onCambios(hayCambios);
+  }, [hayCambios, onCambios]);
+  useEffect(() => () => onCambios(false), [onCambios]);
 
   function guardar() {
     setError("");

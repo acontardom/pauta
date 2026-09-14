@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { cerrarSesion } from "@/app/entrar/acciones";
 import Boton from "@/components/ui/Boton";
 import CampoNumerico from "@/components/ui/CampoNumerico";
-import HojaInferior from "@/components/ui/HojaInferior";
+import { HojaDescartar } from "@/components/ui/HojaInferior";
 import {
   GRUPOS,
   TIEMPOS,
@@ -394,21 +394,11 @@ export default function FormularioConfiguracion({ inicial, existe, correo }: Pro
         </Boton>
       </div>
 
-      <HojaInferior
+      <HojaDescartar
         abierta={destinoPendiente !== null}
-        onCerrar={() => setDestinoPendiente(null)}
-        titulo="Tienes cambios sin guardar"
-      >
-        <p className="text-[14.5px] leading-relaxed text-tinta-2">
-          Si sales ahora, se pierden los cambios que todavía no guardaste.
-        </p>
-        <div className="mt-4 flex flex-col gap-2.5">
-          <Boton onClick={() => setDestinoPendiente(null)}>Seguir editando</Boton>
-          <Boton variante="secundaria" onClick={descartarYSalir}>
-            Descartar y salir
-          </Boton>
-        </div>
-      </HojaInferior>
+        onSeguir={() => setDestinoPendiente(null)}
+        onDescartar={descartarYSalir}
+      />
     </>
   );
 }

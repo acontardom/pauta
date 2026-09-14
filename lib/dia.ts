@@ -77,7 +77,7 @@ export type FilaResumen = {
   y tobillo. Pura y sin JSX, para poder probarla y para que el componente solo
   decida colores.
 
-  Lo que falta se dice "Sin registrar", en tono neutro. No hay texto que
+  Lo que falta se dice "Sin registro", en tono neutro, igual que en las leyendas. No hay texto que
   reproche: cerrar el día es registrar, no evaluar.
 */
 export function resumenDia(
@@ -107,7 +107,7 @@ export function resumenDia(
         tono: "azul",
       };
     }
-    return { etiqueta: t.etiqueta, valor: "Sin registrar", tono: "neutro" };
+    return { etiqueta: t.etiqueta, valor: "Sin registro", tono: "neutro" };
   });
 
   filas.push({
@@ -123,14 +123,14 @@ export function resumenDia(
     valor:
       entrenamiento.length > 0
         ? entrenamiento.join(", ") + (minutos ? ` · ${minutos} min` : "")
-        : "Sin registrar",
+        : "Sin registro",
     tono: "neutro",
   });
 
   const tobillo = ESTADOS_TOBILLO.find((e) => e.clave === dia?.estado_tobillo);
   filas.push({
     etiqueta: "Tobillo",
-    valor: tobillo?.etiqueta ?? "Sin registrar",
+    valor: tobillo?.etiqueta ?? "Sin registro",
     tono: "neutro",
   });
 

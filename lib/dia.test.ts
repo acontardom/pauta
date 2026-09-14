@@ -118,14 +118,14 @@ describe("resumenDia", () => {
   it("sin fila de dias, todo queda en sus valores por defecto", () => {
     const filas = resumenDia([], null);
     expect(filas[5]).toEqual({ etiqueta: "Agua", valor: "0,00 L", tono: "azul" });
-    expect(filas[6].valor).toBe("Sin registrar");
-    expect(filas[7].valor).toBe("Sin registrar");
+    expect(filas[6].valor).toBe("Sin registro");
+    expect(filas[7].valor).toBe("Sin registro");
   });
 
   it("con las cinco comidas pendientes, ninguna reprocha nada", () => {
     const filas = resumenDia([], dia).slice(0, 5);
     for (const f of filas) {
-      expect(f.valor).toBe("Sin registrar");
+      expect(f.valor).toBe("Sin registro");
       expect(f.tono).toBe("neutro");
     }
   });
@@ -168,7 +168,7 @@ describe("resumenDia", () => {
   it("traduce el estado del tobillo", () => {
     expect(resumenDia([], { ...dia, estado_tobillo: "peor" })[7].valor).toBe("Peor");
     expect(resumenDia([], { ...dia, estado_tobillo: null })[7].valor).toBe(
-      "Sin registrar",
+      "Sin registro",
     );
   });
 

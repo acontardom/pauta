@@ -93,7 +93,7 @@ export default function EncabezadoHoy({
 
       <div className="mt-3 flex min-h-6 items-center justify-between gap-2.5">
         {/*
-          El estado es descriptivo, nunca un reproche: un día sin cerrar se ve
+          El estado es descriptivo, nunca un reproche: un día abierto se ve
           igual de neutro que uno en curso.
         */}
         <span
@@ -107,7 +107,7 @@ export default function EncabezadoHoy({
             ? "Día registrado"
             : esHoy
               ? "Día en curso"
-              : "Día sin cerrar"}
+              : "Día abierto"}
         </span>
         {!esHoy ? (
           <button

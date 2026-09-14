@@ -54,6 +54,44 @@ function Etiqueta({ htmlFor, children }: { htmlFor?: string; children: React.Rea
   );
 }
 
+type ValoresEntrada = {
+  tipo: TipoEntrada;
+  fecha: string;
+  numero: string;
+  marcadas: Set<string>;
+  otro: string;
+  hinchazon: Hinchazon | null;
+  indicaciones: string;
+  proximo: string;
+  nota: string;
+};
+
+/** Lo que muestra el formulario al abrirse: contra esto se miden los cambios. */
+function valoresIniciales(entrada: EntradaRecuperacion | null, hoy: string): ValoresEntrada {
+  // Lo autorizado que no está en la lista vuelve como "Otro" con su texto.
+  const guardadas = entrada?.autorizado ?? [];
+  const personalizadas = guardadas.filter((a) => !PREDEFINIDAS.has(a));
+  const marcadas = new Set(guardadas.filter((a) => PREDEFINIDAS.has(a)));
+  if (personalizadas.length > 0) marcadas.add(OTRO);
+
+  return {
+    // Un registro nuevo abre como kinesiología, el tipo más frecuente.
+    tipo: entrada?.tipo ?? "kine",
+    fecha: entrada?.fecha ?? hoy,
+    numero: entrada?.numero_sesion != null ? String(entrada.numero_sesion) : "",
+    marcadas,
+    otro: personalizadas.join(", "),
+    hinchazon: entrada?.hinchazon ?? null,
+    indicaciones: entrada?.indicaciones ?? "",
+    proximo: entrada?.proximo_control ?? "",
+    nota: entrada?.nota ?? "",
+  };
+}
+
+function mismosElementos(a: Set<string>, b: Set<string>): boolean {
+  return a.size === b.size && [...a].every((x) => b.has(x));
+}
+
 export default function HojaEntrada({
   entrada,
   entradas,
@@ -64,32 +102,34 @@ export default function HojaEntrada({
   const idFecha = useId();
   const idProximo = useId();
 
-  // Lo autorizado que no está en la lista vuelve como "Otro" con su texto.
-  const guardadas = entrada?.autorizado ?? [];
-  const personalizadas = guardadas.filter((a) => !PREDEFINIDAS.has(a));
+  const [inicial] = useState(() => valoresIniciales(entrada, hoy));
 
-  // Un registro nuevo abre como kinesiología, el tipo más frecuente.
-  const [tipo, setTipo] = useState<TipoEntrada>(entrada?.tipo ?? "kine");
-  const [fecha, setFecha] = useState(entrada?.fecha ?? hoy);
-  const [numero, setNumero] = useState(
-    entrada?.numero_sesion != null ? String(entrada.numero_sesion) : "",
-  );
-  const [marcadas, setMarcadas] = useState<Set<string>>(() => {
-    const inicial = new Set(guardadas.filter((a) => PREDEFINIDAS.has(a)));
-    if (personalizadas.length > 0) inicial.add(OTRO);
-    return inicial;
-  });
-  const [otro, setOtro] = useState(personalizadas.join(", "));
-  const [hinchazon, setHinchazon] = useState<Hinchazon | null>(entrada?.hinchazon ?? null);
-  const [indicaciones, setIndicaciones] = useState(entrada?.indicaciones ?? "");
-  const [proximo, setProximo] = useState(entrada?.proximo_control ?? "");
-  const [nota, setNota] = useState(entrada?.nota ?? "");
+  const [tipo, setTipo] = useState<TipoEntrada>(inicial.tipo);
+  const [fecha, setFecha] = useState(inicial.fecha);
+  const [numero, setNumero] = useState(inicial.numero);
+  const [marcadas, setMarcadas] = useState<Set<string>>(() => new Set(inicial.marcadas));
+  const [otro, setOtro] = useState(inicial.otro);
+  const [hinchazon, setHinchazon] = useState<Hinchazon | null>(inicial.hinchazon);
+  const [indicaciones, setIndicaciones] = useState(inicial.indicaciones);
+  const [proximo, setProximo] = useState(inicial.proximo);
+  const [nota, setNota] = useState(inicial.nota);
 
   const [confirmando, setConfirmando] = useState(false);
   const [error, setError] = useState("");
   const [guardando, iniciarGuardado] = useTransition();
   const [eliminando, iniciarEliminado] = useTransition();
   const ocupada = guardando || eliminando;
+
+  const hayCambios =
+    tipo !== inicial.tipo ||
+    fecha !== inicial.fecha ||
+    numero !== inicial.numero ||
+    !mismosElementos(marcadas, inicial.marcadas) ||
+    otro !== inicial.otro ||
+    hinchazon !== inicial.hinchazon ||
+    indicaciones !== inicial.indicaciones ||
+    proximo !== inicial.proximo ||
+    nota !== inicial.nota;
 
   /*
     Al cambiar de tipo se limpian los campos que no le corresponden. Si no, una
@@ -170,6 +210,7 @@ export default function HojaEntrada({
       abierta
       onCerrar={onCerrar}
       titulo={editando ? "Editar registro" : "Nuevo registro"}
+      hayCambios={hayCambios}
     >
       <div className="flex flex-col gap-3.5">
         <div>
@@ -285,7 +326,7 @@ export default function HojaEntrada({
         />
 
         <Boton onClick={guardar} disabled={ocupada}>
-          {guardando ? "Guardando…" : "Guardar registro"}
+          {guardando ? "Guardando…" : editando ? "Guardar cambios" : "Guardar registro"}
         </Boton>
 
         {error ? (

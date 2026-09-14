@@ -9,6 +9,7 @@ import Chip from "@/components/ui/Chip";
 import HojaInferior from "@/components/ui/HojaInferior";
 import { TIEMPOS } from "@/lib/dominio";
 import { parsear } from "@/lib/numeros";
+import { porcionesIguales } from "@/lib/porciones";
 import { llamarAccion } from "@/lib/red";
 import type { Menu, Porciones } from "@/lib/supabase/tipos";
 import { MAXIMO_NOMBRE, type EntradaMenu } from "@/lib/validarMenu";
@@ -23,16 +24,23 @@ type Props = {
 export default function HojaMenu({ menu, onCerrar }: Props) {
   const editando = menu !== null;
 
-  const [nombre, setNombre] = useState(menu?.nombre ?? "");
-  const [tiempo, setTiempo] = useState<string>(menu?.tiempo ?? "almuerzo");
-  const [ingredientes, setIngredientes] = useState(
-    (menu?.ingredientes ?? []).join("\n"),
-  );
-  const [observacion, setObservacion] = useState(menu?.observacion ?? "");
+  // Lo que muestra el formulario al abrirse: contra esto se miden los cambios.
+  const inicial = {
+    nombre: menu?.nombre ?? "",
+    tiempo: menu?.tiempo ?? "almuerzo",
+    ingredientes: (menu?.ingredientes ?? []).join("\n"),
+    observacion: menu?.observacion ?? "",
+    kcal: menu?.kcal != null ? String(menu.kcal) : "",
+  };
+
+  const [nombre, setNombre] = useState(inicial.nombre);
+  const [tiempo, setTiempo] = useState<string>(inicial.tiempo);
+  const [ingredientes, setIngredientes] = useState(inicial.ingredientes);
+  const [observacion, setObservacion] = useState(inicial.observacion);
   const [porciones, setPorciones] = useState<Porciones>(
     () => ({ ...(menu?.porciones ?? {}) }),
   );
-  const [kcal, setKcal] = useState(menu?.kcal != null ? String(menu.kcal) : "");
+  const [kcal, setKcal] = useState(inicial.kcal);
 
   const [confirmando, setConfirmando] = useState(false);
   const [error, setError] = useState("");
@@ -40,6 +48,14 @@ export default function HojaMenu({ menu, onCerrar }: Props) {
   const [eliminando, iniciarEliminado] = useTransition();
 
   const ocupada = guardando || eliminando;
+
+  const hayCambios =
+    nombre !== inicial.nombre ||
+    tiempo !== inicial.tiempo ||
+    ingredientes !== inicial.ingredientes ||
+    observacion !== inicial.observacion ||
+    kcal !== inicial.kcal ||
+    !porcionesIguales(porciones, menu?.porciones);
 
   function entrada(): EntradaMenu {
     const n = parsear(kcal);
@@ -79,6 +95,7 @@ export default function HojaMenu({ menu, onCerrar }: Props) {
       abierta
       onCerrar={onCerrar}
       titulo={editando ? "Editar menú" : "Nuevo menú"}
+      hayCambios={hayCambios}
     >
       <div className="flex flex-col gap-3.5">
         <CampoTexto
@@ -140,7 +157,11 @@ export default function HojaMenu({ menu, onCerrar }: Props) {
           onClick={guardar}
           disabled={nombre.trim().length === 0 || ocupada}
         >
-          {guardando ? "Guardando…" : "Guardar menú"}
+          {guardando
+            ? "Guardando…"
+            : editando
+              ? "Guardar cambios"
+              : "Guardar menú"}
         </Boton>
 
         {error ? (
