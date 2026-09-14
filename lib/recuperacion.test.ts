@@ -504,8 +504,8 @@ describe("lineaTiempo: control agendado", () => {
       lineas: ["en 9 días"],
       destacado: false,
     });
-    // No es editable por sí mismo: abre el control que lo agendó.
-    expect(agendado.origen).toEqual({ tipo: "entrada", entrada: ENTRADAS_SEMILLA[1] });
+    // Abre un registro nuevo en su propia fecha, no el control que lo agendó.
+    expect(agendado.origen).toEqual({ tipo: "agendado", fecha: "2026-09-23" });
 
     // Ordenado por su fecha, entre la sesión del 11 sep y el hito del 2 oct.
     const i = items.indexOf(agendado);

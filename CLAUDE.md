@@ -305,8 +305,11 @@ Las validaciones están en `lib/validarEntrada.ts` y `lib/validarHito.ts`.
   próximo control mientras sea hoy o posterior y no haya una entrada de tipo
   control en esa fecha. Lleva la distancia ("en 9 días", "mañana", "hoy"), es
   del grupo `control` (sale en Todo y Controles), se ve como un hito
-  planificado pero en azul, y al tocarlo abre el control que lo agendó.
-  Registrar el control ese día basta para que deje de aparecer.
+  planificado pero en azul. Al tocarlo abre `HojaEntrada` en modo nuevo, con
+  el tipo "Control médico" y su fecha ya cargados (prop `nueva`). Mientras la
+  fecha no llega, los campos se pueden llenar de antemano pero guardar queda
+  deshabilitado, con "Podrás registrar este control el 23 de septiembre." en
+  tinta-3. Registrar el control ese día basta para que deje de aparecer.
 - Preguntas: pendientes primero, las más nuevas arriba, y **desempate por
   texto**, porque la semilla insertó todas en el mismo instante y sin eso su
   orden cambiaría entre recargas. Con UI optimista, como en Hoy.

@@ -7,6 +7,7 @@ import CampoTexto from "@/components/ui/CampoTexto";
 import Chip from "@/components/ui/Chip";
 import HojaInferior from "@/components/ui/HojaInferior";
 import { AUTORIZACIONES } from "@/lib/dominio";
+import { formatoDiaMes } from "@/lib/fechas";
 import { siguienteSesion } from "@/lib/recuperacion";
 import { llamarAccion } from "@/lib/red";
 import type {
@@ -23,6 +24,11 @@ type Props = {
   /** Todas las entradas, para sugerir el número de la próxima sesión. */
   entradas: EntradaRecuperacion[];
   hoy: string;
+  /**
+   * Para un registro nuevo: tipo y fecha ya cargados. Lo usa el control
+   * agendado, cuya fecha puede ser futura.
+   */
+  nueva?: { tipo: TipoEntrada; fecha: string };
   onCerrar: () => void;
 };
 
@@ -67,7 +73,11 @@ type ValoresEntrada = {
 };
 
 /** Lo que muestra el formulario al abrirse: contra esto se miden los cambios. */
-function valoresIniciales(entrada: EntradaRecuperacion | null, hoy: string): ValoresEntrada {
+function valoresIniciales(
+  entrada: EntradaRecuperacion | null,
+  hoy: string,
+  nueva: Props["nueva"],
+): ValoresEntrada {
   // Lo autorizado que no está en la lista vuelve como "Otro" con su texto.
   const guardadas = entrada?.autorizado ?? [];
   const personalizadas = guardadas.filter((a) => !PREDEFINIDAS.has(a));
@@ -75,9 +85,10 @@ function valoresIniciales(entrada: EntradaRecuperacion | null, hoy: string): Val
   if (personalizadas.length > 0) marcadas.add(OTRO);
 
   return {
-    // Un registro nuevo abre como kinesiología, el tipo más frecuente.
-    tipo: entrada?.tipo ?? "kine",
-    fecha: entrada?.fecha ?? hoy,
+    // Un registro nuevo abre como kinesiología, el tipo más frecuente, salvo
+    // que venga con tipo y fecha ya cargados.
+    tipo: entrada?.tipo ?? nueva?.tipo ?? "kine",
+    fecha: entrada?.fecha ?? nueva?.fecha ?? hoy,
     numero: entrada?.numero_sesion != null ? String(entrada.numero_sesion) : "",
     marcadas,
     otro: personalizadas.join(", "),
@@ -96,13 +107,14 @@ export default function HojaEntrada({
   entrada,
   entradas,
   hoy,
+  nueva,
   onCerrar,
 }: Props) {
   const editando = entrada !== null;
   const idFecha = useId();
   const idProximo = useId();
 
-  const [inicial] = useState(() => valoresIniciales(entrada, hoy));
+  const [inicial] = useState(() => valoresIniciales(entrada, hoy, nueva));
 
   const [tipo, setTipo] = useState<TipoEntrada>(inicial.tipo);
   const [fecha, setFecha] = useState(inicial.fecha);
@@ -119,6 +131,7 @@ export default function HojaEntrada({
   const [guardando, iniciarGuardado] = useTransition();
   const [eliminando, iniciarEliminado] = useTransition();
   const ocupada = guardando || eliminando;
+  const fechaFutura = fecha > hoy;
 
   const hayCambios =
     tipo !== inicial.tipo ||
@@ -325,7 +338,18 @@ export default function HojaEntrada({
           placeholder="Cómo se sintió el tobillo, qué dijo el equipo"
         />
 
-        <Boton onClick={guardar} disabled={ocupada}>
+        {/*
+          Un registro no puede tener fecha futura. Pasa con el control agendado:
+          se puede ir llenando de antemano, pero se guarda recién ese día.
+        */}
+        {fechaFutura ? (
+          <p className="px-0.5 text-[13.5px] leading-relaxed text-tinta-3">
+            Podrás registrar {tipo === "control" ? "este control" : "este registro"} el{" "}
+            {formatoDiaMes(fecha)}.
+          </p>
+        ) : null}
+
+        <Boton onClick={guardar} disabled={ocupada || fechaFutura}>
           {guardando ? "Guardando…" : editando ? "Guardar cambios" : "Guardar registro"}
         </Boton>
 

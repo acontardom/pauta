@@ -15,6 +15,8 @@ type Props = {
   hoy: string;
   onAbrirHito: (hito: Hito) => void;
   onAbrirEntrada: (entrada: EntradaRecuperacion) => void;
+  /** El control agendado: abre un registro nuevo de control en esa fecha. */
+  onAgendarControl: (fecha: string) => void;
   onNuevoHito: () => void;
 };
 
@@ -33,6 +35,7 @@ export default function LineaTiempo({
   hoy,
   onAbrirHito,
   onAbrirEntrada,
+  onAgendarControl,
   onNuevoHito,
 }: Props) {
   const [filtro, setFiltro] = useState<Filtro>("todo");
@@ -85,11 +88,12 @@ export default function LineaTiempo({
               item={item}
               primero={i === 0}
               ultimo={i === items.length - 1}
-              onAbrir={() =>
-                item.origen.tipo === "hito"
-                  ? onAbrirHito(item.origen.hito)
-                  : onAbrirEntrada(item.origen.entrada)
-              }
+              onAbrir={() => {
+                const origen = item.origen;
+                if (origen.tipo === "hito") onAbrirHito(origen.hito);
+                else if (origen.tipo === "agendado") onAgendarControl(origen.fecha);
+                else onAbrirEntrada(origen.entrada);
+              }}
             />
           ))}
         </div>
@@ -230,7 +234,7 @@ function TarjetaHito({ item, onAbrir }: { item: ItemLinea; onAbrir: () => void }
   El próximo control, antes de que ocurra. Se ve como un hito planificado
   (borde punteado, fondo blanco) pero en azul, el color de los controles, para
   distinguirlo a simple vista de los controles ya registrados. No se edita:
-  abre la hoja del control que lo agendó.
+  abre un registro nuevo de control con su fecha ya cargada.
 */
 function TarjetaAgendado({ item, onAbrir }: { item: ItemLinea; onAbrir: () => void }) {
   return (

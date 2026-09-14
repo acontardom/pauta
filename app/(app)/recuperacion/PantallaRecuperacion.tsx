@@ -18,6 +18,7 @@ import type {
   EstadoTobillo,
   Hito,
   PreguntaControl,
+  TipoEntrada,
 } from "@/lib/supabase/tipos";
 import HojaEntrada from "./HojaEntrada";
 import HojaHito from "./HojaHito";
@@ -37,7 +38,12 @@ type Props = {
 /** Qué hoja está abierta. Con null en entrada o hito, es para crear uno nuevo. */
 type Hoja =
   | null
-  | { tipo: "entrada"; entrada: EntradaRecuperacion | null }
+  | {
+      tipo: "entrada";
+      entrada: EntradaRecuperacion | null;
+      /** Un registro nuevo con tipo y fecha ya cargados (el control agendado). */
+      nueva?: { tipo: TipoEntrada; fecha: string };
+    }
   | { tipo: "hito"; hito: Hito | null };
 
 /*
@@ -275,6 +281,9 @@ export default function PantallaRecuperacion({
         entradas={entradas}
         onAbrirHito={(hito) => setHoja({ tipo: "hito", hito })}
         onAbrirEntrada={(entrada) => setHoja({ tipo: "entrada", entrada })}
+        onAgendarControl={(fecha) =>
+          setHoja({ tipo: "entrada", entrada: null, nueva: { tipo: "control", fecha } })
+        }
         onNuevoHito={() => setHoja({ tipo: "hito", hito: null })}
       />
 
@@ -283,8 +292,13 @@ export default function PantallaRecuperacion({
       {/* La key remonta cada hoja: abrir otro registro no arrastra lo escrito. */}
       {hoja?.tipo === "entrada" ? (
         <HojaEntrada
-          key={hoja.entrada ? `${hoja.entrada.id}-${hoja.entrada.updated_at}` : "nueva"}
+          key={
+            hoja.entrada
+              ? `${hoja.entrada.id}-${hoja.entrada.updated_at}`
+              : `nueva-${hoja.nueva?.fecha ?? ""}`
+          }
           entrada={hoja.entrada}
+          nueva={hoja.nueva}
           entradas={entradas}
           hoy={hoy}
           onCerrar={() => setHoja(null)}

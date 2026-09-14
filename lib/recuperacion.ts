@@ -428,7 +428,9 @@ export type ItemLinea = {
   /** Lo que abre la tarjeta al tocarla. */
   origen:
     | { tipo: "hito"; hito: Hito }
-    | { tipo: "entrada"; entrada: EntradaRecuperacion };
+    | { tipo: "entrada"; entrada: EntradaRecuperacion }
+    /** Control agendado: abre un registro nuevo de control en esa fecha. */
+    | { tipo: "agendado"; fecha: string };
 };
 
 /* Los hitos sin ninguna fecha van al final. */
@@ -561,8 +563,9 @@ export function lineaTiempo(
         destacado: false,
         agendado: true,
         notaHito: null,
-        // No es editable: abre el control que lo agendó.
-        origen: { tipo: "entrada", entrada: agenda },
+        // No es un registro: abre uno nuevo de control en su fecha, no el
+        // control de otro día que lo agendó.
+        origen: { tipo: "agendado", fecha: fechaAgendada },
       },
     });
   }
