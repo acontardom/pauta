@@ -312,6 +312,11 @@ Ninguna dice que algo se incumplió: un día estimado o un tiempo sin registrar
 son datos, no faltas.
 
 ## Pantalla Progreso
+**Orden de la pantalla, de arriba abajo:** la nota de la meta, % de grasa,
+grasa y músculo, peso, cintura, el botón "Registrar peso y cintura" con "Ver
+registros anteriores" debajo, y al final la sección InBody. Primero se mira
+cómo va la cosa y recién después se registra: por eso el botón no va arriba.
+
 `lib/progreso.ts` tiene la lógica de **series y deltas**, toda pura:
 `ultimoYAnterior`, `delta`, `serieGrafico`, `progresoGrasa` y
 `textoPctGrasa`. Si otra pantalla necesita un gráfico de línea, va acá.
@@ -348,9 +353,11 @@ deltas salen de ahí. No repetir esas etiquetas a mano en una pantalla.
 - Igual que `medidas`, `inbody` permite varias mediciones por fecha (insert,
   no upsert). Un campo vacío se guarda como null, muestra "—" y no genera
   delta. El % de grasa se valida entre 0 y 100.
-- El formulario de InBody es **en línea**, no en hoja. Los botones "Agregar
-  medición InBody" de las tarjetas de arriba lo abren y bajan la vista hasta él.
-  Como no tiene fondo que tocar, la confirmación de cambios sin guardar la pide
+- El formulario de InBody es **en línea**, no en hoja. Se abre **solo** desde
+  "Agregar medición", al lado del título de la sección InBody, o al editar una
+  medición; la vista baja hasta él. Las tarjetas de arriba (% de grasa, grasa y
+  músculo) **no repiten ese botón** cuando están vacías: solo explican qué
+  aparecería. Como no tiene fondo que tocar, la confirmación de cambios sin guardar la pide
   `PantallaProgreso` al cerrarlo ("Cancelar") o al reemplazarlo por otro
   ("Editar", "Agregar medición"); el formulario le avisa con `onCambios`.
 - `CampoNumerico` tiene `tamano`: `normal`, `grande` (peso y cintura) y

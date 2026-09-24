@@ -49,8 +49,7 @@ export default function SeccionInbody({
   const tarjetas = tarjetasInbody(mediciones);
 
   /*
-    Al abrir el formulario la vista baja hasta él. Importa sobre todo cuando se
-    abre desde las tarjetas de arriba ("Agregar medición InBody") o al editar
+    Al abrir el formulario la vista baja hasta él. Importa sobre todo al editar
     una medición del final: el formulario queda lejos de donde se tocó.
   */
   const claveFormulario =

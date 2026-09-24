@@ -157,20 +157,6 @@ export default function PantallaProgreso({
           </p>
         </div>
 
-        <Boton className="mt-3.5" onClick={() => setHoja("nuevo")}>
-          Registrar peso y cintura
-        </Boton>
-
-        {medidas.length > 0 ? (
-          <button
-            type="button"
-            onClick={() => setHoja("lista")}
-            className="w-full pb-0.5 pt-2.5 text-[13.5px] text-verde"
-          >
-            Ver registros anteriores ({medidas.length})
-          </button>
-        ) : null}
-
         {/* % de grasa */}
         <Tarjeta titulo="% de grasa">
           {grasaActual ? (
@@ -203,19 +189,11 @@ export default function PantallaProgreso({
               </div>
             </>
           ) : (
-            <>
-              <p className="mt-2 text-[14.5px] leading-relaxed text-tinta-2">
-                Agrega una medición InBody para ver tu % de grasa y su distancia
-                a la meta.
-              </p>
-              <Boton
-                variante="secundaria"
-                className="mt-3 h-12"
-                onClick={() => cambiarFormInbody("nuevo")}
-              >
-                Agregar medición InBody
-              </Boton>
-            </>
+            // El botón para agregarla está en InBody, más abajo: no se repite acá.
+            <p className="mt-2 text-[14.5px] leading-relaxed text-tinta-2">
+              Con una medición InBody aparece tu % de grasa y su distancia a la
+              meta.
+            </p>
           )}
         </Tarjeta>
 
@@ -224,19 +202,9 @@ export default function PantallaProgreso({
           {hayTendencia ? (
             <GraficoInbody mediciones={inbody} />
           ) : (
-            <>
-              <p className="mt-2 text-[14.5px] leading-relaxed text-tinta-2">
-                Con dos mediciones InBody aparece la tendencia de grasa y
-                músculo.
-              </p>
-              <Boton
-                variante="secundaria"
-                className="mt-3 h-12"
-                onClick={() => cambiarFormInbody("nuevo")}
-              >
-                Agregar medición InBody
-              </Boton>
-            </>
+            <p className="mt-2 text-[14.5px] leading-relaxed text-tinta-2">
+              Con dos mediciones InBody aparece la tendencia de grasa y músculo.
+            </p>
           )}
         </Tarjeta>
 
@@ -317,6 +285,24 @@ export default function PantallaProgreso({
             </>
           )}
         </Tarjeta>
+
+        {/*
+          Registrar va DESPUÉS de los gráficos: primero se mira cómo va la
+          cosa (% de grasa, peso, cintura) y recién después se anota.
+        */}
+        <Boton className="mt-3.5" onClick={() => setHoja("nuevo")}>
+          Registrar peso y cintura
+        </Boton>
+
+        {medidas.length > 0 ? (
+          <button
+            type="button"
+            onClick={() => setHoja("lista")}
+            className="w-full pb-0.5 pt-2.5 text-[13.5px] text-verde"
+          >
+            Ver registros anteriores ({medidas.length})
+          </button>
+        ) : null}
 
         <SeccionInbody
           mediciones={inbody}
