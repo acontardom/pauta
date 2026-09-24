@@ -312,10 +312,17 @@ Ninguna dice que algo se incumplió: un día estimado o un tiempo sin registrar
 son datos, no faltas.
 
 ## Pantalla Progreso
-**Orden de la pantalla, de arriba abajo:** la nota de la meta, % de grasa,
-grasa y músculo, peso, cintura, el botón "Registrar peso y cintura" con "Ver
-registros anteriores" debajo, y al final la sección InBody. Primero se mira
-cómo va la cosa y recién después se registra: por eso el botón no va arriba.
+**Orden de la pantalla, de arriba abajo:** la meta, % de grasa, grasa y
+músculo, peso, cintura, el botón "Registrar peso y cintura" con "Ver registros
+anteriores" debajo, y al final la sección InBody. Primero se mira cómo va la
+cosa y recién después se registra: por eso el botón no va arriba.
+
+- La **meta** es una línea ("Meta: bajar grasa y preservar músculo.") en la
+  tarjeta verde, que se despliega al tocarla para explicar por qué perder
+  músculo no es neutro. Parte cerrada en cada visita.
+- La tarjeta **"Grasa y músculo" solo existe si hay tendencia** (dos mediciones
+  InBody con masa grasa o masa musculoesquelética). Vacía no aportaba nada y
+  le quitaba peso a los números, así que no se muestra.
 
 `lib/progreso.ts` tiene la lógica de **series y deltas**, toda pura:
 `ultimoYAnterior`, `delta`, `serieGrafico`, `progresoGrasa` y

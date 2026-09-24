@@ -73,6 +73,7 @@ export default function PantallaProgreso({
   hoy,
 }: Props) {
   const [hoja, setHoja] = useState<Hoja>(null);
+  const [metaAbierta, setMetaAbierta] = useState(false);
   const [formInbody, setFormInbody] = useState<FormInbody>(null);
   const [inbodyConCambios, setInbodyConCambios] = useState(false);
   /** El formulario de InBody que espera confirmación para reemplazar al actual. */
@@ -150,11 +151,45 @@ export default function PantallaProgreso({
           Progreso
         </h1>
 
+        {/*
+          La meta en una línea: se lee de un vistazo y no le quita espacio a
+          los números. El detalle queda a un toque, para no repetirlo cada vez.
+        */}
         <div className="mt-3 rounded-xl border border-verde-borde bg-verde-fondo px-[15px] py-[13px]">
-          <p className="text-[14.5px] leading-relaxed text-verde-oscuro">
-            Meta: bajar grasa preservando masa magra. La masa musculoesquelética
-            se mira igual que el peso.
-          </p>
+          <button
+            type="button"
+            aria-expanded={metaAbierta}
+            onClick={() => setMetaAbierta((v) => !v)}
+            className="flex w-full items-center justify-between gap-3 text-left"
+          >
+            <span className="text-[14.5px] leading-snug text-verde-oscuro">
+              Meta: bajar grasa y preservar músculo.
+            </span>
+            <svg
+              aria-hidden
+              viewBox="0 0 12 8"
+              className={`h-2 w-3 shrink-0 text-verde-oscuro transition-transform ${
+                metaAbierta ? "rotate-180" : ""
+              }`}
+            >
+              <path
+                d="M1 1.5 6 6.5 11 1.5"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.6"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </button>
+          {metaAbierta ? (
+            <p className="mt-2.5 text-[13.5px] leading-relaxed text-verde-oscuro">
+              La masa musculoesquelética se mira igual que el peso: si baja, el
+              plan no está funcionando, aunque la balanza sí baje. Por eso en
+              InBody bajar es bueno en peso, masa grasa y % de grasa, y es aviso
+              (ámbar) en masa musculoesquelética, masa libre de grasa y agua.
+            </p>
+          ) : null}
         </div>
 
         {/* % de grasa */}
@@ -197,16 +232,15 @@ export default function PantallaProgreso({
           )}
         </Tarjeta>
 
-        {/* Grasa y músculo */}
-        <Tarjeta titulo="Grasa y músculo">
-          {hayTendencia ? (
+        {/*
+          Grasa y músculo: la tarjeta existe solo cuando hay tendencia que
+          mostrar. Vacía no aporta nada y estorba a los números de al lado.
+        */}
+        {hayTendencia ? (
+          <Tarjeta titulo="Grasa y músculo">
             <GraficoInbody mediciones={inbody} />
-          ) : (
-            <p className="mt-2 text-[14.5px] leading-relaxed text-tinta-2">
-              Con dos mediciones InBody aparece la tendencia de grasa y músculo.
-            </p>
-          )}
-        </Tarjeta>
+          </Tarjeta>
+        ) : null}
 
         {/* Peso */}
         <Tarjeta
