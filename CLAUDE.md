@@ -257,7 +257,10 @@ vacío; el validador de la semilla repite esas reglas.
   `npm run semilla:revisar -- --tabla rutinas` y
   `npm run semilla -- --tabla rutinas`, y desactivar las del bloque anterior
   (`activa = false`). Como la semilla nunca hace update, desactivar se hace con
-  una migración de datos o desde el SQL Editor, preguntando antes. Si el
+  un `update` sobre la base (SQL Editor o `npx supabase db query --linked`), y
+  además se deja `"activa": false` en esas filas de `datos.json`, para que una
+  carga desde cero reproduzca el mismo estado. Es reversible: volver a
+  `activa = true` revive el bloque. Si el
   bloque nuevo reutiliza las claves A y B, los días viejos siguen diciendo
   "Sesión A" y se ven igual; si usa otras claves, las viejas se muestran como
   valores antiguos.
@@ -610,8 +613,10 @@ entrenamiento, tobillo y el botón de cierre con su hoja de resumen.
 
 La semilla cargó configuración, 5 hitos, 21 menús, 105 alimentos, 1 medida,
 1 InBody, 4 entradas de recuperación, 7 preguntas (6 ya se borraron desde la
-app) y 2 rutinas (bloque "Bloque sin carga de tobillo"). `dias` y `comidas`
-las llena la app.
+app) y 6 rutinas: las 4 activas del bloque **"Bloque bota fase 2"** (A Empuje +
+tríceps, B Pierna adaptada + core, C Tirón + bíceps, D Torso + pierna ligera) y
+las 2 del "Bloque sin carga de tobillo", desactivadas al cambiar de plan.
+`dias` y `comidas` las llena la app.
 
 - Rutas: `/hoy`, `/semana`, `/progreso`, `/menus`, `/recuperacion`, `/configuracion`,
   todas bajo el grupo `app/(app)/` con el shell común. `/` redirige a `/hoy`.

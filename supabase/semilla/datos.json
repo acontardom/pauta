@@ -1242,7 +1242,7 @@
       "clave": "A",
       "nombre": "Empuje + core",
       "orden": 1,
-      "activa": true,
+      "activa": false,
       "nota": "RIR 2 en todas las series, RIR 0 en la última. Progresión: sumar repeticiones hasta el tope del rango en todas las series; recién ahí subir al par siguiente de mancuernas y volver al piso del rango. Sentado a horcajadas en el banco, pie sano plantado a un lado y pierna operada estirada sobre el banco. Pie elevado entre series y al terminar. Calentamiento: 5 min de movilidad de hombro y dorsal, más 2×15-20 de band pull-apart.",
       "ejercicios": [
         {
@@ -1308,7 +1308,7 @@
       "clave": "B",
       "nombre": "Tirón + core",
       "orden": 2,
-      "activa": true,
+      "activa": false,
       "nota": "RIR 2 en todas las series, RIR 0 en la última. Progresión: sumar repeticiones hasta el tope del rango en todas las series; recién ahí subir al par siguiente de mancuernas y volver al piso del rango. Sentado a horcajadas en el banco, pie sano plantado a un lado y pierna operada estirada sobre el banco. Pie elevado entre series y al terminar. Calentamiento: 5 min de movilidad de hombro y dorsal, más 2×15-20 de band pull-apart.",
       "ejercicios": [
         {
@@ -1366,6 +1366,254 @@
           "reps": "30 seg por lado",
           "descanso_seg": 60,
           "notas": "Rodillas apoyadas siempre, sin cargar el pie."
+        }
+      ]
+    },
+    {
+      "bloque": "Bloque bota fase 2",
+      "clave": "A",
+      "nombre": "Empuje + tríceps",
+      "orden": 1,
+      "activa": true,
+      "nota": "Todo sentado o acostado, sin apoyar ni cargar el pie lesionado. Calentamiento corto de 5 minutos con movilidad de hombros y activación, porque vienes del kine. Intensidad por RIR: semana 1 en RIR 3, semanas 2 y 3 en RIR 1 a 2, semana 4 en RIR 2 como descarga suave. Progresión: cuando completes todas las series en el tope del rango de reps, sube el peso la sesión siguiente. Deja las máquinas y mancuernas cerca para moverte poco con muletas.",
+      "ejercicios": [
+        {
+          "orden": 1,
+          "nombre": "Press banca con barra o máquina",
+          "series": 4,
+          "reps": "6-8",
+          "descanso_seg": 120,
+          "notas": "Pie lesionado apoyado sin empujar o sobre el banco. Sin impulso de piernas."
+        },
+        {
+          "orden": 2,
+          "nombre": "Press inclinado con mancuernas",
+          "series": 3,
+          "reps": "8-10",
+          "descanso_seg": 90,
+          "notas": null
+        },
+        {
+          "orden": 3,
+          "nombre": "Press militar sentado con mancuernas",
+          "series": 3,
+          "reps": "8-10",
+          "descanso_seg": 90,
+          "notas": "Banco con respaldo, espalda apoyada."
+        },
+        {
+          "orden": 4,
+          "nombre": "Aperturas en máquina pec deck",
+          "series": 3,
+          "reps": "12-15",
+          "descanso_seg": 60,
+          "notas": null
+        },
+        {
+          "orden": 5,
+          "nombre": "Elevaciones laterales sentado",
+          "series": 3,
+          "reps": "12-15",
+          "descanso_seg": 60,
+          "notas": null
+        },
+        {
+          "orden": 6,
+          "nombre": "Extensión de tríceps en polea sentado",
+          "series": 3,
+          "reps": "10-12",
+          "descanso_seg": 60,
+          "notas": "Sentado en un banco frente a la polea."
+        }
+      ]
+    },
+    {
+      "bloque": "Bloque bota fase 2",
+      "clave": "B",
+      "nombre": "Pierna adaptada + core",
+      "orden": 2,
+      "activa": true,
+      "nota": "Todo sentado o acostado, sin apoyar ni cargar el pie lesionado. Calentamiento corto de 5 minutos con movilidad de hombros y activación, porque vienes del kine. Intensidad por RIR: semana 1 en RIR 3, semanas 2 y 3 en RIR 1 a 2, semana 4 en RIR 2 como descarga suave. Progresión: cuando completes todas las series en el tope del rango de reps, sube el peso la sesión siguiente. Evita hacer esta sesión el mismo día en que el kine trabaje fuerte rodilla o cadera.",
+      "ejercicios": [
+        {
+          "orden": 1,
+          "nombre": "Extensión de cuádriceps",
+          "series": 4,
+          "reps": "10-12",
+          "descanso_seg": 90,
+          "notas": "Bilateral solo si el kine lo autoriza. Rodillo sobre la caña de la bota; ante cualquier molestia, pasa a unilateral pierna sana."
+        },
+        {
+          "orden": 2,
+          "nombre": "Curl femoral sentado o acostado",
+          "series": 4,
+          "reps": "10-12",
+          "descanso_seg": 90,
+          "notas": "Ajusta el rodillo para que no presione el tobillo lesionado."
+        },
+        {
+          "orden": 3,
+          "nombre": "Prensa unilateral pierna sana",
+          "series": 3,
+          "reps": "8-10",
+          "descanso_seg": 90,
+          "notas": "La pierna lesionada queda fuera de la plataforma, sin apoyo."
+        },
+        {
+          "orden": 4,
+          "nombre": "Máquina de abductores",
+          "series": 3,
+          "reps": "12-15",
+          "descanso_seg": 60,
+          "notas": null
+        },
+        {
+          "orden": 5,
+          "nombre": "Máquina de aductores",
+          "series": 3,
+          "reps": "12-15",
+          "descanso_seg": 60,
+          "notas": null
+        },
+        {
+          "orden": 6,
+          "nombre": "Dead bug",
+          "series": 3,
+          "reps": "10 por lado",
+          "descanso_seg": 45,
+          "notas": "Lumbar pegada al suelo. Movimiento lento con la pierna de la bota."
+        },
+        {
+          "orden": 7,
+          "nombre": "Pallof press sentado en banco",
+          "series": 3,
+          "reps": "12 por lado",
+          "descanso_seg": 45,
+          "notas": null
+        }
+      ]
+    },
+    {
+      "bloque": "Bloque bota fase 2",
+      "clave": "C",
+      "nombre": "Tirón + bíceps",
+      "orden": 3,
+      "activa": true,
+      "nota": "Todo sentado o acostado, sin apoyar ni cargar el pie lesionado. Sin dominadas colgado, porque la bajada es un riesgo para el tobillo. Calentamiento corto de 5 minutos con movilidad de hombros y activación. Intensidad por RIR: semana 1 en RIR 3, semanas 2 y 3 en RIR 1 a 2, semana 4 en RIR 2 como descarga suave. Progresión: cuando completes todas las series en el tope del rango de reps, sube el peso la sesión siguiente.",
+      "ejercicios": [
+        {
+          "orden": 1,
+          "nombre": "Jalón al pecho",
+          "series": 4,
+          "reps": "8-10",
+          "descanso_seg": 90,
+          "notas": null
+        },
+        {
+          "orden": 2,
+          "nombre": "Remo con pecho apoyado",
+          "series": 4,
+          "reps": "8-10",
+          "descanso_seg": 90,
+          "notas": "En máquina o con mancuernas en banco inclinado."
+        },
+        {
+          "orden": 3,
+          "nombre": "Remo en polea baja sentado",
+          "series": 3,
+          "reps": "10-12",
+          "descanso_seg": 90,
+          "notas": "Solo si la bota no recibe carga en el apoyo. Si no, remo unilateral con mancuerna en banco apoyando la rodilla sana."
+        },
+        {
+          "orden": 4,
+          "nombre": "Face pull sentado",
+          "series": 3,
+          "reps": "12-15",
+          "descanso_seg": 60,
+          "notas": null
+        },
+        {
+          "orden": 5,
+          "nombre": "Curl de bíceps con mancuernas sentado",
+          "series": 3,
+          "reps": "10-12",
+          "descanso_seg": 60,
+          "notas": null
+        },
+        {
+          "orden": 6,
+          "nombre": "Curl martillo sentado",
+          "series": 2,
+          "reps": "12",
+          "descanso_seg": 60,
+          "notas": null
+        }
+      ]
+    },
+    {
+      "bloque": "Bloque bota fase 2",
+      "clave": "D",
+      "nombre": "Torso + pierna ligera",
+      "orden": 4,
+      "activa": true,
+      "nota": "Todo sentado o acostado, sin apoyar ni cargar el pie lesionado. Calentamiento corto de 5 minutos con movilidad de hombros y activación, porque vienes del kine. Intensidad por RIR: semana 1 en RIR 3, semanas 2 y 3 en RIR 1 a 2, semana 4 en RIR 2 como descarga suave. Progresión: cuando completes todas las series en el tope del rango de reps, sube el peso la sesión siguiente. Cierra con acondicionamiento en ergómetro de brazos.",
+      "ejercicios": [
+        {
+          "orden": 1,
+          "nombre": "Press en máquina de pecho",
+          "series": 3,
+          "reps": "10-12",
+          "descanso_seg": 90,
+          "notas": null
+        },
+        {
+          "orden": 2,
+          "nombre": "Jalón agarre neutro",
+          "series": 3,
+          "reps": "10-12",
+          "descanso_seg": 90,
+          "notas": null
+        },
+        {
+          "orden": 3,
+          "nombre": "Pájaros en máquina deltoides posterior",
+          "series": 3,
+          "reps": "12-15",
+          "descanso_seg": 60,
+          "notas": null
+        },
+        {
+          "orden": 4,
+          "nombre": "Extensión de cuádriceps unilateral",
+          "series": 3,
+          "reps": "12-15",
+          "descanso_seg": 60,
+          "notas": "Ambas piernas, empezando por la lesionada si el kine lo autoriza. Rodillo sobre la caña de la bota."
+        },
+        {
+          "orden": 5,
+          "nombre": "Curl femoral unilateral",
+          "series": 3,
+          "reps": "12-15",
+          "descanso_seg": 60,
+          "notas": "Empieza por la pierna lesionada y replica esas reps con la sana."
+        },
+        {
+          "orden": 6,
+          "nombre": "Crunch en máquina o polea sentado",
+          "series": 3,
+          "reps": "12-15",
+          "descanso_seg": 60,
+          "notas": null
+        },
+        {
+          "orden": 7,
+          "nombre": "Ergómetro de brazos",
+          "series": 1,
+          "reps": "10-12 min",
+          "descanso_seg": null,
+          "notas": "Continuo o en intervalos de 30 seg fuerte y 30 seg suave."
         }
       ]
     }
